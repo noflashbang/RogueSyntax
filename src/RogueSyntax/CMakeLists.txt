@@ -4,22 +4,24 @@ add_compile_definitions(ROGUESYNTAX_EXPORTS)
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
-    ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxApi.h
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
+    ${PARENT_DIR}/include/RogueSyntax/Token.h
+    ${PARENT_DIR}/include/RogueSyntax/Lexer.h
+    ${PARENT_DIR}/include/RogueSyntax/StandardLib.h
 )
 
 set( libHeaders 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/StandardLib.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Util.h
-)
+ )
 
 set( libSource
-	${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxApi.cpp
-)
+ "src/Lexer.cpp")
 
-add_library (RogueSyntax SHARED ${libSource} ${libHeaders} ${externHeaders}) 
+add_library (RogueSyntax STATIC ${libSource} ${libHeaders} ${externHeaders}) 
 target_include_directories( RogueSyntax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/RogueSyntax )
 target_include_directories( RogueSyntax PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src )
+
+target_precompile_headers( RogueSyntax PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/pch.h )
 
 target_sources( RogueSyntax PRIVATE ${libSource} ${libHeaders} )
 

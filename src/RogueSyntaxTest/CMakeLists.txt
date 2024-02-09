@@ -15,8 +15,10 @@ FetchContent_MakeAvailable(Catch2)
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
-	${PARENT_DIR}/include/RogueSyntax/RogueSyntaxApi.h
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
+    ${PARENT_DIR}/include/RogueSyntax/Lexer.h
+    ${PARENT_DIR}/include/RogueSyntax/Token.h
+    ${PARENT_DIR}/include/RogueSyntax/StandardLib.h
 )
 
 set( testSource 

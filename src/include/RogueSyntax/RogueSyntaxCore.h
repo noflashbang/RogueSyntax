@@ -21,7 +21,10 @@
 //SOFTWARE.
 
 #pragma once 
-#include <cstdint>
+
+#include "Token.h"
+#include "Lexer.h"
+
 
 
 
