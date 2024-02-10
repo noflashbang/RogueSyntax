@@ -1,134 +1,145 @@
 #include "Lexer.h"
 
-Lexer::Lexer(const std::string& input) : _input(input), _position(0), _readPosition(0), _line(1), _character(0), _column(0)
+Lexer::Lexer(const std::string& input) : _input(input), _position(0), _readPosition(0)
 {
+	_currentLocation.Reset();
 	ReadChar();
 }
 
 Token Lexer::NextToken()
 {
-	Token token = Token::New();
 	SkipWhitespace();
 
-	TokenLocation location = { _line, _character, _column, "" };
+	//save the start position of the token
+	TokenLocation location = _currentLocation;
+
+	auto token = GetCurrentToken();
+	token.Location = location;
+
+	ReadChar();
+
+	return token;
+}
+
+Token Lexer::GetCurrentToken()
+{
 	switch (_currentChar)
 	{
 		case '=':
 		{
-			token = Token::New(TokenType::TOKEN_ASSIGN, _currentChar);
-			break;
+			if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				return Token::New(TokenType::TOKEN_EQ, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				return Token::New(TokenType::TOKEN_ASSIGN, _currentChar);
+			}
 		}
 		case ';':
 		{
-			token = Token::New(TokenType::TOKEN_SEMICOLON, _currentChar);
-			break;
+			return Token::New(TokenType::TOKEN_SEMICOLON, _currentChar);
 		}
 		case '(':
 		{
-			token = Token::New(TokenType::TOKEN_LPAREN, _currentChar);
-			break;
+			return Token::New(TokenType::TOKEN_LPAREN, _currentChar);
 		}
 		case ')':
 		{
-			token = Token::New(TokenType::TOKEN_RPAREN, _currentChar);
-			break;
+			return Token::New(TokenType::TOKEN_RPAREN, _currentChar);
 		}
 		case ',':
 		{
-			token = Token::New(TokenType::TOKEN_COMMA, _currentChar);
-			break;
+			return Token::New(TokenType::TOKEN_COMMA, _currentChar);
 		}
 		case '+':
 		{
-			token = Token::New(TokenType::TOKEN_PLUS, _currentChar);
-			break;
+			return Token::New(TokenType::TOKEN_PLUS, _currentChar);
+		}
+		case '-':
+		{
+			return Token::New(TokenType::TOKEN_MINUS, _currentChar);
+		}
+		case '!':
+		{
+			if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				return Token::New(TokenType::TOKEN_NOT_EQ, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				return Token::New(TokenType::TOKEN_BANG, _currentChar);
+			}
+		}
+		case '/':
+		{
+			return Token::New(TokenType::TOKEN_SLASH, _currentChar);
+		}
+		case '*':
+		{
+			return Token::New(TokenType::TOKEN_ASTERISK, _currentChar);
+		}
+		case '<':
+		{
+			return Token::New(TokenType::TOKEN_LT, _currentChar);
+		}
+		case '>':
+		{
+			return Token::New(TokenType::TOKEN_GT, _currentChar);
 		}
 		case '{':
 		{
-			token = Token::New(TokenType::TOKEN_LBRACE, _currentChar);
-			break;
+			return Token::New(TokenType::TOKEN_LBRACE, _currentChar);
 		}
 		case '}':
 		{
-			token = Token::New(TokenType::TOKEN_RBRACE, _currentChar);
-			break;
+			return Token::New(TokenType::TOKEN_RBRACE, _currentChar);
 		}
 		case '\0':
 		{
-			token = Token::New(TokenType::TOKEN_EOF, "");
-			break;
+			return Token::New(TokenType::TOKEN_EOF, "");
 		}
 		default:
 		{
-			if(IsLetter(_currentChar))
+			if (IsLetter(_currentChar))
 			{
 				auto literal = ReadIdentifier();
 				auto tokenType = TokenType::LookupIdent(literal);
-				token = Token::New(tokenType, literal);
-				token.Location = location;
-				return token;
+				return Token::New(tokenType, literal);
 			}
 			else if (IsDigit(_currentChar))
 			{
 				auto literal = ReadNumber();
-				token = Token::New(TokenType::TOKEN_INT, literal);
-				token.Location = location;
-				return token;
+				return Token::New(TokenType::TOKEN_INT, literal);
 			}
 			else
 			{
-				token = Token::New(TokenType::TOKEN_ILLEGAL, _currentChar);
+				return Token::New(TokenType::TOKEN_ILLEGAL, _currentChar);
 			}
-
-			break;
 		}
 	}
-
-	ReadChar();
-
-	token.Location = location;
-	return token;
+	return Token::New();
 }
 
 void Lexer::ReadChar()
 {
-	if (_position >= std::size(_input))
-	{
-		_currentChar = '\0';
-	}
-	else
-	{
-		_currentChar = _input[_readPosition];
-	}
+	_currentChar = _readPosition >= std::size(_input) ? '\0' : _input[_readPosition];
+	_peekChar = (_readPosition + 1) >= std::size(_input) ? '\0' : _input[(_readPosition + 1)];
 	_position = _readPosition;
 	_readPosition++;
-
-	if ('\n' == _currentChar)
-	{
-		_line++;
-		_column = 0;
-		_character = 0;
-	}
-	else
-	{
-		if ('\t' == _currentChar)
-		{
-			_column += 4;
-		}
-		else
-		{
-			_column++;
-		}
-
-		_character++;
-	}
+	_currentLocation.Advance(_currentChar);
 }
 
 std::string Lexer::ReadIdentifier()
 {
 	auto position = _position;
-	auto cnt = 0;
-	while (IsLetter(_currentChar))
+	auto cnt = 1;
+
+	while (IsLetter(_peekChar))
 	{
 		cnt++;
 		ReadChar();
@@ -139,8 +150,8 @@ std::string Lexer::ReadIdentifier()
 std::string Lexer::ReadNumber()
 {
 	auto position = _position;
-	auto cnt = 0;
-	while (IsDigit(_currentChar))
+	auto cnt = 1;
+	while (IsDigit(_peekChar))
 	{
 		cnt++;
 		ReadChar();
@@ -156,17 +167,17 @@ void Lexer::SkipWhitespace()
 	}
 }
 
-bool Lexer::IsLetter(char c)
+bool Lexer::IsLetter(const char c) const
 {
 	return std::isalpha(c) || c == '_';
 }
 
-bool Lexer::IsDigit(char c)
+bool Lexer::IsDigit(const char c) const
 {
 	return std::isdigit(c);
 }
 
-bool Lexer::IsWhitespace(char c)
+bool Lexer::IsWhitespace(const char c) const
 {
 	return std::isspace(c);
 }

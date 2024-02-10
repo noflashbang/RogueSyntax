@@ -65,6 +65,14 @@ struct TokenType
 	// Operators
 	static const TokenType TOKEN_ASSIGN;
 	static const TokenType TOKEN_PLUS;
+	static const TokenType TOKEN_MINUS;
+	static const TokenType TOKEN_BANG;
+	static const TokenType TOKEN_ASTERISK;
+	static const TokenType TOKEN_SLASH;
+	static const TokenType TOKEN_LT;
+	static const TokenType TOKEN_GT;
+	static const TokenType TOKEN_EQ;
+	static const TokenType TOKEN_NOT_EQ;
 
 	// Delimiters
 	static const TokenType TOKEN_COMMA;
@@ -77,6 +85,11 @@ struct TokenType
 	// Keywords
 	static const TokenType TOKEN_FUNCTION;
 	static const TokenType TOKEN_LET;
+	static const TokenType TOKEN_TRUE;
+	static const TokenType TOKEN_FALSE;
+	static const TokenType TOKEN_IF;
+	static const TokenType TOKEN_ELSE;
+	static const TokenType TOKEN_RETURN;
 
 	static TokenType LookupIdent(const std::string& ident)
 	{
@@ -99,6 +112,16 @@ struct TokenLocation
 	unsigned int Character;
 	unsigned int Column;
 	std::string Filename;
+
+	void Reset()
+	{
+		Line = 1;
+		Character = 0;
+		Column = 0;
+		Filename = "";
+	}
+
+	void Advance(const char ch);
 };
 
 struct Token
@@ -108,9 +131,9 @@ struct Token
 	TokenLocation Location;
 
 	//methods for construction - helpers
-	static Token New() { return  { TokenType::TOKEN_ILLEGAL, "" }; };
-	static Token New(const TokenType type, const char literal) { return  { type, std::string(1, literal) }; };
-	static Token New(const TokenType type, const std::string& literal) { return  { type, literal }; };
+	static Token New() { return  Token{ TokenType::TOKEN_ILLEGAL, "" }; };
+	static Token New(const TokenType type, const char literal) { return Token{ type, std::string(1, literal) }; };
+	static Token New(const TokenType type, const std::string& literal) { return  Token{ type, literal }; };
 
 	std::string TypeName() const
 	{

@@ -22,7 +22,9 @@ set( externHeaders
 )
 
 set( testSource 
-   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/LexerTests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+
 )
 
 add_executable(RogueSyntaxTest ${testSource} ${externHeaders})
