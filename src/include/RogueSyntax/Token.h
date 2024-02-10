@@ -2,95 +2,119 @@
 
 #include "StandardLib.h"
 
-namespace Token
+
+struct TokenType
 {
-	enum class TokenType:unsigned int
+	unsigned int Type;
+	std::string Name;
+
+	constexpr bool operator==(const TokenType& other) const
 	{
-		RS_ILLEGAL = 0,
-		RS_EOF,
+		return Type == other.Type;
+	}
 
-		// Identifiers + literals
-		RS_IDENT,
-		RS_INT,
-
-		// Operators
-		RS_ASSIGN,
-		RS_PLUS,
-
-		// Delimiters
-		RS_COMMA,
-		RS_SEMICOLON,
-
-		RS_LPAREN,
-		RS_RPAREN,
-		RS_LBRACE,
-		RS_RBRACE,
-
-		// Keywords
-		RS_FUNCTION,
-		RS_LET
-	};
-
-	const std::map<TokenType, std::string> TokenNames = {
-		{TokenType::RS_ILLEGAL, "ILLEGAL"},
-		{TokenType::RS_EOF, "EOF"},
-
-		{TokenType::RS_IDENT, "IDENT"},
-		{TokenType::RS_INT, "INT"},
-
-		{TokenType::RS_ASSIGN, "="},
-		{TokenType::RS_PLUS, "+"},
-
-		{TokenType::RS_COMMA, ","},
-		{TokenType::RS_SEMICOLON, ";"},
-
-		{TokenType::RS_LPAREN, "("},
-		{TokenType::RS_RPAREN, ")"},
-		{TokenType::RS_LBRACE, "{"},
-		{TokenType::RS_RBRACE, "}"},
-
-		{TokenType::RS_FUNCTION, "FUNCTION"},
-		{TokenType::RS_LET, "LET"}
-	};
-
-	const std::map<std::string, TokenType> Keywords = {
-		{"fn", TokenType::RS_FUNCTION},
-		{"let", TokenType::RS_LET}
-	};
-
-	
-
-	struct TokenLocation
+	constexpr bool operator!=(const TokenType& other) const
 	{
-		unsigned int Line;
-		unsigned int Column;
-		std::string Filename;
-	};
+		return Type != other.Type;
+	}
 
-	struct Token
+	constexpr bool operator<(const TokenType& other) const
 	{
-		Token() : Type(TokenType::RS_ILLEGAL), Literal("") {}
-		Token(TokenType type, char literal) : Type(type), Literal(std::string(1, literal)) {}
-		Token(TokenType type, std::string literal) : Type(type), Literal(literal) {}
+		return Type < other.Type;
+	}
 
-		constexpr std::string TypeName() const
+	constexpr bool operator>(const TokenType& other) const
+	{
+		return Type > other.Type;
+	}
+
+	constexpr bool operator<=(const TokenType& other) const
+	{
+		return Type <= other.Type;
+	}
+
+	constexpr bool operator>=(const TokenType& other) const
+	{
+		return Type >= other.Type;
+	}
+
+	explicit constexpr operator unsigned int() const
+	{
+		return Type;
+	}
+
+	explicit constexpr operator std::string() const
+	{
+		return Name;
+	}
+
+	std::string ToString() const
+	{
+		return Name;
+	}
+
+	//================================================================================
+	// Special tokens
+	static const TokenType TOKEN_ILLEGAL;
+	static const TokenType TOKEN_EOF;
+
+	// Identifiers + literals
+	static const TokenType TOKEN_IDENT;
+	static const TokenType TOKEN_INT;
+
+	// Operators
+	static const TokenType TOKEN_ASSIGN;
+	static const TokenType TOKEN_PLUS;
+
+	// Delimiters
+	static const TokenType TOKEN_COMMA;
+	static const TokenType TOKEN_SEMICOLON;
+	static const TokenType TOKEN_LPAREN;
+	static const TokenType TOKEN_RPAREN;
+	static const TokenType TOKEN_LBRACE;
+	static const TokenType TOKEN_RBRACE;
+
+	// Keywords
+	static const TokenType TOKEN_FUNCTION;
+	static const TokenType TOKEN_LET;
+
+	static TokenType LookupIdent(const std::string& ident)
+	{
+		auto it = KEYWORD_TOKEN_MAP.find(ident);
+		if (it != KEYWORD_TOKEN_MAP.end())
 		{
-			return TokenNames.at(Type);
+			return it->second;
 		}
+		return TokenType::TOKEN_IDENT;
+	}
 
-		static TokenType LookupIdent(const std::string& ident)
-		{
-			auto it = Keywords.find(ident);
-			if (it != Keywords.end())
-			{
-				return it->second;
-			}
-			return TokenType::RS_IDENT;
-		}
+private:
 
-		TokenType Type;
-		std::string Literal;
-		TokenLocation Location;
-	};
+	static const std::map<std::string, TokenType> KEYWORD_TOKEN_MAP;
+};
 
-} // namespace Token
+struct TokenLocation
+{
+	unsigned int Line;
+	unsigned int Character;
+	unsigned int Column;
+	std::string Filename;
+};
+
+struct Token
+{
+	TokenType Type;
+	std::string Literal;
+	TokenLocation Location;
+
+	//methods for construction - helpers
+	static Token New() { return  { TokenType::TOKEN_ILLEGAL, "" }; };
+	static Token New(const TokenType type, const char literal) { return  { type, std::string(1, literal) }; };
+	static Token New(const TokenType type, const std::string& literal) { return  { type, literal }; };
+
+	std::string TypeName() const
+	{
+		return Type.ToString();
+	}
+};
+

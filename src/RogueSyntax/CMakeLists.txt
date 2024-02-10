@@ -15,7 +15,9 @@ set( libHeaders
  )
 
 set( libSource
- "src/Lexer.cpp")
+ "src/Token.cpp"
+ "src/Lexer.cpp"
+)
 
 add_library (RogueSyntax STATIC ${libSource} ${libHeaders} ${externHeaders}) 
 target_include_directories( RogueSyntax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/RogueSyntax )
