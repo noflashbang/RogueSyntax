@@ -18,11 +18,14 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
     ${PARENT_DIR}/include/RogueSyntax/Lexer.h
     ${PARENT_DIR}/include/RogueSyntax/Token.h
+    ${PARENT_DIR}/include/RogueSyntax/AstNode.h
+    ${PARENT_DIR}/include/RogueSyntax/Parser.h
     ${PARENT_DIR}/include/RogueSyntax/StandardLib.h
 )
 
 set( testSource 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LexerTests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ParserTests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
 
 )

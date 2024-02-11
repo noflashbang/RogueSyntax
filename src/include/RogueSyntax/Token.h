@@ -91,6 +91,8 @@ struct TokenType
 	static const TokenType TOKEN_ELSE;
 	static const TokenType TOKEN_RETURN;
 
+	static const int TOKEN_COUNT = 20;
+
 	static TokenType LookupIdent(const std::string& ident)
 	{
 		auto it = KEYWORD_TOKEN_MAP.find(ident);

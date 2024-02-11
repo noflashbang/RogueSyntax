@@ -24,6 +24,9 @@
 
 #include "Token.h"
 #include "Lexer.h"
+#include "AstNode.h"
+#include "Parser.h"
+
 
 
 
