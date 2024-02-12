@@ -2,7 +2,6 @@
 
 Parser::Parser(Lexer lexer) : _lexer(lexer)
 {
-
 	_prefixDispatch[TokenType::TOKEN_IDENT] = std::bind(&Parser::ParseIdentifier, this);
 	_prefixDispatch[TokenType::TOKEN_INT] = std::bind(&Parser::ParseIntegerLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_BANG] = std::bind(&Parser::ParsePrefixExpression, this);
@@ -17,7 +16,6 @@ Parser::Parser(Lexer lexer) : _lexer(lexer)
 	_infixDispatch[TokenType::TOKEN_NOT_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_GT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
-
 
 	//load the first two tokens
 	NextToken();
@@ -36,18 +34,17 @@ Program Parser::ParseProgram()
 
 	while (_currentToken.Type != TokenType::TOKEN_EOF)
 	{
-		IStatement* pStatement = ParseStatement();
+		auto pStatement = ParseStatement();
 		if (pStatement != nullptr)
 		{
-			program.Statements.push_back(pStatement);
+			program.Statements.push_back(std::move(pStatement));
 		}
-		
 		NextToken();
 	}
 	return program;
 }
 
-IStatement* Parser::ParseStatement()
+std::unique_ptr<IStatement> Parser::ParseStatement()
 {
 	if (_currentToken.Type == TokenType::TOKEN_LET)
 	{
@@ -63,7 +60,7 @@ IStatement* Parser::ParseStatement()
 	}
 }
 
-IExpression* Parser::ParseExpression(const Precedence precedence)
+std::unique_ptr<IExpression> Parser::ParseExpression(const Precedence precedence)
 {
 	auto prefix = _prefixDispatch.find(_currentToken.Type);
 	if (prefix == _prefixDispatch.end())
@@ -73,7 +70,7 @@ IExpression* Parser::ParseExpression(const Precedence precedence)
 		return nullptr;
 	}
 
-	IExpression* left = prefix->second();
+	auto left = prefix->second();
 
 	while (!PeekTokenIs(TokenType::TOKEN_SEMICOLON) && precedence < PeekPrecedence())
 	{
@@ -85,27 +82,21 @@ IExpression* Parser::ParseExpression(const Precedence precedence)
 	
 		NextToken();
 	
-		left = infix->second(left);
+		left = infix->second(std::move(left));
 	}
 	return left;
 }
 
-IExpression* Parser::ParseIdentifier()
+std::unique_ptr<IExpression> Parser::ParseIdentifier()
 {
-	Identifier* pIdentifier = new Identifier();
-	pIdentifier->Token = _currentToken;
-	pIdentifier->Value = _currentToken.Literal;
-	return pIdentifier;
+	return Identifier::New(_currentToken, _currentToken.Literal);
 }
 
-IExpression* Parser::ParseIntegerLiteral()
+std::unique_ptr<IExpression> Parser::ParseIntegerLiteral()
 {
-	IntegerLiteral* pIntegerLiteral = new IntegerLiteral();
-	pIntegerLiteral->Token = _currentToken;
-
 	try
 	{
-		pIntegerLiteral->Value = std::stoi(_currentToken.Literal);
+		return IntegerLiteral::New(_currentToken, std::stoi(_currentToken.Literal));
 	}
 	catch (const std::invalid_argument& e)
 	{
@@ -113,50 +104,42 @@ IExpression* Parser::ParseIntegerLiteral()
 		AddError(error);
 		return nullptr;
 	}
-	
-	return pIntegerLiteral;
 }
 
-IExpression* Parser::ParsePrefixExpression()
+std::unique_ptr<IExpression> Parser::ParsePrefixExpression()
 {
-	PrefixExpression* pPrefixExpression = new PrefixExpression();
-	pPrefixExpression->Token = _currentToken;
-	pPrefixExpression->Operator = _currentToken.Literal;
+	auto token = _currentToken;
+	auto op = _currentToken.Literal;
 
 	NextToken();
 
-	pPrefixExpression->Right = ParseExpression(Precedence::PREFIX);
+	auto right = ParseExpression(Precedence::PREFIX);
 
-	return pPrefixExpression;
+	return PrefixExpression::New(token, op, std::move(right));
 }
 
-IExpression* Parser::ParseInfixExpression(IExpression* left)
-{
-	InfixExpression* pInfixExpression = new InfixExpression();
-	pInfixExpression->Token = _currentToken;
-	pInfixExpression->Operator = _currentToken.Literal;
-	pInfixExpression->Left = left;
+std::unique_ptr<IExpression> Parser::ParseInfixExpression(std::unique_ptr<IExpression> left)
+{	
+	auto token = _currentToken;
+	auto op = _currentToken.Literal;
 
 	Precedence precedence = CurrentPrecedence();
 	NextToken();
-	pInfixExpression->Right = ParseExpression(precedence);
+	auto right = ParseExpression(precedence);
 
-	return pInfixExpression;
+	return InfixExpression::New(token, std::move(left), op, std::move(right));
 }
 
-IStatement* Parser::ParseLetStatement()
+std::unique_ptr<IStatement> Parser::ParseLetStatement()
 {
-	LetStatement* pLetStatement = new LetStatement();
-	pLetStatement->Token = _currentToken;
+	auto token = _currentToken;
 
 	if (!ExpectPeek(TokenType::TOKEN_IDENT))
 	{
 		return nullptr;
 	}
 
-	pLetStatement->Name = new Identifier();
-	pLetStatement->Name->Token = _currentToken;
-	pLetStatement->Name->Value = _currentToken.Literal;
+	auto identifier = Identifier::New(_currentToken, _currentToken.Literal);
 
 	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
 	{
@@ -164,40 +147,39 @@ IStatement* Parser::ParseLetStatement()
 	}
 
 	NextToken();
-	pLetStatement->Value = ParseExpression(Precedence::LOWEST);
+	
+	auto value = ParseExpression(Precedence::LOWEST);
 
 	while(_currentToken.Type != TokenType::TOKEN_SEMICOLON)
 	{
 		NextToken();
 	}
 
-	return pLetStatement;
+	return LetStatement::New(token, std::move(identifier), std::move(value));
 }
 
-IStatement* Parser::ParseReturnStatement()
+std::unique_ptr<IStatement> Parser::ParseReturnStatement()
 {
-	ReturnStatement* pReturnStatement = new ReturnStatement();
-	pReturnStatement->Token = _currentToken;
+	auto token = _currentToken;
 
 	NextToken();
 
-	pReturnStatement->ReturnValue = ParseExpression(Precedence::LOWEST);
+	auto returnValue = ParseExpression(Precedence::LOWEST);
 
 	while (_currentToken.Type != TokenType::TOKEN_SEMICOLON)
 	{
 		NextToken();
 	}
 
-	return pReturnStatement;
+	return ReturnStatement::New(token, std::move(returnValue));
 }
 
-IStatement* Parser::ParseExpressionStatement()
+std::unique_ptr<IStatement> Parser::ParseExpressionStatement()
 {
-	ExpressionStatement* pExpressionStatement = new ExpressionStatement();
-	pExpressionStatement->Token = _currentToken;
+	auto token = _currentToken;
 
 	//parse the expression
-	pExpressionStatement->Expression = ParseExpression(Precedence::LOWEST);
+	auto expression = ParseExpression(Precedence::LOWEST);
 
 	//if the next token is a semicolon, consume it
 	if (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
@@ -205,7 +187,7 @@ IStatement* Parser::ParseExpressionStatement()
 		NextToken();
 	}
 
-	return pExpressionStatement;
+	return ExpressionStatement::New(token, std::move(expression));
 }
 
 

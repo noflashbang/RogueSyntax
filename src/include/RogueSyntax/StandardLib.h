@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <memory>
 #include <map>
 #include <fstream>
 #include <sstream>

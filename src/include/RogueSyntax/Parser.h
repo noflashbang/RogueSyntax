@@ -5,8 +5,8 @@
 #include "Lexer.h"
 #include "AstNode.h"
 
-typedef std::function<IExpression* ()> PrefixParseFn;
-typedef std::function<IExpression* (IExpression*)> InfixParseFn;
+typedef std::function<std::unique_ptr<IExpression>()> PrefixParseFn;
+typedef std::function<std::unique_ptr<IExpression>(std::unique_ptr<IExpression>)> InfixParseFn;
 
 enum class Precedence
 {
@@ -38,18 +38,18 @@ public:
 
 	void NextToken();
 	Program ParseProgram();
-	IStatement* ParseStatement();
+	std::unique_ptr<IStatement> ParseStatement();
 
-	IExpression* ParseExpression(const Precedence precedence);
+	std::unique_ptr<IExpression> ParseExpression(const Precedence precedence);
 
-	IExpression* ParseIdentifier();
-	IExpression* ParseIntegerLiteral();
-	IExpression* ParsePrefixExpression();
-	IExpression* ParseInfixExpression(IExpression* left);
+	std::unique_ptr<IExpression> ParseIdentifier();
+	std::unique_ptr<IExpression> ParseIntegerLiteral();
+	std::unique_ptr<IExpression> ParsePrefixExpression();
+	std::unique_ptr<IExpression> ParseInfixExpression(std::unique_ptr<IExpression> left);
 
-	IStatement* ParseLetStatement();
-	IStatement* ParseReturnStatement();
-	IStatement* ParseExpressionStatement();
+	std::unique_ptr<IStatement> ParseLetStatement();
+	std::unique_ptr<IStatement> ParseReturnStatement();
+	std::unique_ptr<IStatement> ParseExpressionStatement();
 
 
 	bool ExpectPeek(const TokenType expectedType);
