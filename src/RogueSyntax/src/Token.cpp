@@ -21,22 +21,22 @@ const TokenType TokenType::TOKEN_EQ        = { 12, "==" };
 const TokenType TokenType::TOKEN_NOT_EQ    = { 13, "!=" };
 
 // Delimiters							   		   
-const TokenType TokenType::TOKEN_COMMA     = { 6,  "," };
-const TokenType TokenType::TOKEN_SEMICOLON = { 7,  ";" };
+const TokenType TokenType::TOKEN_COMMA     = { 14,  "," };
+const TokenType TokenType::TOKEN_SEMICOLON = { 15,  ";" };
 												   
-const TokenType TokenType::TOKEN_LPAREN    = { 8,  "(" };
-const TokenType TokenType::TOKEN_RPAREN    = { 9,  ")" };
-const TokenType TokenType::TOKEN_LBRACE    = { 10, "{" };
-const TokenType TokenType::TOKEN_RBRACE    = { 11, "}" };
+const TokenType TokenType::TOKEN_LPAREN    = { 16,  "(" };
+const TokenType TokenType::TOKEN_RPAREN    = { 17,  ")" };
+const TokenType TokenType::TOKEN_LBRACE    = { 18, "{" };
+const TokenType TokenType::TOKEN_RBRACE    = { 19, "}" };
 
 // Keywords
-const TokenType TokenType::TOKEN_FUNCTION  = { 12, "FUNCTION" };
-const TokenType TokenType::TOKEN_LET       = { 13, "LET" };
-const TokenType TokenType::TOKEN_TRUE      = { 14, "TRUE" };
-const TokenType TokenType::TOKEN_FALSE     = { 15, "FALSE" };
-const TokenType TokenType::TOKEN_IF        = { 16, "IF" };
-const TokenType TokenType::TOKEN_ELSE      = { 17, "ELSE" };
-const TokenType TokenType::TOKEN_RETURN    = { 18, "RETURN" };
+const TokenType TokenType::TOKEN_FUNCTION  = { 20, "FUNCTION" };
+const TokenType TokenType::TOKEN_LET       = { 21, "LET" };
+const TokenType TokenType::TOKEN_TRUE      = { 22, "TRUE" };
+const TokenType TokenType::TOKEN_FALSE     = { 23, "FALSE" };
+const TokenType TokenType::TOKEN_IF        = { 24, "IF" };
+const TokenType TokenType::TOKEN_ELSE      = { 25, "ELSE" };
+const TokenType TokenType::TOKEN_RETURN    = { 26, "RETURN" };
 
 const std::map<std::string, TokenType> TokenType::KEYWORD_TOKEN_MAP = {
 	{"fn",  TokenType::TOKEN_FUNCTION},

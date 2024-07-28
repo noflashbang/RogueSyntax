@@ -1,4 +1,11 @@
 #include "AstNode.h"
+#include "AstNode.h"
+#include "AstNode.h"
+#include "AstNode.h"
+#include "AstNode.h"
+#include "AstNode.h"
+#include "AstNode.h"
+#include "AstNode.h"
 
 std::string Program::TokenLiteral() const
 {
@@ -53,6 +60,11 @@ std::string LetStatement::ToString() const
 	return result;
 }
 
+TokenType LetStatement::Type() const
+{
+	return Token.Type;
+}
+
 Identifier::Identifier(const ::Token token, const std::string& value) : Token(token), Value(value)
 {
 }
@@ -70,6 +82,11 @@ std::string Identifier::TokenLiteral() const
 std::string Identifier::ToString() const
 {
 	return Value;
+}
+
+TokenType Identifier::Type() const
+{
+	return Token.Type;
 }
 
 ReturnStatement::ReturnStatement(const ::Token token, std::unique_ptr<IExpression> returnValue) : Token(token)
@@ -99,6 +116,11 @@ std::string ReturnStatement::ToString() const
 	return result;
 }
 
+TokenType ReturnStatement::Type() const
+{
+	return Token.Type;
+}
+
 ExpressionStatement::ExpressionStatement(const ::Token token, std::unique_ptr<IExpression> expression) : Token(token)
 {
 	Expression.swap(expression);
@@ -123,6 +145,11 @@ std::string ExpressionStatement::ToString() const
 	return "";
 }
 
+TokenType ExpressionStatement::Type() const
+{
+	return Token.Type;
+}
+
 IntegerLiteral::IntegerLiteral(const ::Token token, int value) : Token(token), Value(value)
 {
 }
@@ -140,6 +167,35 @@ std::string IntegerLiteral::TokenLiteral() const
 std::string IntegerLiteral::ToString() const
 {
 	return std::to_string(Value);
+}
+
+TokenType IntegerLiteral::Type() const
+{
+	return Token.Type;
+}
+
+BooleanLiteral::BooleanLiteral(const ::Token token, bool value) : Token(token), Value(value)
+{
+}
+
+std::unique_ptr<BooleanLiteral> BooleanLiteral::New(::Token token, bool value)
+{
+	return std::make_unique<BooleanLiteral>(token, value);
+};
+
+std::string BooleanLiteral::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string BooleanLiteral::ToString() const
+{
+	return Value ? "true" : "false";
+}
+
+TokenType BooleanLiteral::Type() const
+{
+	return Token.Type;
 }
 
 PrefixExpression::PrefixExpression(const ::Token token, const std::string& op, std::unique_ptr<IExpression> right) : Token(token), Operator(op)
@@ -167,6 +223,11 @@ std::string PrefixExpression::ToString() const
 	return result;
 }
 
+TokenType PrefixExpression::Type() const
+{
+	return Token.Type;
+}
+
 InfixExpression::InfixExpression(const ::Token token, std::unique_ptr<IExpression> left, const std::string& op, std::unique_ptr<IExpression> right) : Token(token), Operator(op)
 {
 	Left.swap(left);
@@ -192,4 +253,160 @@ std::string InfixExpression::ToString() const
 	result.append(Right->ToString());
 	result.append(")");
 	return result;
+}
+
+TokenType InfixExpression::Type() const
+{
+	return Token.Type;
+}
+
+BlockStatement::BlockStatement(const ::Token token, std::vector<std::unique_ptr<IStatement>>& statements) : Token(token)
+{
+	Statements.swap(statements);
+}
+
+std::unique_ptr<BlockStatement> BlockStatement::New(const ::Token token, std::vector<std::unique_ptr<IStatement>>& statements)
+{
+	return std::make_unique<BlockStatement>(token, statements);
+}
+
+std::string BlockStatement::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string BlockStatement::ToString() const
+{
+	std::string result;
+	result.append("{");
+	std::for_each(Statements.begin(), Statements.end(), [&result](const auto& statement)
+	{
+		result.append(statement->ToString());
+	});
+	result.append("}");
+
+	return result;
+}
+
+TokenType BlockStatement::Type() const
+{
+	return Token.Type;
+}
+
+IfExpression::IfExpression(const ::Token token, std::unique_ptr<IExpression> condition, std::unique_ptr<IStatement> consequence, std::unique_ptr<IStatement> alternative) : Token(token)
+{
+	Condition.swap(condition);
+	Consequence.swap(consequence);
+	Alternative.swap(alternative);
+}
+
+std::unique_ptr<IfExpression> IfExpression::New(const ::Token token, std::unique_ptr<IExpression> condition, std::unique_ptr<IStatement> consequence, std::unique_ptr<IStatement> alternative)
+{
+	return std::make_unique<IfExpression>(token, std::move(condition), std::move(consequence), std::move(alternative));
+}
+
+std::string IfExpression::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string IfExpression::ToString() const
+{
+	std::string result;
+	result.append("if");
+	result.append(Condition->ToString());
+	result.append(" ");
+	result.append(Consequence->ToString());
+	if (Alternative != nullptr)
+	{
+		result.append("else ");
+		result.append(Alternative->ToString());
+	}
+	return result;
+}
+
+TokenType IfExpression::Type() const
+{
+	return Token.Type;
+}
+
+FunctionLiteral::FunctionLiteral(const ::Token token, std::vector<std::unique_ptr<IExpression>>& parameters, std::unique_ptr<IStatement> body) : Token(token)
+{
+	Parameters.swap(parameters);
+	Body.swap(body);
+}
+
+std::unique_ptr<FunctionLiteral> FunctionLiteral::New(const ::Token token, std::vector<std::unique_ptr<IExpression>>& parameters, std::unique_ptr<IStatement> body)
+{
+	return std::make_unique<FunctionLiteral>(token, parameters, std::move(body));
+}
+
+std::string FunctionLiteral::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string FunctionLiteral::ToString() const
+{
+	std::string result;
+	result.append(TokenLiteral());
+	result.append("(");
+	std::for_each(Parameters.begin(), Parameters.end(), [&result](const auto& param)
+	{
+		result.append(param->ToString());
+		result.append(", ");
+	});
+
+	//remove the last comma
+	result.pop_back();
+	result.pop_back();
+
+	result.append(")");
+	result.append(Body->ToString());
+	return result;
+}
+
+TokenType FunctionLiteral::Type() const
+{
+	return Token.Type;
+}
+
+CallExpression::CallExpression(const ::Token token, std::unique_ptr<IExpression> function, std::vector<std::unique_ptr<IExpression>>& arguments) : Token(token)
+{
+	Function.swap(function);
+	Arguments.swap(arguments);
+}
+
+std::unique_ptr<CallExpression> CallExpression::New(const ::Token token, std::unique_ptr<IExpression> function, std::vector<std::unique_ptr<IExpression>>& arguments)
+{
+	return std::make_unique<CallExpression>(token, std::move(function), arguments);
+}
+
+std::string CallExpression::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string CallExpression::ToString() const
+{
+	std::string result;
+	result.append(Function->ToString());
+	result.append("(");
+	std::for_each(Arguments.begin(), Arguments.end(), [&result](const auto& arg)
+	{
+		result.append(arg->ToString());
+		result.append(", ");
+	});
+
+	//remove the last comma
+	result.pop_back();
+	result.pop_back();
+
+	result.append(")");
+	return result;
+}
+
+TokenType CallExpression::Type() const
+{
+	return Token.Type;
 }

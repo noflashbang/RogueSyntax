@@ -91,7 +91,7 @@ struct TokenType
 	static const TokenType TOKEN_ELSE;
 	static const TokenType TOKEN_RETURN;
 
-	static const int TOKEN_COUNT = 20;
+	static const int TOKEN_COUNT = 26;
 
 	static TokenType LookupIdent(const std::string& ident)
 	{

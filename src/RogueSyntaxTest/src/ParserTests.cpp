@@ -2,6 +2,159 @@
 #include <RogueSyntaxCore.h>
 #include <catch2/catch_test_macros.hpp>
 
+
+bool TestIdentifier(const IExpression* expression, const std::string& expected)
+{
+	auto ident = dynamic_cast<const Identifier*>(expression);
+	if (ident == nullptr)
+	{
+		throw new std::invalid_argument(std::format("Bad expression -> Expected Identifier GOT {}", expression->ToString()));
+		return false;
+	}
+
+	if (ident->Value != expected)
+	{
+		throw new std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, ident->Value));
+		return false;
+	}
+
+	if(ident->TokenLiteral() != expected)
+	{
+		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, ident->Value));
+		return false;
+	}
+
+	return true;
+}
+
+bool TestIntegerLiteral(const IExpression* expression, int expected)
+{
+	auto integer = dynamic_cast<const IntegerLiteral*>(expression);
+	if (integer == nullptr)
+	{
+		throw new std::invalid_argument(std::format("Bad expression -> Expected IntegerLiteral GOT {}", expression->ToString()));
+		return false;
+	}
+
+	if (integer->Value != expected)
+	{
+		throw new std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, integer->Value));
+		return false;
+	}
+
+	if (integer->TokenLiteral() != std::to_string(expected))
+	{
+		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, integer->Value));
+		return false;
+	}
+
+	return true;
+}
+
+bool TestBooleanLiteral(const IExpression* expression, bool expected)
+{
+	auto boolean = dynamic_cast<const BooleanLiteral*>(expression);
+	if (boolean == nullptr)
+	{
+		throw new std::invalid_argument(std::format("Bad expression -> Expected BooleanLiteral GOT {}", expression->ToString()));
+		return false;
+	}
+
+	if (boolean->Value != expected)
+	{
+		throw new std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, boolean->Value));
+		return false;
+	}
+
+	if(expected && boolean->TokenLiteral() != "true")
+	{
+		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, boolean->Value));
+		return false;
+	}
+	
+	if(!expected && boolean->TokenLiteral() != "false")
+	{
+		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, boolean->Value));
+		return false;
+	}
+
+	return true;
+}
+
+bool TestLiteralExpression(const IExpression* expression, const std::string& expected)
+{
+	if (expression->Type() == TokenType::TOKEN_IDENT)
+	{
+		return TestIdentifier(expression, expected);
+	}
+	else if(expression->Type() == TokenType::TOKEN_INT)
+	{
+		return TestIntegerLiteral(expression, std::stoi(expected));
+	}
+	else if(expression->Type() == TokenType::TOKEN_TRUE || expression->Type() == TokenType::TOKEN_FALSE)
+	{
+		return TestBooleanLiteral(expression, expected == "true");
+	}
+	else
+	{
+		throw new std::invalid_argument(std::format("Bad expression -> Expected Literal GOT {}", expression->ToString()));
+		return false;
+	}
+
+	return true;
+}
+
+bool TestInfixExpression(const IExpression* expression, const std::string& left, const std::string& op, const std::string& right)
+{
+	auto infix = dynamic_cast<const InfixExpression*>(expression);
+	if (infix == nullptr)
+	{
+		throw new std::invalid_argument(std::format("Bad expression -> Expected InfixExpression GOT {}", expression->ToString()));
+		return false;
+	}
+
+	if (!TestLiteralExpression(infix->Left.get(), left))
+	{
+		return false;
+	}
+
+	if (infix->Operator != op)
+	{
+		throw new std::invalid_argument(std::format("Bad Operator -> Expected {} GOT {}", op, infix->Operator));
+		return false;
+	}
+
+	if (!TestLiteralExpression(infix->Right.get(), right))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool TestPrefixExpression(const IExpression* expression, const std::string& op, const std::string& right)
+{
+	auto prefix = dynamic_cast<const PrefixExpression*>(expression);
+	if (prefix == nullptr)
+	{
+		throw new std::invalid_argument(std::format("Bad expression -> Expected PrefixExpression GOT {}", expression->ToString()));
+		return false;
+	}
+
+	if (prefix->Operator != op)
+	{
+		throw new std::invalid_argument(std::format("Bad Operator -> Expected {} GOT {}", op, prefix->Operator));
+		return false;
+	}
+
+	if (!TestLiteralExpression(prefix->Right.get(), right))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 TEST_CASE("Parser Tests")
 {
 	SECTION("Test Identifier")
@@ -17,10 +170,8 @@ TEST_CASE("Parser Tests")
 		REQUIRE(program.Statements.size() == 1);
 		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
-		auto ident = dynamic_cast<Identifier*>(expressionStatement->Expression.get());
-		REQUIRE(ident != nullptr);
-		REQUIRE(ident->Value == "foobar");
-		REQUIRE(ident->TokenLiteral() == "foobar");
+
+		REQUIRE(TestIdentifier(expressionStatement->Expression.get(), "foobar"));
 	}
 
 	SECTION("Test Integer Literal")
@@ -37,9 +188,25 @@ TEST_CASE("Parser Tests")
 		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 		auto integer = dynamic_cast<IntegerLiteral*>(expressionStatement->Expression.get());
-		REQUIRE(integer != nullptr);
-		REQUIRE(integer->Value == 5);
-		REQUIRE(integer->TokenLiteral() == "5");
+
+		REQUIRE(TestIntegerLiteral(expressionStatement->Expression.get(), 5));
+	}
+
+	SECTION("Test Boolean Literal")
+	{
+		std::string input = "true;";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(expressionStatement != nullptr);
+
+		REQUIRE(TestBooleanLiteral(expressionStatement->Expression.get(), true));
 	}
 
 	SECTION("Test Prefix Expression BANG")
@@ -55,10 +222,8 @@ TEST_CASE("Parser Tests")
 		REQUIRE(program.Statements.size() == 1);
 		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
+
 		auto prefix = dynamic_cast<PrefixExpression*>(expressionStatement->Expression.get());
-		REQUIRE(prefix != nullptr);
-		REQUIRE(prefix->Operator == "!");
-		REQUIRE(prefix->Right->TokenLiteral() == "5");
 	}
 
 	SECTION("Test Prefix Expression MINUS")
@@ -74,10 +239,8 @@ TEST_CASE("Parser Tests")
 		REQUIRE(program.Statements.size() == 1);
 		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
-		auto prefix = dynamic_cast<PrefixExpression*>(expressionStatement->Expression.get());
-		REQUIRE(prefix != nullptr);
-		REQUIRE(prefix->Operator == "-");
-		REQUIRE(prefix->Right->TokenLiteral() == "15");
+
+		REQUIRE(TestPrefixExpression(expressionStatement->Expression.get(), "-", "15"));
 	}
 
 	SECTION("Test Infix Expression")
@@ -93,14 +256,11 @@ TEST_CASE("Parser Tests")
 		REQUIRE(program.Statements.size() == 1);
 		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
-		auto infix = dynamic_cast<InfixExpression*>(expressionStatement->Expression.get());
-		REQUIRE(infix != nullptr);
-		REQUIRE(infix->Operator == "+");
-		REQUIRE(infix->Left->TokenLiteral() == "5");
-		REQUIRE(infix->Right->TokenLiteral() == "5");
+
+		REQUIRE(TestInfixExpression(expressionStatement->Expression.get(), "5", "+", "5"));
 	}
 
-SECTION("Test Operator Precedence Parsing")
+	SECTION("Test Operator Precedence Parsing")
 	{
 		struct Test
 		{
@@ -121,6 +281,57 @@ SECTION("Test Operator Precedence Parsing")
 			{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
 			{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
 			{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+			{"true", "true"},
+			{"false", "false"},
+			{"3 > 5 == false", "((3 > 5) == false)"},
+			{"3 < 5 == true", "((3 < 5) == true)"},
+			{"1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"},
+			{"(5 + 5) * 2", "((5 + 5) * 2)"},
+			{"2 / (5 + 5)", "(2 / (5 + 5))"},
+			{"-(5 + 5)", "(-(5 + 5))"},
+			{"!(true == true)", "(!(true == true))"},
+			{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+			{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+		};
+
+		for (auto& test : tests)
+		{
+			Lexer lexer(test.input);
+			Parser parser(lexer);
+
+			auto program = parser.ParseProgram();
+			auto errors = parser.Errors();
+			if (errors.size() != 0)
+			{
+				for (auto& error : errors)
+				{
+					INFO(error);
+				}
+			}
+			REQUIRE(errors.size() == 0);
+			REQUIRE(program.ToString() == test.expected);
+		}
+	}
+
+	SECTION("Test Parsing Infix Expressions")
+	{
+		struct Test
+		{
+			std::string input;
+			std::string left;
+			std::string op;
+			std::string right;
+		};
+
+		std::vector<Test> tests = {
+			{"5 + 5;", "5", "+", "5"},
+			{"5 - 5;", "5", "-", "5"},
+			{"5 * 5;", "5", "*", "5"},
+			{"5 / 5;", "5", "/", "5"},
+			{"5 > 5;", "5", ">", "5"},
+			{"5 < 5;", "5", "<", "5"},
+			{"5 == 5;", "5", "==", "5"},
+			{"5 != 5;", "5", "!=", "5"},
 		};
 
 		for (auto& test : tests)
@@ -131,27 +342,47 @@ SECTION("Test Operator Precedence Parsing")
 			auto program = parser.ParseProgram();
 			auto errors = parser.Errors();
 			REQUIRE(errors.size() == 0);
-			REQUIRE(program.ToString() == test.expected);
+
+			REQUIRE(program.Statements.size() == 1);
+			auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+			REQUIRE(expressionStatement != nullptr);
+
+			REQUIRE(TestInfixExpression(expressionStatement->Expression.get(), test.left, test.op, test.right));
 		}
 	}
 
 	SECTION("Test Let Statement")
 	{
-		std::string input = "let x = 5;";
-		Lexer lexer(input);
-		Parser parser(lexer);
+		struct Test
+		{
+			std::string input;
+			std::string expectedIdentifier;
+			std::string expectedValue;
+		};
 
-		auto program = parser.ParseProgram();
-		auto errors = parser.Errors();
-		REQUIRE(errors.size() == 0);
+		std::vector<Test> tests = {
+			{"let x = 5;", "x", "5"},
+			{"let y = true;", "y", "true"},
+			{"let foobar = y;", "foobar", "y"},
+		};
 
-		REQUIRE(program.Statements.size() == 1);
-		auto letStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
-		REQUIRE(letStatement != nullptr);
-		REQUIRE(letStatement->TokenLiteral() == "let");
-		REQUIRE(letStatement->Name->Value == "x");
-		REQUIRE(letStatement->Name->TokenLiteral() == "x");
-		REQUIRE(letStatement->Value->TokenLiteral() == "5");
+		for (auto& test : tests)
+		{
+			Lexer lexer(test.input);
+			Parser parser(lexer);
+
+			auto program = parser.ParseProgram();
+			auto errors = parser.Errors();
+			REQUIRE(errors.size() == 0);
+
+			REQUIRE(program.Statements.size() == 1);
+			auto letStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+			REQUIRE(letStatement != nullptr);
+
+			REQUIRE(letStatement->TokenLiteral() == "let");
+			REQUIRE(TestIdentifier(letStatement->Name.get(), test.expectedIdentifier));
+			REQUIRE(TestLiteralExpression(letStatement->Value.get(), test.expectedValue));
+		}
 	}
 
 	SECTION("Test Errors")
@@ -167,7 +398,39 @@ SECTION("Test Operator Precedence Parsing")
 
 	SECTION("Test Return Statement")
 	{
-		std::string input = "return 5;";
+		struct Test
+		{
+			std::string input;
+			std::string expectedValue;
+		};
+
+		std::vector<Test> tests = {
+			{"return 5;", "5"},
+			{"return true;", "true"},
+			{"return foobar;", "foobar"},
+		};
+
+		for (auto& test : tests)
+		{
+			Lexer lexer(test.input);
+			Parser parser(lexer);
+
+			auto program = parser.ParseProgram();
+			auto errors = parser.Errors();
+			REQUIRE(errors.size() == 0);
+
+			REQUIRE(program.Statements.size() == 1);
+			auto returnStatement = dynamic_cast<ReturnStatement*>(program.Statements[0].get());
+			REQUIRE(returnStatement != nullptr);
+
+			REQUIRE(returnStatement->TokenLiteral() == "return");
+			REQUIRE(TestLiteralExpression(returnStatement->ReturnValue.get(), test.expectedValue));
+		}
+	}
+
+	SECTION("Test If Expression")
+	{
+		std::string input = "if (x < y) { x }";
 		Lexer lexer(input);
 		Parser parser(lexer);
 
@@ -176,9 +439,124 @@ SECTION("Test Operator Precedence Parsing")
 		REQUIRE(errors.size() == 0);
 
 		REQUIRE(program.Statements.size() == 1);
-		auto returnStatement = dynamic_cast<ReturnStatement*>(program.Statements[0].get());
-		REQUIRE(returnStatement != nullptr);
-		REQUIRE(returnStatement->TokenLiteral() == "return");
-		REQUIRE(returnStatement->ReturnValue->TokenLiteral() == "5");
+
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(expressionStatement != nullptr);
+
+		auto ifStatement = dynamic_cast<IfExpression*>(expressionStatement->Expression.get());		
+		REQUIRE(ifStatement != nullptr);
+		REQUIRE(ifStatement->TokenLiteral() == "if");
+		
+		REQUIRE(TestInfixExpression(ifStatement->Condition.get(), "x", "<", "y"));
+
+		auto blockStatement = dynamic_cast<BlockStatement*>(ifStatement->Consequence.get());
+		REQUIRE(blockStatement != nullptr);
+
+		auto statement = dynamic_cast<ExpressionStatement*>(blockStatement->Statements[0].get());
+		REQUIRE(statement != nullptr);
+		REQUIRE(TestIdentifier(statement->Expression.get(), "x"));
 	}
+
+	SECTION("Test If Else Expression")
+	{
+		std::string input = "if (x < y) { x } else { y }";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(expressionStatement != nullptr);
+
+		auto ifStatement = dynamic_cast<IfExpression*>(expressionStatement->Expression.get());
+		REQUIRE(ifStatement != nullptr);
+		REQUIRE(ifStatement->TokenLiteral() == "if");
+
+		REQUIRE(TestInfixExpression(ifStatement->Condition.get(), "x", "<", "y"));
+
+		auto consequence = dynamic_cast<BlockStatement*>(ifStatement->Consequence.get());
+		REQUIRE(consequence != nullptr);
+
+		auto statement = dynamic_cast<ExpressionStatement*>(consequence->Statements[0].get());
+		REQUIRE(statement != nullptr);
+		REQUIRE(TestIdentifier(statement->Expression.get(), "x"));
+		
+
+
+		auto alternative = dynamic_cast<BlockStatement*>(ifStatement->Alternative.get());
+		REQUIRE(alternative != nullptr);
+
+		statement = dynamic_cast<ExpressionStatement*>(alternative->Statements[0].get());
+		REQUIRE(statement != nullptr);
+		REQUIRE(TestIdentifier(statement->Expression.get(), "y"));
+
+	}
+
+	SECTION("Test Function Literal")
+	{
+		std::string input = "fn(x, y) { x + y; }";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(expressionStatement != nullptr);
+
+		auto function = dynamic_cast<FunctionLiteral*>(expressionStatement->Expression.get());
+		REQUIRE(function != nullptr);
+		REQUIRE(function->TokenLiteral() == "fn");
+
+		REQUIRE(function->Parameters.size() == 2);
+
+		auto identifier = dynamic_cast<Identifier*>(function->Parameters[0].get());
+		REQUIRE(identifier != nullptr);
+		REQUIRE(identifier->Value == "x");
+
+		identifier = dynamic_cast<Identifier*>(function->Parameters[1].get());
+		REQUIRE(identifier != nullptr);
+		REQUIRE(identifier->Value == "y");
+		
+		auto blockStatement = dynamic_cast<BlockStatement*>(function->Body.get());
+		REQUIRE(blockStatement != nullptr);
+
+		REQUIRE(blockStatement->Statements.size() == 1);
+		auto statement = dynamic_cast<ExpressionStatement*>(blockStatement->Statements[0].get());
+		REQUIRE(statement != nullptr);
+
+		REQUIRE(TestInfixExpression(statement->Expression.get(), "x", "+", "y"));
+	}
+
+	SECTION("Test Call Expression")
+	{
+		std::string input = "add(1, 2 * 3, 4 + 5);";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(expressionStatement != nullptr);
+
+		auto call = dynamic_cast<CallExpression*>(expressionStatement->Expression.get());
+		REQUIRE(call != nullptr);
+		REQUIRE(call->Function->TokenLiteral() == "add");
+
+		REQUIRE(call->Arguments.size() == 3);
+
+		REQUIRE(TestLiteralExpression(call->Arguments[0].get(), "1"));
+		REQUIRE(TestInfixExpression(call->Arguments[1].get(), "2", "*", "3"));
+		REQUIRE(TestInfixExpression(call->Arguments[2].get(), "4", "+", "5"));
+	}
+
+
 }

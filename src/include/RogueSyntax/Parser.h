@@ -46,7 +46,13 @@ public:
 	std::unique_ptr<IExpression> ParseIntegerLiteral();
 	std::unique_ptr<IExpression> ParsePrefixExpression();
 	std::unique_ptr<IExpression> ParseInfixExpression(std::unique_ptr<IExpression> left);
+	std::unique_ptr<IExpression> ParseBoolean();
+	std::unique_ptr<IExpression> ParseGroupedExpression();
+	std::unique_ptr<IExpression> ParseIfExpression();
+	std::unique_ptr<IExpression> ParseFunctionLiteral();
+	std::unique_ptr<IExpression> ParseCallExpression(std::unique_ptr<IExpression> function);
 
+	std::unique_ptr<IStatement> ParseBlockStatement();
 	std::unique_ptr<IStatement> ParseLetStatement();
 	std::unique_ptr<IStatement> ParseReturnStatement();
 	std::unique_ptr<IStatement> ParseExpressionStatement();

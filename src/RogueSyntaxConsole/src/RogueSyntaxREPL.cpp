@@ -15,12 +15,21 @@ void Repl::Start()
 		}
 
 		Lexer lexer(input);
-		auto token = lexer.NextToken();
-		while (token.Type != TokenType::TOKEN_EOF)
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		if (parser.Errors().size() > 0)
 		{
-			std::cout << "Type: " << token.Type.ToString() << " Literal: " << token.Literal << std::endl;
-			token = lexer.NextToken();
+			for (const auto& error : parser.Errors())
+			{
+				std::cout << "Parser error: " << error << std::endl;
+			}
+			continue;
 		}
+
+		std::cout << program.ToString() << std::endl;
+
+
 	}
 }
 
