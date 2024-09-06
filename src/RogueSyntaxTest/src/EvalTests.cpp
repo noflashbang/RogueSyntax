@@ -1,6 +1,15 @@
 #include <RogueSyntaxCore.h>
 #include <catch2/catch_test_macros.hpp>
 
+namespace Catch {
+	template<>
+	struct StringMaker<ObjectType> {
+		static std::string convert(ObjectType const& value) {
+			return std::format("ObjType:{}",value.Name);
+		}
+	};
+}
+
 IObject* EvalTest(const std::string& input)
 {
 	Evaluator eval;
@@ -19,7 +28,7 @@ bool TestIntegerObject(IObject* obj, const int32_t expected)
 {
 	if (obj->Type() != ObjectType::INTEGER_OBJ)
 	{
-		throw new std::invalid_argument(std::format("Object is not an integer -> Expected {} GOT {}", ObjectType::INTEGER_OBJ.Name, obj->Type().Name));
+		throw std::invalid_argument(std::format("Object is not an integer -> Expected {} GOT {}", ObjectType::INTEGER_OBJ.Name, obj->Type().Name));
 		return false;
 	}
 
@@ -28,7 +37,7 @@ bool TestIntegerObject(IObject* obj, const int32_t expected)
 
 	if (actualValue != expected)
 	{
-		throw new std::invalid_argument(std::format("Value is incorrect -> Expected {} GOT {}", expected, actualValue));
+		throw std::invalid_argument(std::format("Value is incorrect -> Expected {} GOT {}", expected, actualValue));
 		return false;
 	}
 	return true;
@@ -37,6 +46,10 @@ bool TestIntegerObject(IObject* obj, const int32_t expected)
 bool TestEvalInteger(const std::string& input, const int32_t expected)
 {
 	auto result = EvalTest(input);
+	if (result->Type() == ObjectType::NULL_OBJ && expected == 0)
+	{
+		return true;
+	}
 	return TestIntegerObject(result, expected);
 }
 
@@ -44,7 +57,7 @@ bool TestBooleanObject(IObject* obj, const bool expected)
 {
 	if (obj->Type() != ObjectType::BOOLEAN_OBJ)
 	{
-		throw new std::invalid_argument(std::format("Object is not a boolean -> Expected {} GOT {}", ObjectType::BOOLEAN_OBJ.Name, obj->Type().Name));
+		throw std::invalid_argument(std::format("Object is not a boolean -> Expected {} GOT {}", ObjectType::BOOLEAN_OBJ.Name, obj->Type().Name));
 		return false;
 	}
 
@@ -53,7 +66,7 @@ bool TestBooleanObject(IObject* obj, const bool expected)
 
 	if (actualValue != expected)
 	{
-		throw new std::invalid_argument(std::format("Value is incorrect -> Expected {} GOT {}", expected, actualValue));
+		throw std::invalid_argument(std::format("Value is incorrect -> Expected {} GOT {}", expected, actualValue));
 		return false;
 	}
 	return true;
@@ -73,19 +86,19 @@ TEST_CASE("Eval Tests")
 		{
 			{"5", 5},
 			{"10", 10},
-			//{"-5", -5},
-			//{"-10", -10},
-			//{"5 + 5 + 5 + 5 - 10", 10},
-			//{"2 * 2 * 2 * 2 * 2", 32},
-			//{"-50 + 100 + -50", 0},
-			//{"5 * 2 + 10", 20},
-			//{"5 + 2 * 10", 25},
-			//{"20 + 2 * -10", 0},
-			//{"50 / 2 * 2 + 10", 60},
-			//{"2 * (5 + 10)", 30},
-			//{"3 * 3 * 3 + 10", 37},
-			//{"3 * (3 * 3) + 10", 37},
-			//{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50}
+			{"-5", -5},
+			{"-10", -10},
+			{"5 + 5 + 5 + 5 - 10", 10},
+			{"2 * 2 * 2 * 2 * 2", 32},
+			{"-50 + 100 + -50", 0},
+			{"5 * 2 + 10", 20},
+			{"5 + 2 * 10", 25},
+			{"20 + 2 * -10", 0},
+			{"50 / 2 * 2 + 10", 60},
+			{"2 * (5 + 10)", 30},
+			{"3 * 3 * 3 + 10", 37},
+			{"3 * (3 * 3) + 10", 37},
+			{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50}
 		};
 
 		for (auto& test : tests)
@@ -100,28 +113,122 @@ TEST_CASE("Eval Tests")
 		{
 			{"true", true},
 			{"false", false},
-			//{"1 < 2", true},
-			//{"1 > 2", false},
-			//{"1 < 1", false},
-			//{"1 > 1", false},
-			//{"1 == 1", true},
-			//{"1 != 1", false},
-			//{"1 == 2", false},
-			//{"1 != 2", true},
-			//{"true == true", true},
-			//{"false == false", true},
-			//{"true == false", false},
-			//{"true != false", true},
-			//{"false != true", true},
-			//{"(1 < 2) == true", true},
-			//{"(1 < 2) == false", false},
-			//{"(1 > 2) == true", false},
-			//{"(1 > 2) == false", true}
+			{"1 < 2", true},
+			{"1 > 2", false},
+			{"1 < 1", false},
+			{"1 > 1", false},
+			{"1 == 1", true},
+			{"1 != 1", false},
+			{"1 == 2", false},
+			{"1 != 2", true},
+			{"true == true", true},
+			{"false == false", true},
+			{"true == false", false},
+			{"true != false", true},
+			{"false != true", true},
+			{"(1 < 2) == true", true},
+			{"(1 < 2) == false", false},
+			{"(1 > 2) == true", false},
+			{"(1 > 2) == false", true}
 		};
 
 		for (auto& test : tests)
 		{
 			REQUIRE(TestEvalBoolean(test.first, test.second));
+		}
+	}
+
+	SECTION("Bang Operator")
+	{
+		auto tests = std::vector<std::pair<std::string, bool>>
+		{
+			{"!true", false},
+			{"!false", true},
+			{"!5", false},
+			{"!!true", true},
+			{"!!false", false},
+			{"!!5", true}
+		};
+
+		for (auto& test : tests)
+		{
+			REQUIRE(TestEvalBoolean(test.first, test.second));
+		}
+	}
+
+	SECTION("Test If Else Expressions")
+	{
+		auto tests = std::vector<std::pair<std::string, int32_t>>
+		{
+			{"if (true) { 10 }", 10},
+			{"if (false) { 10 }", 0},
+			{"if (1) { 10 }", 10},
+			{"if (0) { 10 }", 0},
+			{"if (1 < 2) { 10 }", 10},
+			{"if (1 > 2) { 10 }", 0},
+			{"if (1 > 2) { 10 } else { 20 }", 20},
+			{"if (1 < 2) { 10 } else { 20 }", 10}
+		};
+
+		for (auto& test : tests)
+		{
+			REQUIRE(TestEvalInteger(test.first, test.second));
+		}
+	}
+
+	SECTION("Test Return Expression")
+	{
+		auto tests = std::vector<std::pair<std::string, int32_t>>
+		{
+			{"return 10;", 10},
+			{"return 10; 9;", 10},
+			{"return 2 * 5; 9;", 10},
+			{"9; return 2 * 5; 9;", 10},
+			{
+				"if (10 > 1) {"
+				"if (10 > 1) {"
+				"return 10;"
+				"}"
+				"return 1;"
+				"}",
+				10
+			}
+		};
+
+		for (auto& test : tests)
+		{
+			REQUIRE(TestEvalInteger(test.first, test.second));
+		}
+	}
+	SECTION("Test Error Obj")
+	{
+		auto tests = std::vector<std::pair<std::string, std::string>>
+		{
+			{"5 + true;", "type mismatch: INTEGER + BOOLEAN"},
+			{"5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"},
+			{"-true", "unknown operator: -BOOLEAN"},
+			{"true + false;", "unknown operator: BOOLEAN + BOOLEAN"},
+			{"5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
+			{"if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"},
+			{
+				"if (10 > 1) {"
+				"if (10 > 1) {"
+				"return true + false;"
+				"}"
+				"return 1;"
+				"}",
+				"unknown operator: BOOLEAN + BOOLEAN"
+			},
+			//{"foobar", "identifier not found: foobar"}
+		};
+
+		for (auto& test : tests)
+		{
+			auto result = EvalTest(test.first);
+			UNSCOPED_INFO(test.first);
+			REQUIRE(result->Type() == ObjectType::ERROR_OBJ);
+			auto errorObj = dynamic_cast<ErrorObj*>(result);
+			REQUIRE(errorObj->Message == test.second);
 		}
 	}
 }

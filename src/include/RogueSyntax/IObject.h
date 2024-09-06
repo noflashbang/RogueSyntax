@@ -52,6 +52,8 @@ struct ObjectType
 	static const ObjectType NULL_OBJ;
 	static const ObjectType INTEGER_OBJ;
 	static const ObjectType BOOLEAN_OBJ;
+	static const ObjectType RETURN_OBJ;
+	static const ObjectType ERROR_OBJ;
 };
 
 class IObject
@@ -123,3 +125,39 @@ public:
 	static BooleanObj FALSE_OBJ_REF;
 };
 
+class ReturnObj : public IObject
+{
+public:
+	ReturnObj(IObject* value) : Value(value) {}
+
+	ObjectType Type() const override
+	{
+		return ObjectType::RETURN_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return Value->Inspect();
+	}
+
+	IObject* Value;
+};
+
+class ErrorObj : public IObject
+{
+public:
+	ErrorObj(const std::string& message, const Token& token) : Message(message), Token(token) {}
+
+	ObjectType Type() const override
+	{
+		return ObjectType::ERROR_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return "ERROR: " + Message;
+	}
+
+	std::string Message;
+	Token Token;
+};

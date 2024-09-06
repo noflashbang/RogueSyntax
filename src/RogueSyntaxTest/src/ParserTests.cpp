@@ -8,19 +8,19 @@ bool TestIdentifier(const IExpression* expression, const std::string& expected)
 	auto ident = dynamic_cast<const Identifier*>(expression);
 	if (ident == nullptr)
 	{
-		throw new std::invalid_argument(std::format("Bad expression -> Expected Identifier GOT {}", expression->ToString()));
+		throw std::invalid_argument(std::format("Bad expression -> Expected Identifier GOT {}", expression->ToString()));
 		return false;
 	}
 
 	if (ident->Value != expected)
 	{
-		throw new std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, ident->Value));
+		throw std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, ident->Value));
 		return false;
 	}
 
 	if(ident->TokenLiteral() != expected)
 	{
-		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, ident->Value));
+		throw std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, ident->Value));
 		return false;
 	}
 
@@ -32,19 +32,19 @@ bool TestIntegerLiteral(const IExpression* expression, int expected)
 	auto integer = dynamic_cast<const IntegerLiteral*>(expression);
 	if (integer == nullptr)
 	{
-		throw new std::invalid_argument(std::format("Bad expression -> Expected IntegerLiteral GOT {}", expression->ToString()));
+		throw std::invalid_argument(std::format("Bad expression -> Expected IntegerLiteral GOT {}", expression->ToString()));
 		return false;
 	}
 
 	if (integer->Value != expected)
 	{
-		throw new std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, integer->Value));
+		throw std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, integer->Value));
 		return false;
 	}
 
 	if (integer->TokenLiteral() != std::to_string(expected))
 	{
-		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, integer->Value));
+		throw std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, integer->Value));
 		return false;
 	}
 
@@ -56,25 +56,25 @@ bool TestBooleanLiteral(const IExpression* expression, bool expected)
 	auto boolean = dynamic_cast<const BooleanLiteral*>(expression);
 	if (boolean == nullptr)
 	{
-		throw new std::invalid_argument(std::format("Bad expression -> Expected BooleanLiteral GOT {}", expression->ToString()));
+		throw std::invalid_argument(std::format("Bad expression -> Expected BooleanLiteral GOT {}", expression->ToString()));
 		return false;
 	}
 
 	if (boolean->Value != expected)
 	{
-		throw new std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, boolean->Value));
+		throw std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, boolean->Value));
 		return false;
 	}
 
 	if(expected && boolean->TokenLiteral() != "true")
 	{
-		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, boolean->Value));
+		throw std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, boolean->Value));
 		return false;
 	}
 	
 	if(!expected && boolean->TokenLiteral() != "false")
 	{
-		throw new std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, boolean->Value));
+		throw std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, boolean->Value));
 		return false;
 	}
 
@@ -97,7 +97,7 @@ bool TestLiteralExpression(const IExpression* expression, const std::string& exp
 	}
 	else
 	{
-		throw new std::invalid_argument(std::format("Bad expression -> Expected Literal GOT {}", expression->ToString()));
+		throw std::invalid_argument(std::format("Bad expression -> Expected Literal GOT {}", expression->ToString()));
 		return false;
 	}
 
@@ -109,7 +109,7 @@ bool TestInfixExpression(const IExpression* expression, const std::string& left,
 	auto infix = dynamic_cast<const InfixExpression*>(expression);
 	if (infix == nullptr)
 	{
-		throw new std::invalid_argument(std::format("Bad expression -> Expected InfixExpression GOT {}", expression->ToString()));
+		throw std::invalid_argument(std::format("Bad expression -> Expected InfixExpression GOT {}", expression->ToString()));
 		return false;
 	}
 
@@ -120,7 +120,7 @@ bool TestInfixExpression(const IExpression* expression, const std::string& left,
 
 	if (infix->Operator != op)
 	{
-		throw new std::invalid_argument(std::format("Bad Operator -> Expected {} GOT {}", op, infix->Operator));
+		throw std::invalid_argument(std::format("Bad Operator -> Expected {} GOT {}", op, infix->Operator));
 		return false;
 	}
 
@@ -137,13 +137,13 @@ bool TestPrefixExpression(const IExpression* expression, const std::string& op, 
 	auto prefix = dynamic_cast<const PrefixExpression*>(expression);
 	if (prefix == nullptr)
 	{
-		throw new std::invalid_argument(std::format("Bad expression -> Expected PrefixExpression GOT {}", expression->ToString()));
+		throw std::invalid_argument(std::format("Bad expression -> Expected PrefixExpression GOT {}", expression->ToString()));
 		return false;
 	}
 
 	if (prefix->Operator != op)
 	{
-		throw new std::invalid_argument(std::format("Bad Operator -> Expected {} GOT {}", op, prefix->Operator));
+		throw std::invalid_argument(std::format("Bad Operator -> Expected {} GOT {}", op, prefix->Operator));
 		return false;
 	}
 
@@ -557,6 +557,4 @@ TEST_CASE("Parser Tests")
 		REQUIRE(TestInfixExpression(call->Arguments[1].get(), "2", "*", "3"));
 		REQUIRE(TestInfixExpression(call->Arguments[2].get(), "4", "+", "5"));
 	}
-
-
 }
