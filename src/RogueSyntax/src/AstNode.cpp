@@ -39,15 +39,15 @@ std::string Program::ToString() const
 	return result;
 }
 
-LetStatement::LetStatement(const ::Token token, std::unique_ptr<Identifier> name, std::unique_ptr<IExpression> value) : Token(token)
+LetStatement::LetStatement(const ::Token token, std::shared_ptr<Identifier> name, std::shared_ptr<IExpression> value) : Token(token)
 {
-	Name.swap(name);
-	Value.swap(value);
+	Name = name;
+	Value = value;
 }
 
-std::unique_ptr<LetStatement> LetStatement::New(const ::Token token, std::unique_ptr<Identifier> name, std::unique_ptr<IExpression> value)
+std::shared_ptr<LetStatement> LetStatement::New(const ::Token token, std::shared_ptr<Identifier> name, std::shared_ptr<IExpression> value)
 {
-	return std::make_unique<LetStatement>(token, std::move(name), std::move(value));
+	return std::make_shared<LetStatement>(token, name, value);
 }
 
 std::string LetStatement::TokenLiteral() const
@@ -83,9 +83,9 @@ Identifier::Identifier(const ::Token token, const std::string& value) : Token(to
 {
 }
 
-std::unique_ptr<Identifier> Identifier::New(const ::Token token, const std::string& value)
+std::shared_ptr<Identifier> Identifier::New(const ::Token token, const std::string& value)
 {
-	return std::make_unique<Identifier>(token, value);
+	return std::make_shared<Identifier>(token, value);
 }
 
 std::string Identifier::TokenLiteral() const
@@ -108,14 +108,14 @@ NodeType Identifier::NType() const
 	return NodeType::Identifier;
 }
 
-ReturnStatement::ReturnStatement(const ::Token token, std::unique_ptr<IExpression> returnValue) : Token(token)
+ReturnStatement::ReturnStatement(const ::Token token, std::shared_ptr<IExpression> returnValue) : Token(token)
 {
-	ReturnValue.swap(returnValue);
+	ReturnValue = returnValue;
 }
 
-std::unique_ptr<ReturnStatement> ReturnStatement::New(const ::Token token, std::unique_ptr<IExpression> returnValue)
+std::shared_ptr<ReturnStatement> ReturnStatement::New(const ::Token token, std::shared_ptr<IExpression> returnValue)
 {
-	return std::make_unique<ReturnStatement>(token, std::move(returnValue));
+	return std::make_shared<ReturnStatement>(token, returnValue);
 }
 
 std::string ReturnStatement::TokenLiteral() const
@@ -145,14 +145,14 @@ NodeType ReturnStatement::NType() const
 	return NodeType::ReturnStatement;
 }
 
-ExpressionStatement::ExpressionStatement(const ::Token token, std::unique_ptr<IExpression> expression) : Token(token)
+ExpressionStatement::ExpressionStatement(const ::Token token, std::shared_ptr<IExpression> expression) : Token(token)
 {
-	Expression.swap(expression);
+	Expression = expression;
 }
 
-std::unique_ptr<ExpressionStatement> ExpressionStatement::New(const ::Token token, std::unique_ptr<IExpression> expression)
+std::shared_ptr<ExpressionStatement> ExpressionStatement::New(const ::Token token, std::shared_ptr<IExpression> expression)
 {
-	return std::make_unique<ExpressionStatement>(token, std::move(expression));
+	return std::make_shared<ExpressionStatement>(token,  expression);
 }
 
 std::string ExpressionStatement::TokenLiteral() const
@@ -183,9 +183,9 @@ IntegerLiteral::IntegerLiteral(const ::Token token, int value) : Token(token), V
 {
 }
 
-std::unique_ptr<IntegerLiteral> IntegerLiteral::New(::Token token, int value)
+std::shared_ptr<IntegerLiteral> IntegerLiteral::New(::Token token, int value)
 {
-	return std::make_unique<IntegerLiteral>(token, value);
+	return std::make_shared<IntegerLiteral>(token, value);
 };
 
 std::string IntegerLiteral::TokenLiteral() const
@@ -212,9 +212,9 @@ BooleanLiteral::BooleanLiteral(const ::Token token, bool value) : Token(token), 
 {
 }
 
-std::unique_ptr<BooleanLiteral> BooleanLiteral::New(::Token token, bool value)
+std::shared_ptr<BooleanLiteral> BooleanLiteral::New(::Token token, bool value)
 {
-	return std::make_unique<BooleanLiteral>(token, value);
+	return std::make_shared<BooleanLiteral>(token, value);
 };
 
 std::string BooleanLiteral::TokenLiteral() const
@@ -237,14 +237,14 @@ NodeType BooleanLiteral::NType() const
 	return NodeType::BooleanLiteral;
 }
 
-PrefixExpression::PrefixExpression(const ::Token token, const std::string& op, std::unique_ptr<IExpression> right) : Token(token), Operator(op)
+PrefixExpression::PrefixExpression(const ::Token token, const std::string& op, std::shared_ptr<IExpression> right) : Token(token), Operator(op)
 {
-	Right.swap(right);
+	Right = right;
 }
 
-std::unique_ptr<PrefixExpression> PrefixExpression::New(const ::Token token, const std::string& op, std::unique_ptr<IExpression> right)
+std::shared_ptr<PrefixExpression> PrefixExpression::New(const ::Token token, const std::string& op, std::shared_ptr<IExpression> right)
 {
-	return std::make_unique<PrefixExpression>(token, op, std::move(right));
+	return std::make_shared<PrefixExpression>(token, op, right);
 }
 
 std::string PrefixExpression::TokenLiteral() const
@@ -272,15 +272,15 @@ NodeType PrefixExpression::NType() const
 	return NodeType::PrefixExpression;
 }
 
-InfixExpression::InfixExpression(const ::Token token, std::unique_ptr<IExpression> left, const std::string& op, std::unique_ptr<IExpression> right) : Token(token), Operator(op)
+InfixExpression::InfixExpression(const ::Token token, std::shared_ptr<IExpression> left, const std::string& op, std::shared_ptr<IExpression> right) : Token(token), Operator(op)
 {
-	Left.swap(left);
-	Right.swap(right);
+	Left = left;
+	Right = right;
 }
 
-std::unique_ptr<InfixExpression> InfixExpression::New(const ::Token token, std::unique_ptr<IExpression> left, const std::string& op, std::unique_ptr<IExpression> right)
+std::shared_ptr<InfixExpression> InfixExpression::New(const ::Token token, std::shared_ptr<IExpression> left, const std::string& op, std::shared_ptr<IExpression> right)
 {
-	return std::make_unique<InfixExpression>(token, std::move(left), op, std::move(right));
+	return std::make_shared<InfixExpression>(token, left, op, right);
 }
 
 std::string InfixExpression::TokenLiteral() const
@@ -309,14 +309,14 @@ NodeType InfixExpression::NType() const
 	return NodeType::InfixExpression;
 }
 
-BlockStatement::BlockStatement(const ::Token token, std::vector<std::unique_ptr<IStatement>>& statements) : Token(token)
+BlockStatement::BlockStatement(const ::Token token, std::vector<std::shared_ptr<IStatement>>& statements) : Token(token)
 {
-	Statements.swap(statements);
+	Statements = statements;
 }
 
-std::unique_ptr<BlockStatement> BlockStatement::New(const ::Token token, std::vector<std::unique_ptr<IStatement>>& statements)
+std::shared_ptr<BlockStatement> BlockStatement::New(const ::Token token, std::vector<std::shared_ptr<IStatement>>& statements)
 {
-	return std::make_unique<BlockStatement>(token, statements);
+	return std::make_shared<BlockStatement>(token, statements);
 }
 
 std::string BlockStatement::TokenLiteral() const
@@ -347,16 +347,16 @@ NodeType BlockStatement::NType() const
 	return NodeType::BlockStatement;
 }
 
-IfExpression::IfExpression(const ::Token token, std::unique_ptr<IExpression> condition, std::unique_ptr<IStatement> consequence, std::unique_ptr<IStatement> alternative) : Token(token)
+IfExpression::IfExpression(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> consequence, std::shared_ptr<IStatement> alternative) : Token(token)
 {
-	Condition.swap(condition);
-	Consequence.swap(consequence);
-	Alternative.swap(alternative);
+	Condition = condition;
+	Consequence = consequence;
+	Alternative = alternative;
 }
 
-std::unique_ptr<IfExpression> IfExpression::New(const ::Token token, std::unique_ptr<IExpression> condition, std::unique_ptr<IStatement> consequence, std::unique_ptr<IStatement> alternative)
+std::shared_ptr<IfExpression> IfExpression::New(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> consequence, std::shared_ptr<IStatement> alternative)
 {
-	return std::make_unique<IfExpression>(token, std::move(condition), std::move(consequence), std::move(alternative));
+	return std::make_shared<IfExpression>(token, condition, consequence, alternative);
 }
 
 std::string IfExpression::TokenLiteral() const
@@ -389,15 +389,15 @@ NodeType IfExpression::NType() const
 	return NodeType::IfExpression;
 }
 
-FunctionLiteral::FunctionLiteral(const ::Token token, std::vector<std::unique_ptr<IExpression>>& parameters, std::unique_ptr<IStatement> body) : Token(token)
+FunctionLiteral::FunctionLiteral(const ::Token token, std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement> body) : Token(token)
 {
-	Parameters.swap(parameters);
-	Body.swap(body);
+	Parameters = parameters;
+	Body = body;
 }
 
-std::unique_ptr<FunctionLiteral> FunctionLiteral::New(const ::Token token, std::vector<std::unique_ptr<IExpression>>& parameters, std::unique_ptr<IStatement> body)
+std::shared_ptr<FunctionLiteral> FunctionLiteral::New(const ::Token token, std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement> body)
 {
-	return std::make_unique<FunctionLiteral>(token, parameters, std::move(body));
+	return std::make_shared<FunctionLiteral>(token, parameters, body);
 }
 
 std::string FunctionLiteral::TokenLiteral() const
@@ -435,15 +435,15 @@ NodeType FunctionLiteral::NType() const
 	return NodeType::FunctionLiteral;
 }
 
-CallExpression::CallExpression(const ::Token token, std::unique_ptr<IExpression> function, std::vector<std::unique_ptr<IExpression>>& arguments) : Token(token)
+CallExpression::CallExpression(const ::Token token, std::shared_ptr<IExpression> function, std::vector<std::shared_ptr<IExpression>>& arguments) : Token(token)
 {
-	Function.swap(function);
-	Arguments.swap(arguments);
+	Function = function;
+	Arguments= arguments;
 }
 
-std::unique_ptr<CallExpression> CallExpression::New(const ::Token token, std::unique_ptr<IExpression> function, std::vector<std::unique_ptr<IExpression>>& arguments)
+std::shared_ptr<CallExpression> CallExpression::New(const ::Token token, std::shared_ptr<IExpression> function, std::vector<std::shared_ptr<IExpression>>& arguments)
 {
-	return std::make_unique<CallExpression>(token, std::move(function), arguments);
+	return std::make_shared<CallExpression>(token, function, arguments);
 }
 
 std::string CallExpression::TokenLiteral() const

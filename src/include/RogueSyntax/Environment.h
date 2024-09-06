@@ -5,14 +5,10 @@
 struct Environment
 {
 	std::unordered_map<std::string, IObject*> Store;
-	//RSEnvironment* Outer;
+	Environment* Outer;
 
-	Environment() = default;
-
-	//Environment(Environment* outer)
-	//{
-	//	Outer = outer;
-	//}
+	Environment();
+	Environment(Environment* outer);
 
 	void Set(const std::string& name, IObject* value);
 	IObject* Get(const std::string& name);

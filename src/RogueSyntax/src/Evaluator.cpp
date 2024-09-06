@@ -155,6 +155,36 @@ IObject* Evaluator::Eval(INode* node, Environment* env)
 			}
 			break;
 		}
+		case NodeType::FunctionLiteral:
+		{
+			auto func = dynamic_cast<FunctionLiteral*>(node);
+			result = new FunctionObj(func->Parameters, func->Body, env);
+			break;
+		}
+		case NodeType::CallExpression:
+		{
+			auto call = dynamic_cast<CallExpression*>(node);
+			auto function = Eval(call->Function.get(), env);
+			if (function->Type() == ObjectType::ERROR_OBJ)
+			{
+				return function;
+			}
+
+			if (function->Type() != ObjectType::FUNCTION_OBJ)
+			{
+				return MakeError(std::format("literal not a function: {}", function->Inspect()), call->Token);
+			}
+
+			auto evalArgs = EvalExpressions(call->Arguments, env);
+			if (evalArgs.size() == 1 && evalArgs[0]->Type() == ObjectType::ERROR_OBJ)
+			{
+				return evalArgs[0];
+			}
+
+			auto fn = dynamic_cast<FunctionObj*>(function);
+			result = ApplyFunction(fn, evalArgs);
+			break;
+		}
 		default:
 		{
 			result = &NullObj::NULL_OBJ_REF;
@@ -339,4 +369,44 @@ IObject* Evaluator::EvalMinusPrefixOperatorExpression(const Token& op, IObject* 
 IObject* Evaluator::MakeError(const std::string& message, const Token& token)
 {
 	return new ErrorObj(message, token);
+}
+
+std::vector<IObject*> Evaluator::EvalExpressions(std::vector<std::shared_ptr<IExpression>>& expressions, Environment* env)
+{
+	std::vector<IObject*> result;
+	for (const auto& expr : expressions)
+	{
+		auto evaluated = Eval(expr.get(), env);
+		if (evaluated->Type() == ObjectType::ERROR_OBJ)
+		{
+			return { evaluated };
+		}
+		result.push_back(evaluated);
+	}
+	return result;
+}
+
+IObject* Evaluator::ApplyFunction(FunctionObj* fn, std::vector<IObject*>& args)
+{
+	auto extEnv = ExtendFunctionEnv(fn, args);
+	auto evaluated = Eval(fn->Body.get(), extEnv);
+	return evaluated;
+}
+
+Environment* Evaluator::ExtendFunctionEnv(FunctionObj* fn, std::vector<IObject*>& args)
+{
+	auto env = new Environment(fn->Env);
+	for (size_t i = 0; i < fn->Parameters.size(); i++)
+	{
+		auto param = fn->Parameters[i].get();
+
+		if (param->NType() != NodeType::Identifier)
+		{
+			continue;
+		}
+
+		auto ident = dynamic_cast<Identifier*>(param);
+		env->Set(ident->Value, args[i]);
+	}
+	return env;
 }

@@ -1,5 +1,15 @@
 #include "Environment.h"
 
+Environment::Environment()
+{
+	Outer = nullptr;
+}
+
+Environment::Environment(Environment* outer)
+{
+	Outer = outer;
+}
+
 void Environment::Set(const std::string& name, IObject* value)
 {
 	Store[name] = value;
@@ -13,10 +23,10 @@ IObject* Environment::Get(const std::string& name)
 		return it->second;
 	}
 
-	//if (Outer != nullptr)
-	//{
-	//	return Outer->Get(name);
-	//}
+	if (Outer != nullptr)
+	{
+		return Outer->Get(name);
+	}
 
 	return nullptr;
 }

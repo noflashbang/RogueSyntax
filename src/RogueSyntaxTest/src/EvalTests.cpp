@@ -29,6 +29,11 @@ bool TestIntegerObject(IObject* obj, const int32_t expected)
 {
 	if (obj->Type() != ObjectType::INTEGER_OBJ)
 	{
+		if (obj->Type() == ObjectType::ERROR_OBJ)
+		{
+			auto errorObj = dynamic_cast<ErrorObj*>(obj);
+			UNSCOPED_INFO(errorObj->Message);
+		}
 		throw std::invalid_argument(std::format("Object is not an integer -> Expected {} GOT {}", ObjectType::INTEGER_OBJ.Name, obj->Type().Name));
 		return false;
 	}
@@ -251,6 +256,36 @@ TEST_CASE("Eval Tests")
 		for (auto& test : tests)
 		{
 			UNSCOPED_INFO(test.first);
+			REQUIRE(TestEvalInteger(test.first, test.second));
+		}
+	}
+
+	SECTION("Test Function Object")
+	{
+		auto input = "fn(x) { x + 2; };";
+		auto result = EvalTest(input);
+		REQUIRE(result->Type() == ObjectType::FUNCTION_OBJ);
+		auto func = dynamic_cast<FunctionObj*>(result);
+		REQUIRE(func->Parameters.size() == 1);
+		REQUIRE(func->Parameters[0].get()->ToString() == "x");
+		REQUIRE(func->Body->ToString() == "{(x + 2)}");
+	}
+
+	SECTION("Test Function Eval")
+	{
+		auto tests = std::vector<std::pair<std::string, int32_t>>
+		{
+			{"let identity = fn(x) { x; }; identity(5);", 5},
+			{"let identity = fn(x) { return x; }; identity(5);", 5},
+			{"let double = fn(x) { x * 2; }; double(5);", 10},
+			{"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+			{"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+			{"fn(x) { x; }(5)", 5}
+		};
+
+		for (auto& test : tests)
+		{
+			INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}

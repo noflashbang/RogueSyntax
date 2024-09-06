@@ -2,6 +2,7 @@
 
 #include "StandardLib.h"
 
+struct Environment;
 
 struct ObjectType
 {
@@ -54,6 +55,7 @@ struct ObjectType
 	static const ObjectType BOOLEAN_OBJ;
 	static const ObjectType RETURN_OBJ;
 	static const ObjectType ERROR_OBJ;
+	static const ObjectType FUNCTION_OBJ;
 };
 
 class IObject
@@ -161,3 +163,39 @@ public:
 	std::string Message;
 	Token Token;
 };
+
+class FunctionObj : public IObject
+{
+public:
+	FunctionObj(std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement>& body, Environment* env) : Parameters(parameters), Body(body), Env(env) {}
+
+	ObjectType Type() const override
+	{
+		return ObjectType::FUNCTION_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		std::string out = "fn(";
+
+		std::for_each(Parameters.begin(), Parameters.end(), [&out](const auto& param)
+		{
+			out.append(param->ToString());
+			out.append(", ");
+		});
+
+		//remove the last comma
+		out.pop_back();
+		out.pop_back();
+
+		out += ") {\n";
+		out += Body->ToString();
+		out += "\n}";
+		return out;
+	}
+
+	std::vector<std::shared_ptr<IExpression>> Parameters;
+	std::shared_ptr<IStatement> Body;
+	Environment* Env;
+};
+

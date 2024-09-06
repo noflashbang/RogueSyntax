@@ -26,5 +26,9 @@ private:
 	IObject* EvalMinusPrefixOperatorExpression(const Token& op, IObject* right);
 
 	IObject* MakeError(const std::string& message, const Token& token);
+
+	std::vector<IObject*> EvalExpressions(std::vector<std::shared_ptr<IExpression>>& expressions, Environment* env);
+	IObject* ApplyFunction(FunctionObj* fn, std::vector<IObject*>& args);
+	Environment* ExtendFunctionEnv(FunctionObj* fn, std::vector<IObject*>& args);
 };
 

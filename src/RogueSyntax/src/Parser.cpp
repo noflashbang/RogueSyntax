@@ -56,7 +56,7 @@ Program Parser::ParseProgram()
 	return program;
 }
 
-std::unique_ptr<IStatement> Parser::ParseStatement()
+std::shared_ptr<IStatement> Parser::ParseStatement()
 {
 	if (_currentToken.Type == TokenType::TOKEN_LET)
 	{
@@ -72,7 +72,7 @@ std::unique_ptr<IStatement> Parser::ParseStatement()
 	}
 }
 
-std::unique_ptr<IExpression> Parser::ParseExpression(const Precedence precedence)
+std::shared_ptr<IExpression> Parser::ParseExpression(const Precedence precedence)
 {
 	auto prefix = _prefixDispatch.find(_currentToken.Type);
 	if (prefix == _prefixDispatch.end())
@@ -99,12 +99,12 @@ std::unique_ptr<IExpression> Parser::ParseExpression(const Precedence precedence
 	return left;
 }
 
-std::unique_ptr<IExpression> Parser::ParseIdentifier()
+std::shared_ptr<IExpression> Parser::ParseIdentifier()
 {
 	return Identifier::New(_currentToken, _currentToken.Literal);
 }
 
-std::unique_ptr<IExpression> Parser::ParseIntegerLiteral()
+std::shared_ptr<IExpression> Parser::ParseIntegerLiteral()
 {
 	try
 	{
@@ -118,7 +118,7 @@ std::unique_ptr<IExpression> Parser::ParseIntegerLiteral()
 	}
 }
 
-std::unique_ptr<IExpression> Parser::ParsePrefixExpression()
+std::shared_ptr<IExpression> Parser::ParsePrefixExpression()
 {
 	auto token = _currentToken;
 	auto op = _currentToken.Literal;
@@ -130,7 +130,7 @@ std::unique_ptr<IExpression> Parser::ParsePrefixExpression()
 	return PrefixExpression::New(token, op, std::move(right));
 }
 
-std::unique_ptr<IExpression> Parser::ParseInfixExpression(std::unique_ptr<IExpression> left)
+std::shared_ptr<IExpression> Parser::ParseInfixExpression(std::shared_ptr<IExpression> left)
 {	
 	auto token = _currentToken;
 	auto op = _currentToken.Literal;
@@ -142,12 +142,12 @@ std::unique_ptr<IExpression> Parser::ParseInfixExpression(std::unique_ptr<IExpre
 	return InfixExpression::New(token, std::move(left), op, std::move(right));
 }
 
-std::unique_ptr<IExpression> Parser::ParseBoolean()
+std::shared_ptr<IExpression> Parser::ParseBoolean()
 {
 	return BooleanLiteral::New(_currentToken, _currentToken.Type == TokenType::TOKEN_TRUE);
 }
 
-std::unique_ptr<IExpression> Parser::ParseGroupedExpression()
+std::shared_ptr<IExpression> Parser::ParseGroupedExpression()
 {
 	NextToken();
 
@@ -161,7 +161,7 @@ std::unique_ptr<IExpression> Parser::ParseGroupedExpression()
 	return expression;
 }
 
-std::unique_ptr<IExpression> Parser::ParseIfExpression()
+std::shared_ptr<IExpression> Parser::ParseIfExpression()
 {
 	auto token = _currentToken;
 
@@ -187,7 +187,7 @@ std::unique_ptr<IExpression> Parser::ParseIfExpression()
 	//parse the consequence
 	auto consequence = ParseBlockStatement();
 
-	std::unique_ptr<IStatement> alternative = nullptr;
+	std::shared_ptr<IStatement> alternative = nullptr;
 
 	if (PeekTokenIs(TokenType::TOKEN_ELSE))
 	{
@@ -201,14 +201,14 @@ std::unique_ptr<IExpression> Parser::ParseIfExpression()
 		alternative.swap(alt);
 	}
 
-	return IfExpression::New(token, std::move(condition), std::move(consequence), std::move(alternative));
+	return IfExpression::New(token, condition, consequence, alternative);
 }
 
-std::unique_ptr<IStatement> Parser::ParseBlockStatement()
+std::shared_ptr<IStatement> Parser::ParseBlockStatement()
 {
 	auto token = _currentToken;
 
-	std::vector<std::unique_ptr<IStatement>> statements;
+	std::vector<std::shared_ptr<IStatement>> statements;
 
 	NextToken();
 
@@ -225,7 +225,7 @@ std::unique_ptr<IStatement> Parser::ParseBlockStatement()
 	return BlockStatement::New(token, statements);
 }
 
-std::unique_ptr<IExpression> Parser::ParseFunctionLiteral()
+std::shared_ptr<IExpression> Parser::ParseFunctionLiteral()
 {
 	auto token = _currentToken;
 
@@ -234,7 +234,7 @@ std::unique_ptr<IExpression> Parser::ParseFunctionLiteral()
 		return nullptr;
 	}
 
-	std::vector<std::unique_ptr<IExpression>> parameters;
+	std::vector<std::shared_ptr<IExpression>> parameters;
 
 	while (!PeekTokenIs(TokenType::TOKEN_RPAREN))
 	{
@@ -261,11 +261,11 @@ std::unique_ptr<IExpression> Parser::ParseFunctionLiteral()
 	return FunctionLiteral::New(token, parameters, std::move(body));
 }
 
-std::unique_ptr<IExpression> Parser::ParseCallExpression(std::unique_ptr<IExpression> function)
+std::shared_ptr<IExpression> Parser::ParseCallExpression(std::shared_ptr<IExpression> function)
 {
 	auto token = _currentToken;
 
-	std::vector<std::unique_ptr<IExpression>> arguments;
+	std::vector<std::shared_ptr<IExpression>> arguments;
 
 	while (!PeekTokenIs(TokenType::TOKEN_RPAREN))
 	{
@@ -285,7 +285,7 @@ std::unique_ptr<IExpression> Parser::ParseCallExpression(std::unique_ptr<IExpres
 	return CallExpression::New(token, std::move(function), arguments);
 }
 
-std::unique_ptr<IStatement> Parser::ParseLetStatement()
+std::shared_ptr<IStatement> Parser::ParseLetStatement()
 {
 	auto token = _currentToken;
 
@@ -313,7 +313,7 @@ std::unique_ptr<IStatement> Parser::ParseLetStatement()
 	return LetStatement::New(token, std::move(identifier), std::move(value));
 }
 
-std::unique_ptr<IStatement> Parser::ParseReturnStatement()
+std::shared_ptr<IStatement> Parser::ParseReturnStatement()
 {
 	auto token = _currentToken;
 
@@ -329,7 +329,7 @@ std::unique_ptr<IStatement> Parser::ParseReturnStatement()
 	return ReturnStatement::New(token, std::move(returnValue));
 }
 
-std::unique_ptr<IStatement> Parser::ParseExpressionStatement()
+std::shared_ptr<IStatement> Parser::ParseExpressionStatement()
 {
 	auto token = _currentToken;
 
