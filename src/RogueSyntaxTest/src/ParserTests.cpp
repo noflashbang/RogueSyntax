@@ -308,6 +308,7 @@ TEST_CASE("Parser Tests")
 					INFO(error);
 				}
 			}
+			UNSCOPED_INFO(test.input);
 			REQUIRE(errors.size() == 0);
 			REQUIRE(program.ToString() == test.expected);
 		}
@@ -341,6 +342,9 @@ TEST_CASE("Parser Tests")
 
 			auto program = parser.ParseProgram();
 			auto errors = parser.Errors();
+
+			UNSCOPED_INFO(test.input);
+
 			REQUIRE(errors.size() == 0);
 
 			REQUIRE(program.Statements.size() == 1);
@@ -373,6 +377,9 @@ TEST_CASE("Parser Tests")
 
 			auto program = parser.ParseProgram();
 			auto errors = parser.Errors();
+
+			UNSCOPED_INFO(test.input);
+
 			REQUIRE(errors.size() == 0);
 
 			REQUIRE(program.Statements.size() == 1);

@@ -8,8 +8,8 @@
 class Evaluator
 {
 public:
-	IObject* Eval(Program& program);
-	IObject* Eval(INode* node);
+	IObject* Eval(Program& program, Environment* env);
+	IObject* Eval(INode* node, Environment* env);
 
 private:
 

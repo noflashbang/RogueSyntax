@@ -7,6 +7,9 @@ TEST_CASE("Lexer Tests")
 	SECTION("Test Location Information")
 	{
 		Lexer lexer("let x = 5;");
+
+		UNSCOPED_INFO("let x = 5;");
+
 		Token nt = lexer.NextToken();
 		REQUIRE(nt.Location.Line == 1);
 		REQUIRE(nt.Location.Column == 1);
@@ -36,6 +39,9 @@ TEST_CASE("Lexer Tests")
 	SECTION("Test Location Information")
 	{
 		Lexer lexer("\t\t\tlet\n \t\tx = 5;");
+
+		UNSCOPED_INFO("\t\t\tlet\n \t\tx = 5;");
+
 		Token nt = lexer.NextToken();
 		REQUIRE(nt.Location.Line == 1);
 		REQUIRE(nt.Location.Column == 13);
@@ -66,6 +72,8 @@ TEST_CASE("Lexer Tests")
 	{
 		Lexer lexer("let x = 5;");
 		
+		UNSCOPED_INFO("let x = 5;");
+
 		Token nt = lexer.NextToken();
 		REQUIRE(nt.Type == TokenType::TOKEN_LET);
 		REQUIRE(nt.Literal == "let");
@@ -102,6 +110,8 @@ let add = fn(x, y) {
 let result = add(five, ten);
 )";
 			
+		UNSCOPED_INFO(testCase);
+
 		Lexer lexer(testCase);
 		Token nt = lexer.NextToken();
 		REQUIRE(nt.Type == TokenType::TOKEN_LET);
@@ -257,6 +267,8 @@ let result = add(five, ten);
 		const std::string testCase = "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^";
 
 		Lexer lexer(testCase);
+
+		UNSCOPED_INFO(testCase);
 
 		Token nt = lexer.NextToken();
 		REQUIRE(nt.Type == TokenType::TOKEN_LET);

@@ -13,6 +13,7 @@ namespace Catch {
 IObject* EvalTest(const std::string& input)
 {
 	Evaluator eval;
+	Environment env;
 	Lexer lexer(input);
 	Parser parser(lexer);
 	
@@ -20,7 +21,7 @@ IObject* EvalTest(const std::string& input)
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
-	IObject* result = eval.Eval(program);
+	IObject* result = eval.Eval(program, &env);
 	return result;
 }
 
@@ -103,6 +104,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
+			UNSCOPED_INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}
@@ -134,6 +136,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
+			UNSCOPED_INFO(test.first);
 			REQUIRE(TestEvalBoolean(test.first, test.second));
 		}
 	}
@@ -152,6 +155,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
+			UNSCOPED_INFO(test.first);
 			REQUIRE(TestEvalBoolean(test.first, test.second));
 		}
 	}
@@ -172,6 +176,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
+			UNSCOPED_INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}
@@ -197,6 +202,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
+			UNSCOPED_INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}
@@ -219,7 +225,7 @@ TEST_CASE("Eval Tests")
 				"}",
 				"unknown operator: BOOLEAN + BOOLEAN"
 			},
-			//{"foobar", "identifier not found: foobar"}
+			{"foobar", "identifier not found: foobar"}
 		};
 
 		for (auto& test : tests)
@@ -229,6 +235,23 @@ TEST_CASE("Eval Tests")
 			REQUIRE(result->Type() == ObjectType::ERROR_OBJ);
 			auto errorObj = dynamic_cast<ErrorObj*>(result);
 			REQUIRE(errorObj->Message == test.second);
+		}
+	}
+
+	SECTION("Test Let Statements")
+	{
+		auto tests = std::vector<std::pair<std::string, int32_t>>
+		{
+			{"let a = 5; a;", 5},
+			{"let a = 5 * 5; a;", 25},
+			{"let a = 5; let b = a; b;", 5},
+			{"let a = 5; let b = a; let c = a + b + 5; c;", 15}
+		};
+
+		for (auto& test : tests)
+		{
+			UNSCOPED_INFO(test.first);
+			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}
 }

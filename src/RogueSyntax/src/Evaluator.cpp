@@ -1,11 +1,16 @@
 #include "Evaluator.h"
 
-IObject* Evaluator::Eval(Program& program)
+IObject* Evaluator::Eval(Program& program, Environment* env)
 {
 	IObject* result = nullptr;
 	for (const auto& stmt : program.Statements)
 	{
-		result = Eval(stmt.get());
+		result = Eval(stmt.get(), env);
+		if (result == nullptr)
+		{
+			continue;
+		}
+
 		if (result->Type() == ObjectType::RETURN_OBJ)
 		{
 			result = dynamic_cast<ReturnObj*>(result)->Value;
@@ -19,7 +24,7 @@ IObject* Evaluator::Eval(Program& program)
 	return result;
 }
 
-IObject* Evaluator::Eval(INode* node)
+IObject* Evaluator::Eval(INode* node, Environment* env)
 {
 	auto type = node->NType();
 	IObject* result = nullptr;
@@ -28,13 +33,13 @@ IObject* Evaluator::Eval(INode* node)
 		case NodeType::Program:
 		{
 			auto program = dynamic_cast<Program*>(node);
-			result = Eval(*program);
+			result = Eval(*program, env);
 			break;
 		}
 		case NodeType::ExpressionStatement:
 		{
 			auto expression = dynamic_cast<ExpressionStatement*>(node);
-			result = Eval(expression->Expression.get());
+			result = Eval(expression->Expression.get(), env);
 			break;
 		}
 		case NodeType::IntegerLiteral:
@@ -52,7 +57,7 @@ IObject* Evaluator::Eval(INode* node)
 		case NodeType::PrefixExpression:
 		{
 			auto prefix = dynamic_cast<PrefixExpression*>(node);
-			auto right = Eval(prefix->Right.get());
+			auto right = Eval(prefix->Right.get(), env);
 			if (right->Type() == ObjectType::ERROR_OBJ)
 			{
 				return right;
@@ -65,7 +70,12 @@ IObject* Evaluator::Eval(INode* node)
 			auto block = dynamic_cast<BlockStatement*>(node);
 			for (const auto& stmt : block->Statements)
 			{
-				result = Eval(stmt.get());
+				result = Eval(stmt.get(), env);
+				if (result == nullptr)
+				{
+					continue;
+				}
+
 				if (result->Type() == ObjectType::RETURN_OBJ || result->Type() == ObjectType::ERROR_OBJ)
 				{
 					break;
@@ -77,7 +87,7 @@ IObject* Evaluator::Eval(INode* node)
 		{
 			auto ifex = dynamic_cast<IfExpression*>(node);
 
-			auto condition = Eval(ifex->Condition.get());
+			auto condition = Eval(ifex->Condition.get(), env);
 			if (condition->Type() == ObjectType::ERROR_OBJ)
 			{
 				return condition;
@@ -85,11 +95,11 @@ IObject* Evaluator::Eval(INode* node)
 
 			if (IsTruthy(condition))
 			{
-				result = Eval(ifex->Consequence.get());
+				result = Eval(ifex->Consequence.get(), env);
 			}
 			else if (ifex->Alternative != nullptr)
 			{
-				result = Eval(ifex->Alternative.get());
+				result = Eval(ifex->Alternative.get(), env);
 			}
 			else
 			{
@@ -100,12 +110,12 @@ IObject* Evaluator::Eval(INode* node)
 		case NodeType::InfixExpression:
 		{
 			auto infix = dynamic_cast<InfixExpression*>(node);
-			auto left = Eval(infix->Left.get());
+			auto left = Eval(infix->Left.get(), env);
 			if (left->Type() == ObjectType::ERROR_OBJ)
 			{
 				return left;
 			}
-			auto right = Eval(infix->Right.get());
+			auto right = Eval(infix->Right.get(), env);
 			if (right->Type() == ObjectType::ERROR_OBJ)
 			{
 				return right;
@@ -116,8 +126,33 @@ IObject* Evaluator::Eval(INode* node)
 		case NodeType::ReturnStatement:
 		{
 			auto ret = dynamic_cast<ReturnStatement*>(node);
-			auto value = Eval(ret->ReturnValue.get());
+			auto value = Eval(ret->ReturnValue.get(), env);
 			result = new ReturnObj(value);
+			break;
+		}
+		case NodeType::LetStatement:
+		{
+			auto let = dynamic_cast<LetStatement*>(node);
+			auto value = Eval(let->Value.get(), env);
+			if (value->Type() == ObjectType::ERROR_OBJ)
+			{
+				return value;
+			}
+			env->Set(let->Name.get()->Value, value);
+			break;
+		}
+		case NodeType::Identifier:
+		{
+			auto ident = dynamic_cast<Identifier*>(node);
+			auto value = env->Get(ident->Value);
+			if (value != nullptr)
+			{
+				result = value;
+			}
+			else
+			{
+				result = MakeError(std::format("identifier not found: {}", ident->Value), ident->Token);
+			}
 			break;
 		}
 		default:
