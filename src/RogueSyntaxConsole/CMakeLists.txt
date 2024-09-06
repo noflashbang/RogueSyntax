@@ -9,6 +9,8 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Lexer.h
     ${PARENT_DIR}/include/RogueSyntax/Token.h
     ${PARENT_DIR}/include/RogueSyntax/StandardLib.h
+    ${PARENT_DIR}/include/RogueSyntax/IObject.h
+    ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
 )
 
 set( consoleHeaders 

@@ -3,12 +3,32 @@
 #include "StandardLib.h"
 #include "Token.h"
 
+enum class NodeType
+{
+	Program,
+	Expression,
+	Statement,
+	Identifier,
+	LetStatement,
+	ReturnStatement,
+	ExpressionStatement,
+	IntegerLiteral,
+	BooleanLiteral,
+	PrefixExpression,
+	InfixExpression,
+	BlockStatement,
+	IfExpression,
+	FunctionLiteral,
+	CallExpression
+};
+
 class INode
 {
 public:
 	virtual std::string TokenLiteral() const = 0;
 	virtual std::string ToString() const = 0;
 	virtual TokenType Type() const = 0;
+	virtual NodeType NType() const = 0;
 
 	virtual ~INode() = default;
 };
@@ -26,20 +46,23 @@ public:
 };
 
 
-struct Program
+struct Program : IStatement
 {
 	std::vector<std::unique_ptr<IStatement>> Statements;
-	std::string TokenLiteral() const;
-	std::string ToString() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 };
 
 struct Identifier : IExpression
 {
 	Identifier(const Token token, const std::string& value);
 	virtual ~Identifier() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const;
+	NodeType NType() const;
 
 	static std::unique_ptr<Identifier> New(const Token token, const std::string& value);
 
@@ -51,9 +74,10 @@ struct LetStatement : IStatement
 {
 	LetStatement(const Token token, std::unique_ptr<Identifier> name, std::unique_ptr<IExpression> value);
 	virtual ~LetStatement() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 	
 	static std::unique_ptr<LetStatement> New(const Token token, std::unique_ptr<Identifier> name, std::unique_ptr<IExpression> value);
 
@@ -66,9 +90,10 @@ struct ReturnStatement : IStatement
 {
 	ReturnStatement(const Token token, std::unique_ptr<IExpression> returnValue);
 	virtual ~ReturnStatement() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<ReturnStatement> New(const Token token, std::unique_ptr<IExpression> returnValue);
 
@@ -80,9 +105,10 @@ struct ExpressionStatement : IStatement
 {
 	ExpressionStatement(const Token token, std::unique_ptr<IExpression> expression);
 	virtual ~ExpressionStatement() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<ExpressionStatement> New(const Token token, std::unique_ptr<IExpression> expression);
 
@@ -94,9 +120,10 @@ struct IntegerLiteral : IExpression
 {
 	IntegerLiteral(const Token token, const int value);
 	virtual ~IntegerLiteral() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<IntegerLiteral> New(const Token token, const int value);
 
@@ -108,9 +135,10 @@ struct BooleanLiteral : IExpression
 {
 	BooleanLiteral(const Token token, const bool value);
 	virtual ~BooleanLiteral() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<BooleanLiteral> New(const Token token, const bool value);
 
@@ -122,9 +150,10 @@ struct PrefixExpression : IExpression
 {
 	PrefixExpression(const Token token, const std::string& op, std::unique_ptr<IExpression> right);
 	virtual ~PrefixExpression() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<PrefixExpression> New(const Token token, const std::string& op, std::unique_ptr<IExpression> right);
 
@@ -137,9 +166,10 @@ struct InfixExpression : IExpression
 {
 	InfixExpression(const Token token, std::unique_ptr<IExpression> left, const std::string& op, std::unique_ptr<IExpression> right);
 	virtual ~InfixExpression() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<InfixExpression> New(const Token token, std::unique_ptr<IExpression> left, const std::string& op, std::unique_ptr<IExpression> right);
 
@@ -153,9 +183,10 @@ struct BlockStatement : IStatement
 {
 	BlockStatement(const Token token, std::vector<std::unique_ptr<IStatement>>& statements);
 	virtual ~BlockStatement() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<BlockStatement> New(const Token token, std::vector<std::unique_ptr<IStatement>>& statements);
 
@@ -167,9 +198,10 @@ struct IfExpression : IExpression
 {
 	IfExpression(const Token token, std::unique_ptr<IExpression> condition, std::unique_ptr<IStatement> consequence, std::unique_ptr<IStatement> alternative);
 	virtual ~IfExpression() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<IfExpression> New(const Token token, std::unique_ptr<IExpression> condition, std::unique_ptr<IStatement> consequence, std::unique_ptr<IStatement> alternative);
 
@@ -183,9 +215,10 @@ struct FunctionLiteral : IExpression
 {
 	FunctionLiteral(const Token token, std::vector<std::unique_ptr<IExpression>>& parameters, std::unique_ptr<IStatement> body);
 	virtual ~FunctionLiteral() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<FunctionLiteral> New(const Token token, std::vector<std::unique_ptr<IExpression>>& parameters, std::unique_ptr<IStatement> body);
 
@@ -198,9 +231,10 @@ struct CallExpression : IExpression
 {
 	CallExpression(const Token token, std::unique_ptr<IExpression> function, std::vector<std::unique_ptr<IExpression>>& arguments);
 	virtual ~CallExpression() = default;
-	virtual std::string TokenLiteral() const override;
-	virtual std::string ToString() const override;
-	virtual TokenType Type() const;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
 
 	static std::unique_ptr<CallExpression> New(const Token token, std::unique_ptr<IExpression> function, std::vector<std::unique_ptr<IExpression>>& arguments);
 

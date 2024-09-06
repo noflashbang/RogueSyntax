@@ -7,6 +7,15 @@
 #include "AstNode.h"
 #include "AstNode.h"
 
+TokenType Program::Type() const
+{
+	return TokenType::TOKEN_ILLEGAL;
+}
+NodeType Program::NType() const
+{
+	return NodeType::Program;
+}
+
 std::string Program::TokenLiteral() const
 {
 	if (Statements.size() > 0)
@@ -65,6 +74,11 @@ TokenType LetStatement::Type() const
 	return Token.Type;
 }
 
+NodeType LetStatement::NType() const
+{
+	return NodeType::LetStatement;
+}
+
 Identifier::Identifier(const ::Token token, const std::string& value) : Token(token), Value(value)
 {
 }
@@ -87,6 +101,11 @@ std::string Identifier::ToString() const
 TokenType Identifier::Type() const
 {
 	return Token.Type;
+}
+
+NodeType Identifier::NType() const
+{
+	return NodeType::Identifier;
 }
 
 ReturnStatement::ReturnStatement(const ::Token token, std::unique_ptr<IExpression> returnValue) : Token(token)
@@ -121,6 +140,11 @@ TokenType ReturnStatement::Type() const
 	return Token.Type;
 }
 
+NodeType ReturnStatement::NType() const
+{
+	return NodeType::ReturnStatement;
+}
+
 ExpressionStatement::ExpressionStatement(const ::Token token, std::unique_ptr<IExpression> expression) : Token(token)
 {
 	Expression.swap(expression);
@@ -150,6 +174,11 @@ TokenType ExpressionStatement::Type() const
 	return Token.Type;
 }
 
+NodeType ExpressionStatement::NType() const
+{
+	return NodeType::ExpressionStatement;
+}
+
 IntegerLiteral::IntegerLiteral(const ::Token token, int value) : Token(token), Value(value)
 {
 }
@@ -174,6 +203,11 @@ TokenType IntegerLiteral::Type() const
 	return Token.Type;
 }
 
+NodeType IntegerLiteral::NType() const
+{
+	return NodeType::IntegerLiteral;
+}
+
 BooleanLiteral::BooleanLiteral(const ::Token token, bool value) : Token(token), Value(value)
 {
 }
@@ -196,6 +230,11 @@ std::string BooleanLiteral::ToString() const
 TokenType BooleanLiteral::Type() const
 {
 	return Token.Type;
+}
+
+NodeType BooleanLiteral::NType() const
+{
+	return NodeType::BooleanLiteral;
 }
 
 PrefixExpression::PrefixExpression(const ::Token token, const std::string& op, std::unique_ptr<IExpression> right) : Token(token), Operator(op)
@@ -226,6 +265,11 @@ std::string PrefixExpression::ToString() const
 TokenType PrefixExpression::Type() const
 {
 	return Token.Type;
+}
+
+NodeType PrefixExpression::NType() const
+{
+	return NodeType::PrefixExpression;
 }
 
 InfixExpression::InfixExpression(const ::Token token, std::unique_ptr<IExpression> left, const std::string& op, std::unique_ptr<IExpression> right) : Token(token), Operator(op)
@@ -260,6 +304,11 @@ TokenType InfixExpression::Type() const
 	return Token.Type;
 }
 
+NodeType InfixExpression::NType() const
+{
+	return NodeType::InfixExpression;
+}
+
 BlockStatement::BlockStatement(const ::Token token, std::vector<std::unique_ptr<IStatement>>& statements) : Token(token)
 {
 	Statements.swap(statements);
@@ -291,6 +340,11 @@ std::string BlockStatement::ToString() const
 TokenType BlockStatement::Type() const
 {
 	return Token.Type;
+}
+
+NodeType BlockStatement::NType() const
+{
+	return NodeType::BlockStatement;
 }
 
 IfExpression::IfExpression(const ::Token token, std::unique_ptr<IExpression> condition, std::unique_ptr<IStatement> consequence, std::unique_ptr<IStatement> alternative) : Token(token)
@@ -328,6 +382,11 @@ std::string IfExpression::ToString() const
 TokenType IfExpression::Type() const
 {
 	return Token.Type;
+}
+
+NodeType IfExpression::NType() const
+{
+	return NodeType::IfExpression;
 }
 
 FunctionLiteral::FunctionLiteral(const ::Token token, std::vector<std::unique_ptr<IExpression>>& parameters, std::unique_ptr<IStatement> body) : Token(token)
@@ -371,6 +430,11 @@ TokenType FunctionLiteral::Type() const
 	return Token.Type;
 }
 
+NodeType FunctionLiteral::NType() const
+{
+	return NodeType::FunctionLiteral;
+}
+
 CallExpression::CallExpression(const ::Token token, std::unique_ptr<IExpression> function, std::vector<std::unique_ptr<IExpression>>& arguments) : Token(token)
 {
 	Function.swap(function);
@@ -409,4 +473,9 @@ std::string CallExpression::ToString() const
 TokenType CallExpression::Type() const
 {
 	return Token.Type;
+}
+
+NodeType CallExpression::NType() const
+{
+	return NodeType::CallExpression;
 }

@@ -27,9 +27,12 @@ void Repl::Start()
 			continue;
 		}
 
-		std::cout << program.ToString() << std::endl;
-
-
+		Evaluator eval;
+		auto result = eval.Eval(program);
+		if (result != nullptr)
+		{
+			std::cout << result->Inspect() << std::endl;
+		}
 	}
 }
 
