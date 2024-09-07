@@ -27,19 +27,24 @@ std::shared_ptr<IObject> Evaluator::Eval(Program& program, std::shared_ptr<Envir
 
 std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node, std::shared_ptr<Environment>& env)
 {
-	std::stack<std::tuple<std::shared_ptr<INode>,int32_t>> stack;
+	std::stack<std::tuple<std::shared_ptr<INode>,int32_t, std::shared_ptr<Environment>>> stack;
 	std::stack<std::shared_ptr<IObject>> results;
 
-	stack.push({ node, 0 });
+	stack.push({ node, 0, nullptr });
 
 	while (!stack.empty())
 	{
-		auto [currentNode, signal] = stack.top();
+		auto [currentNode, signal, subEnv] = stack.top();
 		stack.pop();
 
 		if (!results.empty() && results.top()->Type() == ObjectType::ERROR_OBJ)
 		{
 			return results.top();
+		}
+
+		if (subEnv != nullptr)
+		{
+			env = subEnv;
 		}
 
 		auto type = currentNode->NType();
@@ -50,14 +55,14 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto program = std::dynamic_pointer_cast<Program>(currentNode);
 				for (auto it = program->Statements.rbegin(); it != program->Statements.rend(); ++it)
 				{
-					stack.push({ *it, 0 });
+					stack.push({ *it, 0, nullptr });
 				}
 				break;
 			}
 			case NodeType::ExpressionStatement:
 			{
 				auto expression = std::dynamic_pointer_cast<ExpressionStatement>(currentNode);
-				stack.push({ expression->Expression, 0 });
+				stack.push({ expression->Expression, 0, nullptr });
 				break;
 			}
 			case NodeType::IntegerLiteral:
@@ -77,8 +82,8 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto prefix = std::dynamic_pointer_cast<PrefixExpression>(currentNode);
 				if (signal == 0)
 				{
-					stack.push({ prefix, 1 });
-					stack.push({ prefix->Right, 0 });
+					stack.push({ prefix, 1, nullptr });
+					stack.push({ prefix->Right, 0, nullptr });
 				}
 				else
 				{
@@ -93,7 +98,7 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto block = std::dynamic_pointer_cast<BlockStatement>(currentNode);
 				for (auto it = block->Statements.begin(); it != block->Statements.end(); ++it)
 				{
-					stack.push({ *it, 0 });
+					stack.push({ *it, 0, nullptr });
 				}
 				break;
 			}
@@ -102,8 +107,8 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto ifex = std::dynamic_pointer_cast<IfExpression>(currentNode);
 				if (signal == 0)
 				{
-					stack.push({ ifex,  1 });
-					stack.push({ ifex->Condition, 0 });
+					stack.push({ ifex,  1, nullptr });
+					stack.push({ ifex->Condition, 0, nullptr });
 				}
 				else
 				{
@@ -111,11 +116,11 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 					results.pop();
 					if (IsTruthy(lastResult))
 					{
-						stack.push({ ifex->Consequence, 0 });
+						stack.push({ ifex->Consequence, 0, nullptr });
 					}
 					else if (ifex->Alternative != nullptr)
 					{
-						stack.push({ ifex->Alternative, 0 });
+						stack.push({ ifex->Alternative, 0, nullptr });
 					}
 					else
 					{
@@ -129,13 +134,13 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto infix = std::dynamic_pointer_cast<InfixExpression>(currentNode);
 				if (signal == 0)
 				{
-					stack.push({ infix, 1 });
-					stack.push({ infix->Left, 0 });
+					stack.push({ infix, 1, nullptr });
+					stack.push({ infix->Left, 0, nullptr });
 				}
 				else if (signal == 1)
 				{
-					stack.push({ infix, 2 });
-					stack.push({ infix->Right, 0 });
+					stack.push({ infix, 2, nullptr });
+					stack.push({ infix->Right, 0, nullptr });
 				}
 				else
 				{
@@ -161,8 +166,8 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto ret = std::dynamic_pointer_cast<ReturnStatement>(currentNode);
 				if (signal == 0)
 				{
-					stack.push({ ret, 1 });
-					stack.push({ ret->ReturnValue, 0 });
+					stack.push({ ret, 1, nullptr });
+					stack.push({ ret->ReturnValue, 0, nullptr });
 				}
 				else
 				{
@@ -177,8 +182,8 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto let = std::dynamic_pointer_cast<LetStatement>(currentNode);
 				if (signal == 0)
 				{
-					stack.push({ let, 1 });
-					stack.push({ let->Value, 0 });
+					stack.push({ let, 1, nullptr });
+					stack.push({ let->Value, 0, nullptr });
 				}
 				else
 				{
@@ -213,8 +218,8 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 				auto call = std::dynamic_pointer_cast<CallExpression>(currentNode);
 				if (signal == 0)
 				{
-					stack.push({ call, 1 });
-					stack.push({ call->Function, 0 });
+					stack.push({ call, 1, nullptr });
+					stack.push({ call->Function, 0, nullptr });
 				}
 				else if (signal == 1)
 				{
@@ -227,12 +232,12 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 					}
 					auto function = lastResult;
 
-					stack.push({ call, 2 });
+					stack.push({ call, 2, nullptr });
 
 					// Evaluate arguments
 					for (auto it = call->Arguments.rbegin(); it != call->Arguments.rend(); ++it)
 					{
-						stack.push({ *it, 0 });
+						stack.push({ *it, 0, nullptr });
 					}
 				}
 				else
@@ -248,8 +253,9 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 					results.pop();
 
 					auto fn = std::dynamic_pointer_cast<FunctionObj>(function);
-					auto result = ApplyFunction(fn, evalArgs);
-					results.push(result);
+
+					auto extEnv = ExtendFunctionEnv(fn, evalArgs);
+					stack.push({ fn->Body, 0, extEnv });
 				}
 				break;
 			}
