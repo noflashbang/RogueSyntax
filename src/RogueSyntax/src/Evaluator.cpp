@@ -6,7 +6,7 @@ std::shared_ptr<IObject> Evaluator::Eval(Program& program, std::shared_ptr<Envir
 	std::shared_ptr<IObject> result = nullptr;
 	for (const auto& stmt : program.Statements)
 	{
-		result = StackEval(stmt, env);
+		result = Eval(stmt, env);
 		if (result == nullptr)
 		{
 			continue;
@@ -153,8 +153,18 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 					auto right = results.top();
 					results.pop();
 
+					if (right->Type() == ObjectType::RETURN_OBJ)
+					{
+						right = std::dynamic_pointer_cast<ReturnObj>(right)->Value;
+					}
+
 					auto left = results.top();
 					results.pop();
+
+					if (left->Type() == ObjectType::RETURN_OBJ)
+					{
+						left = std::dynamic_pointer_cast<ReturnObj>(left)->Value;
+					}
 
 					auto result = EvalInfixExpression(infix->Token, left, right);
 					results.push(result);
@@ -247,6 +257,18 @@ std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node
 					{
 						auto arg = results.top();
 						results.pop();
+
+						if (arg->Type() == ObjectType::ERROR_OBJ)
+						{
+							results.push(arg);
+							break;
+						}
+
+						if (arg->Type() == ObjectType::RETURN_OBJ)
+						{
+							arg = std::dynamic_pointer_cast<ReturnObj>(arg)->Value;
+						}
+
 						evalArgs.push_back(arg);
 					}
 					auto function = results.top();
@@ -637,7 +659,16 @@ std::vector<std::shared_ptr<IObject>> Evaluator::EvalExpressions(std::vector<std
 		{
 			return { evaluated };
 		}
-		result.push_back(evaluated);
+
+		if (evaluated->Type() == ObjectType::RETURN_OBJ)
+		{
+			auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
+			result.push_back(ret->Value);
+		}
+		else
+		{
+			result.push_back(evaluated);
+		}
 	}
 	return result;
 }
