@@ -10,10 +10,10 @@ namespace Catch {
 	};
 }
 
-IObject* EvalTest(const std::string& input)
+std::shared_ptr<IObject> EvalTest(const std::string& input)
 {
 	Evaluator eval;
-	Environment env;
+	auto env = Environment::New();
 	Lexer lexer(input);
 	Parser parser(lexer);
 	
@@ -21,24 +21,24 @@ IObject* EvalTest(const std::string& input)
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
-	IObject* result = eval.Eval(program, &env);
+	auto result = eval.Eval(program, env);
 	return result;
 }
 
-bool TestIntegerObject(IObject* obj, const int32_t expected)
+bool TestIntegerObject(std::shared_ptr<IObject> obj, const int32_t expected)
 {
 	if (obj->Type() != ObjectType::INTEGER_OBJ)
 	{
 		if (obj->Type() == ObjectType::ERROR_OBJ)
 		{
-			auto errorObj = dynamic_cast<ErrorObj*>(obj);
+			auto errorObj = std::dynamic_pointer_cast<ErrorObj>(obj);
 			UNSCOPED_INFO(errorObj->Message);
 		}
 		throw std::invalid_argument(std::format("Object is not an integer -> Expected {} GOT {}", ObjectType::INTEGER_OBJ.Name, obj->Type().Name));
 		return false;
 	}
 
-	auto converted = dynamic_cast<IntegerObj*>(obj);
+	auto converted = std::dynamic_pointer_cast<IntegerObj>(obj);
 	auto actualValue = converted->Value;
 
 	if (actualValue != expected)
@@ -59,7 +59,7 @@ bool TestEvalInteger(const std::string& input, const int32_t expected)
 	return TestIntegerObject(result, expected);
 }
 
-bool TestBooleanObject(IObject* obj, const bool expected)
+bool TestBooleanObject(std::shared_ptr<IObject> obj, const bool expected)
 {
 	if (obj->Type() != ObjectType::BOOLEAN_OBJ)
 	{
@@ -67,7 +67,7 @@ bool TestBooleanObject(IObject* obj, const bool expected)
 		return false;
 	}
 
-	auto converted = dynamic_cast<BooleanObj*>(obj);
+	auto converted = std::dynamic_pointer_cast<BooleanObj>(obj);
 	auto actualValue = converted->Value;
 
 	if (actualValue != expected)
@@ -238,7 +238,7 @@ TEST_CASE("Eval Tests")
 			auto result = EvalTest(test.first);
 			UNSCOPED_INFO(test.first);
 			REQUIRE(result->Type() == ObjectType::ERROR_OBJ);
-			auto errorObj = dynamic_cast<ErrorObj*>(result);
+			auto errorObj = std::dynamic_pointer_cast<ErrorObj>(result);
 			REQUIRE(errorObj->Message == test.second);
 		}
 	}
@@ -265,7 +265,7 @@ TEST_CASE("Eval Tests")
 		auto input = "fn(x) { x + 2; };";
 		auto result = EvalTest(input);
 		REQUIRE(result->Type() == ObjectType::FUNCTION_OBJ);
-		auto func = dynamic_cast<FunctionObj*>(result);
+		auto func = dynamic_pointer_cast<FunctionObj>(result);
 		REQUIRE(func->Parameters.size() == 1);
 		REQUIRE(func->Parameters[0].get()->ToString() == "x");
 		REQUIRE(func->Body->ToString() == "{(x + 2)}");

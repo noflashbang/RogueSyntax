@@ -4,7 +4,7 @@
 void Repl::Start()
 {
 	std::string input;
-	Environment env;
+	auto env = Environment::New();
 
 	while (true)
 	{
@@ -30,7 +30,7 @@ void Repl::Start()
 		}
 
 		Evaluator eval;
-		auto result = eval.Eval(program, &env);
+		auto result = eval.Eval(program, env);
 
 		if (result == nullptr)
 		{
@@ -39,7 +39,7 @@ void Repl::Start()
 
 		if (result->Type() == ObjectType::ERROR_OBJ)
 		{
-			auto error = dynamic_cast<ErrorObj*>(result);
+			auto error = std::dynamic_pointer_cast<ErrorObj>(result);
 			std::cout << "Error: " << error->Message << std::endl;
 
 			//print out the source and error location

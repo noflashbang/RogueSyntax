@@ -81,8 +81,10 @@ public:
 	{
 		return "null";
 	}
-	static NullObj NULL_OBJ_REF;
 
+	static std::shared_ptr<NullObj> NULL_OBJ_REF;
+	static std::shared_ptr<NullObj> New();
+	
 private:
 	int _dummy;
 };
@@ -103,6 +105,8 @@ public:
 	}
 
 	int32_t Value;
+
+	static std::shared_ptr<IntegerObj> New(int value);
 };
 
 class BooleanObj : public IObject
@@ -123,14 +127,17 @@ public:
 	bool Value;
 
 	//Native object references
-	static BooleanObj TRUE_OBJ_REF;
-	static BooleanObj FALSE_OBJ_REF;
+	static std::shared_ptr<BooleanObj> TRUE_OBJ_REF;
+	static std::shared_ptr<BooleanObj> FALSE_OBJ_REF;
+
+
+	static std::shared_ptr<BooleanObj> New(bool value);
 };
 
 class ReturnObj : public IObject
 {
 public:
-	ReturnObj(IObject* value) : Value(value) {}
+	ReturnObj(const std::shared_ptr<IObject>& value) : Value(value) {}
 
 	ObjectType Type() const override
 	{
@@ -142,7 +149,9 @@ public:
 		return Value->Inspect();
 	}
 
-	IObject* Value;
+	std::shared_ptr<IObject> Value;
+
+	static std::shared_ptr<ReturnObj> New(const std::shared_ptr<IObject>& value);
 };
 
 class ErrorObj : public IObject
@@ -162,12 +171,14 @@ public:
 
 	std::string Message;
 	Token Token;
+
+	static std::shared_ptr<ErrorObj> New(const std::string& message, const ::Token& token);
 };
 
 class FunctionObj : public IObject
 {
 public:
-	FunctionObj(std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement>& body, Environment* env) : Parameters(parameters), Body(body), Env(env) {}
+	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env) : Parameters(parameters), Body(body), Env(env) {}
 
 	ObjectType Type() const override
 	{
@@ -196,6 +207,8 @@ public:
 
 	std::vector<std::shared_ptr<IExpression>> Parameters;
 	std::shared_ptr<IStatement> Body;
-	Environment* Env;
+	std::shared_ptr<Environment> Env;
+
+	static std::shared_ptr<FunctionObj> New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env);
 };
 
