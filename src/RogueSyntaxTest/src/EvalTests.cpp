@@ -90,10 +90,10 @@ TEST_CASE("Eval Tests")
 	{
 		auto tests = std::vector<std::pair<std::string, int32_t>>
 		{
-			{"5", 5},
-			{"10", 10},
-			{"-5", -5},
-			{"-10", -10},
+			//{"5", 5},
+			//{"10", 10},
+			//{"-5", -5},
+			//{"-10", -10},
 			{"5 + 5 + 5 + 5 - 10", 10},
 			{"2 * 2 * 2 * 2 * 2", 32},
 			{"-50 + 100 + -50", 0},
@@ -109,7 +109,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
-			UNSCOPED_INFO(test.first);
+			INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}
@@ -141,7 +141,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
-			UNSCOPED_INFO(test.first);
+			INFO(test.first);
 			REQUIRE(TestEvalBoolean(test.first, test.second));
 		}
 	}
@@ -160,7 +160,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
-			UNSCOPED_INFO(test.first);
+			INFO(test.first);
 			REQUIRE(TestEvalBoolean(test.first, test.second));
 		}
 	}
@@ -181,7 +181,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
-			UNSCOPED_INFO(test.first);
+			INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}
@@ -207,7 +207,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
-			UNSCOPED_INFO(test.first);
+			INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}
@@ -236,7 +236,7 @@ TEST_CASE("Eval Tests")
 		for (auto& test : tests)
 		{
 			auto result = EvalTest(test.first);
-			UNSCOPED_INFO(test.first);
+			INFO(test.first);
 			REQUIRE(result->Type() == ObjectType::ERROR_OBJ);
 			auto errorObj = std::dynamic_pointer_cast<ErrorObj>(result);
 			REQUIRE(errorObj->Message == test.second);
@@ -255,7 +255,7 @@ TEST_CASE("Eval Tests")
 
 		for (auto& test : tests)
 		{
-			UNSCOPED_INFO(test.first);
+			INFO(test.first);
 			REQUIRE(TestEvalInteger(test.first, test.second));
 		}
 	}

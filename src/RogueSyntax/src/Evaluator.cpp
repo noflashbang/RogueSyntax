@@ -27,213 +27,250 @@ std::shared_ptr<IObject> Evaluator::Eval(Program& program, std::shared_ptr<Envir
 
 std::shared_ptr<IObject> Evaluator::StackEval(const std::shared_ptr<INode>& node, std::shared_ptr<Environment>& env)
 {
-	std::stack<std::tuple<std::shared_ptr<INode>, std::shared_ptr<Environment>, std::shared_ptr<IObject>>> stack;
-	stack.push({ node, env, nullptr });
-	std::shared_ptr<IObject> result = nullptr;
+	std::stack<std::tuple<std::shared_ptr<INode>,int32_t>> stack;
+	std::stack<std::shared_ptr<IObject>> results;
+
+	stack.push({ node, 0 });
 
 	while (!stack.empty())
 	{
-		auto [currentNode, currentEnv, leftResult] = stack.top();
+		auto [currentNode, signal] = stack.top();
 		stack.pop();
+
+		if (!results.empty() && results.top()->Type() == ObjectType::ERROR_OBJ)
+		{
+			return results.top();
+		}
 
 		auto type = currentNode->NType();
 		switch (type)
 		{
-		case NodeType::Program:
-		{
-			auto program = std::dynamic_pointer_cast<Program>(currentNode);
-			for (auto it = program->Statements.rbegin(); it != program->Statements.rend(); ++it)
+			case NodeType::Program:
 			{
-				stack.push({ *it, currentEnv, nullptr });
+				auto program = std::dynamic_pointer_cast<Program>(currentNode);
+				for (auto it = program->Statements.rbegin(); it != program->Statements.rend(); ++it)
+				{
+					stack.push({ *it, 0 });
+				}
+				break;
 			}
-			break;
-		}
-		case NodeType::ExpressionStatement:
-		{
-			auto expression = std::dynamic_pointer_cast<ExpressionStatement>(currentNode);
-			stack.push({ expression->Expression, currentEnv, nullptr });
-			break;
-		}
-		case NodeType::IntegerLiteral:
-		{
-			auto integer = std::dynamic_pointer_cast<IntegerLiteral>(currentNode);
-			result = IntegerObj::New(integer->Value);
-			break;
-		}
-		case NodeType::BooleanLiteral:
-		{
-			auto boolean = std::dynamic_pointer_cast<BooleanLiteral>(currentNode);
-			result = boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
-			break;
-		}
-		case NodeType::PrefixExpression:
-		{
-			auto prefix = std::dynamic_pointer_cast<PrefixExpression>(currentNode);
-			stack.push({ prefix, currentEnv, nullptr }); // Save the state to process after evaluating the right expression
-			stack.push({ prefix->Right, currentEnv, nullptr });
-			break;
-		}
-		case NodeType::BlockStatement:
-		{
-			auto block = std::dynamic_pointer_cast<BlockStatement>(currentNode);
-			for (auto it = block->Statements.rbegin(); it != block->Statements.rend(); ++it)
+			case NodeType::ExpressionStatement:
 			{
-				stack.push({ *it, currentEnv, nullptr });
+				auto expression = std::dynamic_pointer_cast<ExpressionStatement>(currentNode);
+				stack.push({ expression->Expression, 0 });
+				break;
 			}
-			break;
-		}
-		case NodeType::IfExpression:
-		{
-			auto ifex = std::dynamic_pointer_cast<IfExpression>(currentNode);
-			stack.push({ ifex, currentEnv, nullptr }); // Save the state to process after evaluating the condition
-			stack.push({ ifex->Condition, currentEnv, nullptr });
-			break;
-		}
-		case NodeType::InfixExpression:
-		{
-			auto infix = std::dynamic_pointer_cast<InfixExpression>(currentNode);
-			if (leftResult == nullptr)
+			case NodeType::IntegerLiteral:
 			{
-				stack.push({ infix, currentEnv, nullptr }); // Save the state to process after evaluating the left expression
-				stack.push({ infix->Left, currentEnv, nullptr });
+				auto integer = std::dynamic_pointer_cast<IntegerLiteral>(currentNode);
+				results.push(IntegerObj::New(integer->Value));
+				break;
 			}
-			else
+			case NodeType::BooleanLiteral:
 			{
-				auto right = result;
-				result = EvalInfixExpression(infix->Token, leftResult, right);
+				auto boolean = std::dynamic_pointer_cast<BooleanLiteral>(currentNode);
+				results.push(boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF);
+				break;
 			}
-			break;
-		}
-		case NodeType::ReturnStatement:
-		{
-			auto ret = std::dynamic_pointer_cast<ReturnStatement>(currentNode);
-			stack.push({ ret, currentEnv, nullptr }); // Save the state to process after evaluating the return value
-			stack.push({ ret->ReturnValue, currentEnv, nullptr });
-			break;
-		}
-		case NodeType::LetStatement:
-		{
-			auto let = std::dynamic_pointer_cast<LetStatement>(currentNode);
-			stack.push({ let, currentEnv, nullptr }); // Save the state to process after evaluating the value
-			stack.push({ let->Value, currentEnv, nullptr });
-			break;
-		}
-		case NodeType::Identifier:
-		{
-			auto ident = std::dynamic_pointer_cast<Identifier>(currentNode);
-			auto value = currentEnv->Get(ident->Value);
-			if (value != nullptr)
-			{
-				result = value;
-			}
-			else
-			{
-				result = MakeError(std::format("identifier not found: {}", ident->Value), ident->Token);
-			}
-			break;
-		}
-		case NodeType::FunctionLiteral:
-		{
-			auto func = std::dynamic_pointer_cast<FunctionLiteral>(currentNode);
-			result = FunctionObj::New(func->Parameters, func->Body, currentEnv);
-			break;
-		}
-		case NodeType::CallExpression:
-		{
-			auto call = std::dynamic_pointer_cast<CallExpression>(currentNode);
-			stack.push({ call, currentEnv, nullptr }); // Save the state to process after evaluating the function
-			stack.push({ call->Function, currentEnv, nullptr });
-			break;
-		}
-		default:
-		{
-			result = NullObj::NULL_OBJ_REF;
-		}
-		}
-
-		// Process saved states
-		while (!stack.empty() && result != nullptr)
-		{
-			auto [savedNode, savedEnv, savedLeftResult] = stack.top();
-			stack.pop();
-
-			switch (savedNode->NType())
-			{
 			case NodeType::PrefixExpression:
 			{
-				auto prefix = std::dynamic_pointer_cast<PrefixExpression>(savedNode);
-				result = EvalPrefixExpression(prefix->Token, result);
+				auto prefix = std::dynamic_pointer_cast<PrefixExpression>(currentNode);
+				if (signal == 0)
+				{
+					stack.push({ prefix, 1 });
+					stack.push({ prefix->Right, 0 });
+				}
+				else
+				{
+					auto lastResult = results.top();
+					results.pop();
+					results.push(EvalPrefixExpression(prefix->Token, lastResult));
+				}
+				break;
+			}
+			case NodeType::BlockStatement:
+			{
+				auto block = std::dynamic_pointer_cast<BlockStatement>(currentNode);
+				for (auto it = block->Statements.begin(); it != block->Statements.end(); ++it)
+				{
+					stack.push({ *it, 0 });
+				}
 				break;
 			}
 			case NodeType::IfExpression:
 			{
-				auto ifex = std::dynamic_pointer_cast<IfExpression>(savedNode);
-				if (IsTruthy(result))
+				auto ifex = std::dynamic_pointer_cast<IfExpression>(currentNode);
+				if (signal == 0)
 				{
-					stack.push({ ifex->Consequence, savedEnv, nullptr });
-				}
-				else if (ifex->Alternative != nullptr)
-				{
-					stack.push({ ifex->Alternative, savedEnv, nullptr });
+					stack.push({ ifex,  1 });
+					stack.push({ ifex->Condition, 0 });
 				}
 				else
 				{
-					result = NullObj::NULL_OBJ_REF;
+					auto lastResult = results.top();
+					results.pop();
+					if (IsTruthy(lastResult))
+					{
+						stack.push({ ifex->Consequence, 0 });
+					}
+					else if (ifex->Alternative != nullptr)
+					{
+						stack.push({ ifex->Alternative, 0 });
+					}
+					else
+					{
+						results.push(NullObj::NULL_OBJ_REF);
+					}
 				}
 				break;
 			}
 			case NodeType::InfixExpression:
 			{
-				auto infix = std::dynamic_pointer_cast<InfixExpression>(savedNode);
-				if (savedLeftResult == nullptr)
+				auto infix = std::dynamic_pointer_cast<InfixExpression>(currentNode);
+				if (signal == 0)
 				{
-					// Save the left result and continue with the right expression
-					stack.push({ infix, savedEnv, result });
-					stack.push({ infix->Right, savedEnv, nullptr });
+					stack.push({ infix, 1 });
+					stack.push({ infix->Left, 0 });
+				}
+				else if (signal == 1)
+				{
+					stack.push({ infix, 2 });
+					stack.push({ infix->Right, 0 });
 				}
 				else
 				{
-					auto right = result;
-					result = EvalInfixExpression(infix->Token, savedLeftResult, right);
+					if (results.size() < 2)
+					{
+						results.push(MakeError("infix expression requires two operands", infix->Token));
+						break;
+					}
+
+					auto right = results.top();
+					results.pop();
+
+					auto left = results.top();
+					results.pop();
+
+					auto result = EvalInfixExpression(infix->Token, left, right);
+					results.push(result);
 				}
 				break;
 			}
 			case NodeType::ReturnStatement:
 			{
-				auto ret = std::dynamic_pointer_cast<ReturnStatement>(savedNode);
-				result = ReturnObj::New(result);
+				auto ret = std::dynamic_pointer_cast<ReturnStatement>(currentNode);
+				if (signal == 0)
+				{
+					stack.push({ ret, 1 });
+					stack.push({ ret->ReturnValue, 0 });
+				}
+				else
+				{
+					auto lastResult = results.top();
+					results.pop();
+					results.push(ReturnObj::New(lastResult));
+				}
 				break;
 			}
 			case NodeType::LetStatement:
 			{
-				auto let = std::dynamic_pointer_cast<LetStatement>(savedNode);
-				savedEnv->Set(let->Name->Value, result);
+				auto let = std::dynamic_pointer_cast<LetStatement>(currentNode);
+				if (signal == 0)
+				{
+					stack.push({ let, 1 });
+					stack.push({ let->Value, 0 });
+				}
+				else
+				{
+					auto lastResult = results.top();
+					results.pop();
+					env->Set(let->Name->Value, lastResult);
+				}
+				break;
+			}
+			case NodeType::Identifier:
+			{
+				auto ident = std::dynamic_pointer_cast<Identifier>(currentNode);
+				auto value = env->Get(ident->Value);
+				if (value != nullptr)
+				{
+					results.push(value);
+				}
+				else
+				{
+					results.push(MakeError(std::format("identifier not found: {}", ident->Value), ident->Token));
+				}
+				break;
+			}
+			case NodeType::FunctionLiteral:
+			{
+				auto func = std::dynamic_pointer_cast<FunctionLiteral>(currentNode);
+				results.push(FunctionObj::New(func->Parameters, func->Body, env));
 				break;
 			}
 			case NodeType::CallExpression:
 			{
-				auto call = std::dynamic_pointer_cast<CallExpression>(savedNode);
-				auto function = result;
-				if (function->Type() != ObjectType::FUNCTION_OBJ)
+				auto call = std::dynamic_pointer_cast<CallExpression>(currentNode);
+				if (signal == 0)
 				{
-					result = MakeError(std::format("literal not a function: {}", function->Inspect()), call->Token);
-					break;
+					stack.push({ call, 1 });
+					stack.push({ call->Function, 0 });
 				}
-				auto evalArgs = EvalExpressions(call->Arguments, savedEnv);
-				if (evalArgs.size() == 1 && evalArgs[0]->Type() == ObjectType::ERROR_OBJ)
+				else if (signal == 1)
 				{
-					result = evalArgs[0];
-					break;
+					auto lastResult = results.top();
+
+					if (lastResult->Type() != ObjectType::FUNCTION_OBJ)
+					{
+						results.push(MakeError(std::format("literal not a function: {}", lastResult->Inspect()), call->Token));
+						break;
+					}
+					auto function = lastResult;
+
+					stack.push({ call, 2 });
+
+					// Evaluate arguments
+					for (auto it = call->Arguments.rbegin(); it != call->Arguments.rend(); ++it)
+					{
+						stack.push({ *it, 0 });
+					}
 				}
-				auto fn = std::dynamic_pointer_cast<FunctionObj>(function);
-				result = ApplyFunction(fn, evalArgs);
+				else
+				{
+					std::vector<std::shared_ptr<IObject>> evalArgs;
+					for (size_t i = 0; i < call->Arguments.size(); i++)
+					{
+						auto arg = results.top();
+						results.pop();
+						evalArgs.push_back(arg);
+					}
+					auto function = results.top();
+					results.pop();
+
+					auto fn = std::dynamic_pointer_cast<FunctionObj>(function);
+					auto result = ApplyFunction(fn, evalArgs);
+					results.push(result);
+				}
 				break;
 			}
 			default:
-				break;
+			{
+				results.push(NullObj::NULL_OBJ_REF);
 			}
 		}
 	}
+
+	if (results.empty())
+	{
+		return nullptr;
+	}
+
+	//if (results.size() > 1)
+	//{
+	//	return MakeError("stack has more than one result", Token());
+	//}
+
+	auto result = results.top();
 	return result;
 }
 
