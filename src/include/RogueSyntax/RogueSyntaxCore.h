@@ -26,6 +26,10 @@
 #include "Lexer.h"
 #include "AstNode.h"
 #include "Parser.h"
+#include "IObject.h"
+#include "Environment.h"
+#include "Evaluator.h"
+
 
 
 

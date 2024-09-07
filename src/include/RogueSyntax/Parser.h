@@ -5,8 +5,8 @@
 #include "Lexer.h"
 #include "AstNode.h"
 
-typedef std::function<std::unique_ptr<IExpression>()> PrefixParseFn;
-typedef std::function<std::unique_ptr<IExpression>(std::unique_ptr<IExpression>)> InfixParseFn;
+typedef std::function<std::shared_ptr<IExpression>()> PrefixParseFn;
+typedef std::function<std::shared_ptr<IExpression>(std::shared_ptr<IExpression>)> InfixParseFn;
 
 enum class Precedence
 {
@@ -38,24 +38,24 @@ public:
 
 	void NextToken();
 	Program ParseProgram();
-	std::unique_ptr<IStatement> ParseStatement();
+	std::shared_ptr<IStatement> ParseStatement();
 
-	std::unique_ptr<IExpression> ParseExpression(const Precedence precedence);
+	std::shared_ptr<IExpression> ParseExpression(const Precedence precedence);
 
-	std::unique_ptr<IExpression> ParseIdentifier();
-	std::unique_ptr<IExpression> ParseIntegerLiteral();
-	std::unique_ptr<IExpression> ParsePrefixExpression();
-	std::unique_ptr<IExpression> ParseInfixExpression(std::unique_ptr<IExpression> left);
-	std::unique_ptr<IExpression> ParseBoolean();
-	std::unique_ptr<IExpression> ParseGroupedExpression();
-	std::unique_ptr<IExpression> ParseIfExpression();
-	std::unique_ptr<IExpression> ParseFunctionLiteral();
-	std::unique_ptr<IExpression> ParseCallExpression(std::unique_ptr<IExpression> function);
+	std::shared_ptr<IExpression> ParseIdentifier();
+	std::shared_ptr<IExpression> ParseIntegerLiteral();
+	std::shared_ptr<IExpression> ParsePrefixExpression();
+	std::shared_ptr<IExpression> ParseInfixExpression(std::shared_ptr<IExpression> left);
+	std::shared_ptr<IExpression> ParseBoolean();
+	std::shared_ptr<IExpression> ParseGroupedExpression();
+	std::shared_ptr<IExpression> ParseIfExpression();
+	std::shared_ptr<IExpression> ParseFunctionLiteral();
+	std::shared_ptr<IExpression> ParseCallExpression(std::shared_ptr<IExpression> function);
 
-	std::unique_ptr<IStatement> ParseBlockStatement();
-	std::unique_ptr<IStatement> ParseLetStatement();
-	std::unique_ptr<IStatement> ParseReturnStatement();
-	std::unique_ptr<IStatement> ParseExpressionStatement();
+	std::shared_ptr<IStatement> ParseBlockStatement();
+	std::shared_ptr<IStatement> ParseLetStatement();
+	std::shared_ptr<IStatement> ParseReturnStatement();
+	std::shared_ptr<IStatement> ParseExpressionStatement();
 
 
 	bool ExpectPeek(const TokenType expectedType);

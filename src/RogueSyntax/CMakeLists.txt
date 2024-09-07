@@ -10,6 +10,9 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/AstNode.h
     ${PARENT_DIR}/include/RogueSyntax/Parser.h
     ${PARENT_DIR}/include/RogueSyntax/StandardLib.h
+    ${PARENT_DIR}/include/RogueSyntax/IObject.h
+    ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
+    ${PARENT_DIR}/include/RogueSyntax/Environment.h
 )
 
 set( libHeaders 
@@ -20,7 +23,10 @@ set( libSource
  "src/Token.cpp"
  "src/Lexer.cpp"
  "src/AstNode.cpp"
- "src/Parser.cpp"    
+ "src/Parser.cpp"  
+ "src/IObject.cpp"
+ "src/Evaluator.cpp"
+ "src/Environment.cpp"
 )
 
 add_library (RogueSyntax STATIC ${libSource} ${libHeaders} ${externHeaders}) 
