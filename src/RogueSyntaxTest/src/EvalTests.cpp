@@ -10,9 +10,8 @@ namespace Catch {
 	};
 }
 
-std::shared_ptr<IObject> EvalTest(const std::string& input)
+std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input)
 {
-	Evaluator eval;
 	auto env = Environment::New();
 	Lexer lexer(input);
 	Parser parser(lexer);
@@ -21,7 +20,7 @@ std::shared_ptr<IObject> EvalTest(const std::string& input)
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
-	auto result = eval.Eval(program, env);
+	auto result = eval->Eval(program, env);
 	return result;
 }
 
@@ -49,9 +48,9 @@ bool TestIntegerObject(std::shared_ptr<IObject> obj, const int32_t expected)
 	return true;
 }
 
-bool TestEvalInteger(const std::string& input, const int32_t expected)
+bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& input, const int32_t expected)
 {
-	auto result = EvalTest(input);
+	auto result = EvalTest(eval, input);
 	if (result->Type() == ObjectType::NULL_OBJ && expected == 0)
 	{
 		return true;
@@ -78,14 +77,15 @@ bool TestBooleanObject(std::shared_ptr<IObject> obj, const bool expected)
 	return true;
 }
 
-bool TestEvalBoolean(const std::string& input, const bool expected)
+bool TestEvalBoolean(const std::shared_ptr<Evaluator>& eval, const std::string& input, const bool expected)
 {
-	auto result = EvalTest(input);
+	auto result = EvalTest(eval, input);
 	return TestBooleanObject(result, expected);
 }
 
 TEST_CASE("Eval Tests")
 {
+	std::vector<std::shared_ptr<Evaluator>> evaluators = { std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() };
 	SECTION("Simple Integer Type")
 	{
 		auto tests = std::vector<std::pair<std::string, int32_t>>
@@ -107,10 +107,13 @@ TEST_CASE("Eval Tests")
 			{"(5 + 10 * 2 + 15 / 3) * 2 + -10", 50}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			INFO(test.first);
-			REQUIRE(TestEvalInteger(test.first, test.second));
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
 		}
 	}
 
@@ -139,10 +142,13 @@ TEST_CASE("Eval Tests")
 			{"(1 > 2) == false", true}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			INFO(test.first);
-			REQUIRE(TestEvalBoolean(test.first, test.second));
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalBoolean(eval, test.first, test.second));
+			}
 		}
 	}
 
@@ -158,10 +164,13 @@ TEST_CASE("Eval Tests")
 			{"!!5", true}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			INFO(test.first);
-			REQUIRE(TestEvalBoolean(test.first, test.second));
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalBoolean(eval, test.first, test.second));
+			}
 		}
 	}
 
@@ -179,10 +188,13 @@ TEST_CASE("Eval Tests")
 			{"if (1 < 2) { 10 } else { 20 }", 10}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			INFO(test.first);
-			REQUIRE(TestEvalInteger(test.first, test.second));
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
 		}
 	}
 
@@ -205,10 +217,13 @@ TEST_CASE("Eval Tests")
 			}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			INFO(test.first);
-			REQUIRE(TestEvalInteger(test.first, test.second));
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
 		}
 	}
 	SECTION("Test Error Obj")
@@ -233,13 +248,16 @@ TEST_CASE("Eval Tests")
 			{"foobar", "identifier not found: foobar"}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			auto result = EvalTest(test.first);
-			INFO(test.first);
-			REQUIRE(result->Type() == ObjectType::ERROR_OBJ);
-			auto errorObj = std::dynamic_pointer_cast<ErrorObj>(result);
-			REQUIRE(errorObj->Message == test.second);
+			for (auto& test : tests)
+			{
+				auto result = EvalTest(eval, test.first);
+				INFO(test.first);
+				REQUIRE(result->Type() == ObjectType::ERROR_OBJ);
+				auto errorObj = std::dynamic_pointer_cast<ErrorObj>(result);
+				REQUIRE(errorObj->Message == test.second);
+			}
 		}
 	}
 
@@ -253,22 +271,29 @@ TEST_CASE("Eval Tests")
 			{"let a = 5; let b = a; let c = a + b + 5; c;", 15}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			INFO(test.first);
-			REQUIRE(TestEvalInteger(test.first, test.second));
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
 		}
 	}
 
 	SECTION("Test Function Object")
 	{
 		auto input = "fn(x) { x + 2; };";
-		auto result = EvalTest(input);
-		REQUIRE(result->Type() == ObjectType::FUNCTION_OBJ);
-		auto func = dynamic_pointer_cast<FunctionObj>(result);
-		REQUIRE(func->Parameters.size() == 1);
-		REQUIRE(func->Parameters[0].get()->ToString() == "x");
-		REQUIRE(func->Body->ToString() == "{(x + 2)}");
+
+		for (auto& eval : evaluators)
+		{
+			auto result = EvalTest(eval, input);
+			REQUIRE(result->Type() == ObjectType::FUNCTION_OBJ);
+			auto func = dynamic_pointer_cast<FunctionObj>(result);
+			REQUIRE(func->Parameters.size() == 1);
+			REQUIRE(func->Parameters[0].get()->ToString() == "x");
+			REQUIRE(func->Body->ToString() == "{(x + 2)}");
+		}
 	}
 
 	SECTION("Test Function Eval")
@@ -285,10 +310,13 @@ TEST_CASE("Eval Tests")
 			{"fn(x) { x; }(5)", 5}
 		};
 
-		for (auto& test : tests)
+		for (auto& eval : evaluators)
 		{
-			INFO(test.first);
-			REQUIRE(TestEvalInteger(test.first, test.second));
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
 		}
 	}
 }

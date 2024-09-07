@@ -29,8 +29,8 @@ void Repl::Start()
 			continue;
 		}
 
-		Evaluator eval;
-		auto result = eval.Eval(program, env);
+		std::shared_ptr<Evaluator> eval = std::make_shared<StackEvaluator>();
+		auto result = eval->Eval(program, env);
 
 		if (result == nullptr)
 		{
