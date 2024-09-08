@@ -1,10 +1,10 @@
 #include "Evaluator.h"
 #include <stack>
 
-std::shared_ptr<IObject> Evaluator::Eval(Program& program, std::shared_ptr<Environment>& env)  const
+std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<Environment>& env)  const
 {
 	std::shared_ptr<IObject> result = nullptr;
-	for (const auto& stmt : program.Statements)
+	for (const auto& stmt : program->Statements)
 	{
 		result = Eval(stmt, env);
 		if (result == nullptr)
@@ -50,11 +50,11 @@ std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& op, const s
 
 	if (left->Type() == ObjectType::INTEGER_OBJ && right->Type() == ObjectType::INTEGER_OBJ)
 	{
-		return EvalIntegerInfixExpression(op, std::dynamic_pointer_cast<IntegerObj>(left), std::dynamic_pointer_cast<IntegerObj>(right));
+		return EvalIntegerInfixExpression(op, dynamic_cast<IntegerObj*>(left.get()), dynamic_cast<IntegerObj*>(right.get()));
 	}
 	else if (left->Type() == ObjectType::BOOLEAN_OBJ && right->Type() == ObjectType::BOOLEAN_OBJ)
 	{
-		return EvalBooleanInfixExpression(op, std::dynamic_pointer_cast<BooleanObj>(left), std::dynamic_pointer_cast<BooleanObj>(right));
+		return EvalBooleanInfixExpression(op, dynamic_cast<BooleanObj*>(left.get()), dynamic_cast<BooleanObj*>(right.get()));
 	}
 	else
 	{
@@ -81,14 +81,14 @@ std::shared_ptr<IObject> Evaluator::EvalAsBoolean(const Token& context, const st
 
 	if (obj->Type() == ObjectType::INTEGER_OBJ)
 	{
-		auto value = std::dynamic_pointer_cast<IntegerObj>(obj)->Value;
+		auto value = dynamic_cast<IntegerObj*>(obj.get())->Value;
 		return value == 0 ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
 	}
 
 	return MakeError(std::format("illegal expression, type {} can not be evaluated as boolean: {}", obj->Type().Name, obj->Inspect()), context);
 }
 
-std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& op, const std::shared_ptr<IntegerObj>& left, const std::shared_ptr<IntegerObj>& right) const
+std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& op, const IntegerObj* const left, const const IntegerObj* const right) const
 {
 	if (op.Type == TokenType::TOKEN_PLUS)
 	{
@@ -128,7 +128,7 @@ std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& op, 
 	}
 }
 
-std::shared_ptr<IObject> Evaluator::EvalBooleanInfixExpression(const Token& op, const std::shared_ptr<BooleanObj>& left, const std::shared_ptr<BooleanObj>& right) const
+std::shared_ptr<IObject> Evaluator::EvalBooleanInfixExpression(const Token& op, const BooleanObj* const left, const BooleanObj* const right) const
 {
 	if (op.Type == TokenType::TOKEN_EQ)
 	{
@@ -160,7 +160,7 @@ std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token
 	}
 	else if (right->Type() == ObjectType::INTEGER_OBJ)
 	{
-		auto value = std::dynamic_pointer_cast<IntegerObj>(right)->Value;
+		auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
 		if (value == 0)
 		{
 			return BooleanObj::TRUE_OBJ_REF;
@@ -183,7 +183,7 @@ std::shared_ptr<IObject> Evaluator::EvalMinusPrefixOperatorExpression(const Toke
 		return MakeError(std::format("unknown operator: {}{}", op.Literal, right->Type().Name), op);
 	}
 
-	auto value = std::dynamic_pointer_cast<IntegerObj>(right)->Value;
+	auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
 	return IntegerObj::New(-value);
 }
 
@@ -192,7 +192,7 @@ std::shared_ptr<IObject> Evaluator::MakeError(const std::string& message, const 
 	return ErrorObj::New(message, token);
 }
 
-std::shared_ptr<Environment> Evaluator::ExtendFunctionEnv(std::shared_ptr<FunctionObj> fn, std::vector<std::shared_ptr<IObject>>& args) const
+std::shared_ptr<Environment> Evaluator::ExtendFunctionEnv(const std::shared_ptr<FunctionObj>& fn, const std::vector<std::shared_ptr<IObject>>& args) const
 {
 	auto env = Environment::NewEnclosed(fn->Env);
 	for (size_t i = 0; i < fn->Parameters.size(); i++)
@@ -214,17 +214,17 @@ std::shared_ptr<IObject> Evaluator::UnwrapIfReturnObj(const std::shared_ptr<IObj
 {
 	if (input != nullptr && input->Type() == ObjectType::RETURN_OBJ)
 	{
-		return std::dynamic_pointer_cast<ReturnObj>(input)->Value;
+		return dynamic_cast<ReturnObj*>(input.get())->Value;
 	}
 	return input;
 }
 
-std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node, std::shared_ptr<Environment>& env) const
+std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env) const
 {
-	std::stack<std::tuple<std::shared_ptr<INode>, int32_t, std::shared_ptr<Environment>>> stack;
+	std::stack<std::tuple<const INode*, int32_t, std::shared_ptr<Environment>>> stack;
 	std::stack<std::shared_ptr<IObject>> results;
 
-	stack.push({ node, 0, nullptr });
+	stack.push({ node.get(), 0, nullptr});
 
 	std::shared_ptr<Environment> useEnv = env;
 
@@ -253,38 +253,38 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		{
 		case NodeType::Program:
 		{
-			auto program = std::dynamic_pointer_cast<Program>(currentNode);
+			auto program = dynamic_cast<const Program*>(currentNode);
 			for (auto it = program->Statements.rbegin(); it != program->Statements.rend(); ++it)
 			{
-				stack.push({ *it, 0, useEnv });
+				stack.push({ (*it).get(), 0, useEnv});
 			}
 			break;
 		}
 		case NodeType::ExpressionStatement:
 		{
-			auto expression = std::dynamic_pointer_cast<ExpressionStatement>(currentNode);
-			stack.push({ expression->Expression, 0, useEnv });
+			auto expression = dynamic_cast<const ExpressionStatement*>(currentNode);
+			stack.push({ expression->Expression.get(), 0, useEnv});
 			break;
 		}
 		case NodeType::IntegerLiteral:
 		{
-			auto integer = std::dynamic_pointer_cast<IntegerLiteral>(currentNode);
+			auto integer = dynamic_cast<const IntegerLiteral*>(currentNode);
 			results.push(IntegerObj::New(integer->Value));
 			break;
 		}
 		case NodeType::BooleanLiteral:
 		{
-			auto boolean = std::dynamic_pointer_cast<BooleanLiteral>(currentNode);
+			auto boolean = dynamic_cast<const BooleanLiteral*>(currentNode);
 			results.push(boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF);
 			break;
 		}
 		case NodeType::PrefixExpression:
 		{
-			auto prefix = std::dynamic_pointer_cast<PrefixExpression>(currentNode);
+			auto prefix = dynamic_cast<const PrefixExpression*>(currentNode);
 			if (signal == 0)
 			{
-				stack.push({ prefix, 1, useEnv });
-				stack.push({ prefix->Right, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ prefix->Right.get(), 0, useEnv});
 			}
 			else
 			{
@@ -294,13 +294,13 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				//unwrap any return objects
 				lastResult = UnwrapIfReturnObj(lastResult);
 
-				results.push(EvalPrefixExpression(prefix->Token, lastResult));
+				results.push(EvalPrefixExpression(prefix->BaseToken, lastResult));
 			}
 			break;
 		}
 		case NodeType::BlockStatement:
 		{
-			auto block = std::dynamic_pointer_cast<BlockStatement>(currentNode);
+			auto block = dynamic_cast<const BlockStatement*>(currentNode);
 
 			//check the action for return/error
 			if (!results.empty() && (results.top()->Type() == ObjectType::ERROR_OBJ || results.top()->Type() == ObjectType::RETURN_OBJ))
@@ -311,20 +311,20 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 			if (signal < block->Statements.size())
 			{
 				//get the statement for the current signal
-				auto stmt = block->Statements[signal];
+				auto& stmt = block->Statements[signal];
 
-				stack.push({ block, signal + 1, useEnv });
-				stack.push({ stmt, 0, useEnv });
+				stack.push({ currentNode, signal + 1, useEnv });
+				stack.push({ stmt.get(), 0, useEnv });
 			}
 			break;
 		}
 		case NodeType::IfExpression:
 		{
-			auto ifex = std::dynamic_pointer_cast<IfExpression>(currentNode);
+			auto ifex = dynamic_cast<const IfExpression*>(currentNode);
 			if (signal == 0)
 			{
-				stack.push({ ifex,  1, useEnv });
-				stack.push({ ifex->Condition, 0, useEnv });
+				stack.push({ currentNode,  1, useEnv });
+				stack.push({ ifex->Condition.get(), 0, useEnv });
 			}
 			else
 			{
@@ -334,7 +334,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				//unwrap any return objects
 				lastResult = UnwrapIfReturnObj(lastResult);
 
-				auto evalBool = EvalAsBoolean(ifex->Token, lastResult);
+				auto evalBool = EvalAsBoolean(ifex->BaseToken, lastResult);
 
 				if (evalBool->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -344,11 +344,11 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				if (evalBool == BooleanObj::TRUE_OBJ_REF)
 				{
-					stack.push({ ifex->Consequence, 0, useEnv });
+					stack.push({ ifex->Consequence.get(), 0, useEnv });
 				}
 				else if (ifex->Alternative != nullptr)
 				{
-					stack.push({ ifex->Alternative, 0, useEnv });
+					stack.push({ ifex->Alternative.get(), 0, useEnv });
 				}
 				else
 				{
@@ -359,22 +359,22 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		}
 		case NodeType::InfixExpression:
 		{
-			auto infix = std::dynamic_pointer_cast<InfixExpression>(currentNode);
+			auto infix = dynamic_cast<const InfixExpression*>(currentNode);
 			if (signal == 0)
 			{
-				stack.push({ infix, 1, useEnv });
-				stack.push({ infix->Left, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ infix->Left.get(), 0, useEnv });
 			}
 			else if (signal == 1)
 			{
-				stack.push({ infix, 2, useEnv });
-				stack.push({ infix->Right, 0, useEnv });
+				stack.push({ currentNode, 2, useEnv });
+				stack.push({ infix->Right.get(), 0, useEnv });
 			}
 			else
 			{
 				if (results.size() < 2)
 				{
-					results.push(MakeError("infix expression requires two operands", infix->Token));
+					results.push(MakeError("infix expression requires two operands", infix->BaseToken));
 					break;
 				}
 
@@ -388,18 +388,18 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				left = UnwrapIfReturnObj(left);
 
-				auto result = EvalInfixExpression(infix->Token, left, right);
+				auto result = EvalInfixExpression(infix->BaseToken, left, right);
 				results.push(result);
 			}
 			break;
 		}
 		case NodeType::ReturnStatement:
 		{
-			auto ret = std::dynamic_pointer_cast<ReturnStatement>(currentNode);
+			auto ret = dynamic_cast<const ReturnStatement*>(currentNode);
 			if (signal == 0)
 			{
-				stack.push({ ret, 1, useEnv });
-				stack.push({ ret->ReturnValue, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ ret->ReturnValue.get(), 0, useEnv });
 			}
 			else
 			{
@@ -411,11 +411,11 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		}
 		case NodeType::LetStatement:
 		{
-			auto let = std::dynamic_pointer_cast<LetStatement>(currentNode);
+			auto let = dynamic_cast<const LetStatement*>(currentNode);
 			if (signal == 0)
 			{
-				stack.push({ let, 1, useEnv });
-				stack.push({ let->Value, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ let->Value.get(), 0, useEnv });
 			}
 			else
 			{
@@ -430,7 +430,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		}
 		case NodeType::Identifier:
 		{
-			auto ident = std::dynamic_pointer_cast<Identifier>(currentNode);
+			auto ident = dynamic_cast<const Identifier*>(currentNode);
 			auto value = useEnv->Get(ident->Value);
 			if (value != nullptr)
 			{
@@ -438,41 +438,41 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 			}
 			else
 			{
-				results.push(MakeError(std::format("identifier not found: {}", ident->Value), ident->Token));
+				results.push(MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken));
 			}
 			break;
 		}
 		case NodeType::FunctionLiteral:
 		{
-			auto func = std::dynamic_pointer_cast<FunctionLiteral>(currentNode);
+			auto func = dynamic_cast<const FunctionLiteral*>(currentNode);
 			results.push(FunctionObj::New(func->Parameters, func->Body, useEnv));
 			break;
 		}
 		case NodeType::CallExpression:
 		{
-			auto call = std::dynamic_pointer_cast<CallExpression>(currentNode);
+			auto call = dynamic_cast<const CallExpression*>(currentNode);
 			if (signal == 0)
 			{
-				stack.push({ call, 1, useEnv });
-				stack.push({ call->Function, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ call->Function.get(), 0, useEnv });
 			}
 			else if (signal == 1)
 			{
-				auto lastResult = results.top();
+				auto& lastResult = results.top();
 
 				if (lastResult->Type() != ObjectType::FUNCTION_OBJ)
 				{
-					results.push(MakeError(std::format("literal not a function: {}", lastResult->Inspect()), call->Token));
+					results.push(MakeError(std::format("literal not a function: {}", lastResult->Inspect()), call->BaseToken));
 					break;
 				}
 				auto function = lastResult;
 
-				stack.push({ call, 2, useEnv });
+				stack.push({ currentNode, 2, useEnv });
 
 				// Evaluate arguments
 				for (auto it = call->Arguments.rbegin(); it != call->Arguments.rend(); ++it)
 				{
-					stack.push({ *it, 0, useEnv });
+					stack.push({ (*it).get(), 0, useEnv });
 				}
 			}
 			else
@@ -481,7 +481,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				if (results.size() < call->Arguments.size())
 				{
-					results.push(MakeError("not enough arguments", call->Token));
+					results.push(MakeError("not enough arguments", call->BaseToken));
 					break;
 				}
 
@@ -507,13 +507,13 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				auto fn = std::dynamic_pointer_cast<FunctionObj>(function);
 
 				auto extEnv = ExtendFunctionEnv(fn, evalArgs);
-				stack.push({ fn->Body, 0, extEnv });
+				stack.push({ fn->Body.get(), 0, extEnv });
 			}
 			break;
 		}
 		case NodeType::WhileExpression:
 		{
-			auto whileEx = std::dynamic_pointer_cast<WhileExpression>(currentNode);
+			auto whileEx = dynamic_cast<const WhileExpression*>(currentNode);
 			if (signal == 0)
 			{
 				//check the action for return/error
@@ -521,7 +521,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				{
 					if (results.top()->Type() == ObjectType::RETURN_OBJ)
 					{
-						auto ret = std::dynamic_pointer_cast<ReturnObj>(results.top());
+						auto ret = dynamic_no_copy_cast<ReturnObj>(results.top());
 						if (ret->Value == BreakObj::BREAK_OBJ_REF)
 						{
 							results.pop();
@@ -541,8 +541,8 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 						break;
 					}
 				}
-				stack.push({ whileEx, 1, useEnv });
-				stack.push({ whileEx->Condition, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ whileEx->Condition.get(), 0, useEnv });
 			}
 			else
 			{
@@ -551,7 +551,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				lastResult = UnwrapIfReturnObj(lastResult);
 
-				auto booleanObj = EvalAsBoolean(whileEx->Token, lastResult);
+				auto booleanObj = EvalAsBoolean(whileEx->BaseToken, lastResult);
 
 				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -561,25 +561,25 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				if (booleanObj == BooleanObj::TRUE_OBJ_REF)
 				{
-					stack.push({ whileEx, 0, useEnv });
-					stack.push({ whileEx->Action, 0, useEnv });
+					stack.push({ currentNode, 0, useEnv });
+					stack.push({ whileEx->Action.get(), 0, useEnv });
 				}
 			}
 			break;
 		}
 		case NodeType::ForExpression:
 		{
-			auto forEx = std::dynamic_pointer_cast<ForExpression>(currentNode);
+			auto forEx = dynamic_cast<const ForExpression*>(currentNode);
 			if (signal == 0)
 			{
-				stack.push({ forEx, 1, useEnv });
-				stack.push({ forEx->Init, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ forEx->Init.get(), 0, useEnv });
 			}
 			else if (signal == 1)
 			{
 				//condition
-				stack.push({ forEx, 2, useEnv });
-				stack.push({ forEx->Condition, 0, useEnv });
+				stack.push({ currentNode, 2, useEnv });
+				stack.push({ forEx->Condition.get(), 0, useEnv });
 			}
 			else if (signal == 2)
 			{
@@ -588,7 +588,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				lastResult = UnwrapIfReturnObj(lastResult);
 
-				auto booleanObj = EvalAsBoolean(forEx->Token, lastResult);
+				auto booleanObj = EvalAsBoolean(forEx->BaseToken, lastResult);
 
 				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -598,8 +598,8 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				if (booleanObj == BooleanObj::TRUE_OBJ_REF)
 				{
-					stack.push({ forEx, 3, useEnv });
-					stack.push({ forEx->Action, 0, useEnv });
+					stack.push({ currentNode, 3, useEnv });
+					stack.push({ forEx->Action.get(), 0, useEnv });
 				}
 			}
 			else if (signal == 3)
@@ -609,7 +609,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				{
 					if (results.top()->Type() == ObjectType::RETURN_OBJ)
 					{
-						auto ret = std::dynamic_pointer_cast<ReturnObj>(results.top());
+						auto ret = dynamic_no_copy_cast<ReturnObj>(results.top());
 						if (ret->Value == BreakObj::BREAK_OBJ_REF)
 						{
 							results.pop();
@@ -629,8 +629,8 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 						break;
 					}
 				}
-				stack.push({ forEx, 1, useEnv });
-				stack.push({ forEx->Post, 0, useEnv });
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ forEx->Post.get(), 0, useEnv });
 			}
 			break;
 		}
@@ -656,12 +656,11 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		return nullptr;
 	}
 
-	auto result = results.top();
-	return result;
+	return results.top();
 }
 
 
-std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& node, std::shared_ptr<Environment>& env) const
+std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env) const
 {
 	auto type = node->NType();
 	std::shared_ptr<IObject> result = nullptr;
@@ -675,25 +674,25 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		}
 		case NodeType::ExpressionStatement:
 		{
-			auto expression = std::dynamic_pointer_cast<ExpressionStatement>(node);
+			auto expression = dynamic_no_copy_cast<ExpressionStatement>(node);
 			result = Eval(expression->Expression, env);
 			break;
 		}
 		case NodeType::IntegerLiteral:
 		{
-			auto integer = std::dynamic_pointer_cast<IntegerLiteral>(node);
+			auto integer = dynamic_no_copy_cast<IntegerLiteral>(node);
 			result = IntegerObj::New(integer->Value);
 			break;
 		}
 		case NodeType::BooleanLiteral:
 		{
-			auto boolean = std::dynamic_pointer_cast<BooleanLiteral>(node);
+			auto boolean = dynamic_no_copy_cast<BooleanLiteral>(node);
 			result = boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 			break;
 		}
 		case NodeType::PrefixExpression:
 		{
-			auto prefix = std::dynamic_pointer_cast<PrefixExpression>(node);
+			auto prefix = dynamic_no_copy_cast<PrefixExpression>(node);
 			auto right = Eval(prefix->Right, env);
 
 			right = UnwrapIfReturnObj(right);
@@ -702,12 +701,12 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			{
 				return right;
 			}
-			result = EvalPrefixExpression(prefix->Token, right);
+			result = EvalPrefixExpression(prefix->BaseToken, right);
 			break;
 		}
 		case NodeType::BlockStatement:
 		{
-			auto block = std::dynamic_pointer_cast<BlockStatement>(node);
+			auto block = dynamic_no_copy_cast<BlockStatement>(node);
 			for (const auto& stmt : block->Statements)
 			{
 				result = Eval(stmt, env);
@@ -725,7 +724,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		}
 		case NodeType::IfExpression:
 		{
-			auto ifex = std::dynamic_pointer_cast<IfExpression>(node);
+			auto ifex = dynamic_no_copy_cast<IfExpression>(node);
 
 			auto condition = Eval(ifex->Condition, env);
 
@@ -736,7 +735,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				return condition;
 			}
 
-			auto booleanObj = EvalAsBoolean(ifex->Token, condition);
+			auto booleanObj = EvalAsBoolean(ifex->BaseToken, condition);
 
 			if (booleanObj->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -759,7 +758,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		}
 		case NodeType::InfixExpression:
 		{
-			auto infix = std::dynamic_pointer_cast<InfixExpression>(node);
+			auto infix = dynamic_no_copy_cast<InfixExpression>(node);
 			auto left = Eval(infix->Left, env);
 
 			left = UnwrapIfReturnObj(left);
@@ -776,19 +775,19 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			{
 				return right;
 			}
-			result = EvalInfixExpression(infix->Token, left, right);
+			result = EvalInfixExpression(infix->BaseToken, left, right);
 			break;
 		}
 		case NodeType::ReturnStatement:
 		{
-			auto ret = std::dynamic_pointer_cast<ReturnStatement>(node);
+			auto ret = dynamic_no_copy_cast<ReturnStatement>(node);
 			auto value = Eval(ret->ReturnValue, env);
 			result = ReturnObj::New(value);
 			break;
 		}
 		case NodeType::LetStatement:
 		{
-			auto let = std::dynamic_pointer_cast<LetStatement>(node);
+			auto let = dynamic_no_copy_cast<LetStatement>(node);
 			auto value = Eval(let->Value, env);
 
 			value = UnwrapIfReturnObj(value);
@@ -802,7 +801,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		}
 		case NodeType::Identifier:
 		{
-			auto ident = std::dynamic_pointer_cast<Identifier>(node);
+			auto ident = dynamic_no_copy_cast<Identifier>(node);
 			auto value = env->Get(ident->Value);
 			if (value != nullptr)
 			{
@@ -810,19 +809,19 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			}
 			else
 			{
-				result = MakeError(std::format("identifier not found: {}", ident->Value), ident->Token);
+				result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
 			}
 			break;
 		}
 		case NodeType::FunctionLiteral:
 		{
-			auto func = std::dynamic_pointer_cast<FunctionLiteral>(node);
+			auto func = dynamic_no_copy_cast<FunctionLiteral>(node);
 			result = FunctionObj::New(func->Parameters, func->Body, env);
 			break;
 		}
 		case NodeType::CallExpression:
 		{
-			auto call = std::dynamic_pointer_cast<CallExpression>(node);
+			auto call = dynamic_no_copy_cast<CallExpression>(node);
 			auto function = Eval(call->Function, env);
 			if (function->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -831,7 +830,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 
 			if (function->Type() != ObjectType::FUNCTION_OBJ)
 			{
-				return MakeError(std::format("literal not a function: {}", function->Inspect()), call->Token);
+				return MakeError(std::format("literal not a function: {}", function->Inspect()), call->BaseToken);
 			}
 
 			auto evalArgs = EvalExpressions(call->Arguments, env);
@@ -846,7 +845,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		}
 		case NodeType::WhileExpression:
 		{
-			auto whileEx = std::dynamic_pointer_cast<WhileExpression>(node);
+			auto whileEx = dynamic_no_copy_cast<WhileExpression>(node);
 			auto condition = Eval(whileEx->Condition, env);
 
 			condition = UnwrapIfReturnObj(condition);
@@ -856,7 +855,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				return condition;
 			}
 
-			auto booleanObj = EvalAsBoolean(whileEx->Token, condition);
+			auto booleanObj = EvalAsBoolean(whileEx->BaseToken, condition);
 
 			if (booleanObj->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -870,7 +869,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				{
 					if (evaluated->Type() == ObjectType::RETURN_OBJ)
 					{
-						auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
+						auto ret = dynamic_no_copy_cast<ReturnObj>(evaluated);
 						if (ret->Value == BreakObj::BREAK_OBJ_REF)
 						{
 							break;
@@ -896,7 +895,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 					return condition;
 				}
 
-				booleanObj = EvalAsBoolean(whileEx->Token, condition);
+				booleanObj = EvalAsBoolean(whileEx->BaseToken, condition);
 
 				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -908,7 +907,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		}
 		case NodeType::ForExpression:
 		{
-			auto forEx = std::dynamic_pointer_cast<ForExpression>(node);
+			auto forEx = dynamic_no_copy_cast<ForExpression>(node);
 
 			auto init = Eval(forEx->Init, env);
 
@@ -921,7 +920,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				return condition;
 			}
 
-			auto booleanObj = EvalAsBoolean(forEx->Token, condition);
+			auto booleanObj = EvalAsBoolean(forEx->BaseToken, condition);
 
 			if (booleanObj->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -935,7 +934,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				{
 					if (evaluated->Type() == ObjectType::RETURN_OBJ)
 					{
-						auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
+						auto ret = dynamic_no_copy_cast<ReturnObj>(evaluated);
 						if (ret->Value == BreakObj::BREAK_OBJ_REF)
 						{
 							break;
@@ -964,7 +963,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 					return condition;
 				}
 
-				booleanObj = EvalAsBoolean(forEx->Token, condition);
+				booleanObj = EvalAsBoolean(forEx->BaseToken, condition);
 
 				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -992,7 +991,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 	return result;
 }
 
-std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(std::vector<std::shared_ptr<IExpression>>& expressions, std::shared_ptr<Environment>& env) const
+std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const std::vector<std::shared_ptr<IExpression>>& expressions, const std::shared_ptr<Environment>& env) const
 {
 	std::vector<std::shared_ptr<IObject>> result;
 	for (const auto& expr : expressions)
@@ -1016,7 +1015,7 @@ std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(std::v
 	return result;
 }
 
-std::shared_ptr<IObject> RecursiveEvaluator::ApplyFunction(std::shared_ptr<FunctionObj> fn, std::vector<std::shared_ptr<IObject>>& args) const
+std::shared_ptr<IObject> RecursiveEvaluator::ApplyFunction(const std::shared_ptr<FunctionObj>& fn, const std::vector<std::shared_ptr<IObject>>& args) const
 {
 	auto extEnv = ExtendFunctionEnv(fn, args);
 	auto evaluated = Eval(fn->Body, extEnv);

@@ -42,16 +42,16 @@ void Parser::NextToken()
 	_nextToken = _lexer.NextToken();
 }
 
-Program Parser::ParseProgram()
+std::shared_ptr<Program> Parser::ParseProgram()
 {
-	Program program;
+	auto program = Program::New();
 
 	while (_currentToken.Type != TokenType::TOKEN_EOF)
 	{
 		auto pStatement = ParseStatement();
 		if (pStatement != nullptr)
 		{
-			program.Statements.push_back(std::move(pStatement));
+			program->Statements.push_back(std::move(pStatement));
 		}
 		NextToken();
 	}
@@ -530,7 +530,7 @@ std::shared_ptr<IStatement> Parser::ParseExpressionStatement()
 }
 
 
-bool Parser::ExpectPeek(const TokenType expectedType)
+bool Parser::ExpectPeek(const TokenType& expectedType)
 {
 	if (_nextToken.Type == expectedType)
 	{
@@ -544,12 +544,12 @@ bool Parser::ExpectPeek(const TokenType expectedType)
 	}
 }
 
-bool Parser::PeekTokenIs(const TokenType expectedType) const
+bool Parser::PeekTokenIs(const TokenType& expectedType) const
 {
 	return _nextToken.Type == expectedType;
 }
 
-bool Parser::CurrentTokenIs(const TokenType expectedType) const
+bool Parser::CurrentTokenIs(const TokenType& expectedType) const
 {
 	return _currentToken.Type == expectedType;
 }
@@ -564,18 +564,18 @@ void Parser::AddError(const std::string& error)
 	_errors.push_back(error);
 }
 
-void Parser::PeekError(const TokenType expectedType)
+void Parser::PeekError(const TokenType& expectedType)
 {
 	std::string error = "expected next token to be " + expectedType.Name + ", got " + _nextToken.Type.Name + " instead";
 	AddError(error);
 }
 
-void Parser::RegisterInfix(TokenType type, InfixParseFn fn)
+void Parser::RegisterInfix(const TokenType& type, InfixParseFn fn)
 {
 	_infixDispatch[type] = fn;
 }
 
-void Parser::RegisterPrefix(TokenType type, PrefixParseFn fn)
+void Parser::RegisterPrefix(const TokenType& type, PrefixParseFn fn)
 {
 	_prefixDispatch[type] = fn;
 }

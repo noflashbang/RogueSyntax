@@ -167,8 +167,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		REQUIRE(TestIdentifier(expressionStatement->Expression.get(), "foobar"));
@@ -184,8 +184,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 		auto integer = dynamic_cast<IntegerLiteral*>(expressionStatement->Expression.get());
 
@@ -202,8 +202,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		REQUIRE(TestBooleanLiteral(expressionStatement->Expression.get(), true));
@@ -219,8 +219,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		auto prefix = dynamic_cast<PrefixExpression*>(expressionStatement->Expression.get());
@@ -236,8 +236,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		REQUIRE(TestPrefixExpression(expressionStatement->Expression.get(), "-", "15"));
@@ -265,8 +265,8 @@ TEST_CASE("Parser Tests")
 			auto errors = parser.Errors();
 			REQUIRE(errors.size() == 0);
 
-			REQUIRE(program.Statements.size() == 1);
-			auto assignStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+			REQUIRE(program->Statements.size() == 1);
+			auto assignStatement = dynamic_cast<LetStatement*>(program->Statements[0].get());
 			REQUIRE(assignStatement != nullptr);
 			REQUIRE(assignStatement->ToString() == test.expected);
 		}
@@ -282,8 +282,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		REQUIRE(TestInfixExpression(expressionStatement->Expression.get(), "5", "+", "5"));
@@ -339,7 +339,7 @@ TEST_CASE("Parser Tests")
 			}
 			UNSCOPED_INFO(test.input);
 			REQUIRE(errors.size() == 0);
-			REQUIRE(program.ToString() == test.expected);
+			REQUIRE(program->ToString() == test.expected);
 		}
 	}
 
@@ -376,8 +376,8 @@ TEST_CASE("Parser Tests")
 
 			REQUIRE(errors.size() == 0);
 
-			REQUIRE(program.Statements.size() == 1);
-			auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+			REQUIRE(program->Statements.size() == 1);
+			auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 			REQUIRE(expressionStatement != nullptr);
 
 			REQUIRE(TestInfixExpression(expressionStatement->Expression.get(), test.left, test.op, test.right));
@@ -411,8 +411,8 @@ TEST_CASE("Parser Tests")
 
 			REQUIRE(errors.size() == 0);
 
-			REQUIRE(program.Statements.size() == 1);
-			auto letStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+			REQUIRE(program->Statements.size() == 1);
+			auto letStatement = dynamic_cast<LetStatement*>(program->Statements[0].get());
 			REQUIRE(letStatement != nullptr);
 
 			REQUIRE(letStatement->TokenLiteral() == "let");
@@ -455,8 +455,8 @@ TEST_CASE("Parser Tests")
 			auto errors = parser.Errors();
 			REQUIRE(errors.size() == 0);
 
-			REQUIRE(program.Statements.size() == 1);
-			auto returnStatement = dynamic_cast<ReturnStatement*>(program.Statements[0].get());
+			REQUIRE(program->Statements.size() == 1);
+			auto returnStatement = dynamic_cast<ReturnStatement*>(program->Statements[0].get());
 			REQUIRE(returnStatement != nullptr);
 
 			REQUIRE(returnStatement->TokenLiteral() == "return");
@@ -474,9 +474,9 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
+		REQUIRE(program->Statements.size() == 1);
 
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		auto ifStatement = dynamic_cast<IfExpression*>(expressionStatement->Expression.get());		
@@ -503,8 +503,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		auto ifStatement = dynamic_cast<IfExpression*>(expressionStatement->Expression.get());
@@ -541,8 +541,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		auto function = dynamic_cast<FunctionLiteral*>(expressionStatement->Expression.get());
@@ -579,8 +579,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		auto call = dynamic_cast<CallExpression*>(expressionStatement->Expression.get());
@@ -604,8 +604,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(expressionStatement != nullptr);
 
 		auto whileStatement = dynamic_cast<WhileExpression*>(expressionStatement->Expression.get());
@@ -632,8 +632,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto breakStatement = dynamic_cast<BreakStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto breakStatement = dynamic_cast<BreakStatement*>(program->Statements[0].get());
 		REQUIRE(breakStatement != nullptr);
 		REQUIRE(breakStatement->TokenLiteral() == "break");
 	}
@@ -648,8 +648,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto continueStatement = dynamic_cast<ContinueStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto continueStatement = dynamic_cast<ContinueStatement*>(program->Statements[0].get());
 		REQUIRE(continueStatement != nullptr);
 		REQUIRE(continueStatement->TokenLiteral() == "continue");
 	}
@@ -664,8 +664,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto assignStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto assignStatement = dynamic_cast<LetStatement*>(program->Statements[0].get());
 		REQUIRE(assignStatement != nullptr);
 		REQUIRE(assignStatement->Name->Value == "x");
 		REQUIRE(assignStatement->Value->ToString() == "5");
@@ -681,8 +681,8 @@ TEST_CASE("Parser Tests")
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
-		REQUIRE(program.Statements.size() == 1);
-		auto assignStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+		REQUIRE(program->Statements.size() == 1);
+		auto assignStatement = dynamic_cast<LetStatement*>(program->Statements[0].get());
 		REQUIRE(assignStatement != nullptr);
 		REQUIRE(assignStatement->Name->Value == "x");
 		REQUIRE(assignStatement->Value->ToString() == "fn(x){return (x * x);}");
@@ -715,8 +715,8 @@ TEST_CASE("Parser Tests")
 			auto errors = parser.Errors();
 			REQUIRE(errors.size() == 0);
 
-			REQUIRE(program.Statements.size() == 1);
-			auto forStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+			REQUIRE(program->Statements.size() == 1);
+			auto forStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 			REQUIRE(forStatement != nullptr);
 			REQUIRE(forStatement->TokenLiteral() == "for");
 

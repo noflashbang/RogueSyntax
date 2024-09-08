@@ -75,6 +75,7 @@ class NullObj : public IObject
 {
 public:
 	NullObj() { _dummy = 0; }
+	virtual ~NullObj() = default;
 
 	ObjectType Type() const override
 	{
@@ -97,6 +98,7 @@ class BreakObj : public IObject
 {
 public:
 	BreakObj() { _dummy = 0; }
+	virtual ~BreakObj() = default;
 
 	ObjectType Type() const override
 	{
@@ -119,7 +121,7 @@ class ContinueObj : public IObject
 {
 public:
 	ContinueObj() { _dummy = 0; }
-
+	virtual ~ContinueObj() = default;
 	ObjectType Type() const override
 	{
 		return ObjectType::CONTINUE_OBJ;
@@ -140,7 +142,8 @@ private:
 class IntegerObj : public IObject
 {
 public:
-	IntegerObj(int value) : Value(value) {}
+	IntegerObj(int value) : Value(value) {};
+	virtual ~IntegerObj() = default;
 
 	ObjectType Type() const override
 	{
@@ -161,6 +164,7 @@ class BooleanObj : public IObject
 {
 public:
 	BooleanObj(bool value) : Value(value) {}
+	virtual ~BooleanObj() = default;
 
 	ObjectType Type() const override
 	{
@@ -186,6 +190,7 @@ class ReturnObj : public IObject
 {
 public:
 	ReturnObj(const std::shared_ptr<IObject>& value) : Value(value) {}
+	virtual ~ReturnObj() = default;
 
 	ObjectType Type() const override
 	{
@@ -206,6 +211,7 @@ class ErrorObj : public IObject
 {
 public:
 	ErrorObj(const std::string& message, const Token& token) : Message(message), Token(token) {}
+	virtual ~ErrorObj() = default;
 
 	ObjectType Type() const override
 	{
@@ -227,6 +233,7 @@ class FunctionObj : public IObject
 {
 public:
 	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env) : Parameters(parameters), Body(body), Env(env) {}
+	virtual ~FunctionObj() = default;
 
 	ObjectType Type() const override
 	{

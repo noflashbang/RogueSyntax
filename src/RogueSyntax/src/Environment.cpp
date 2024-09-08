@@ -14,7 +14,7 @@ void Environment::Set(const std::string& name, const std::shared_ptr<IObject>& v
 	Store[name] = value;
 }
 
-std::shared_ptr<IObject> Environment::Get(const std::string& name)
+std::shared_ptr<IObject> Environment::Get(const std::string& name) const
 {
 	auto it = Store.find(name);
 	if (it != Store.end())

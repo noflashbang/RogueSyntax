@@ -41,7 +41,7 @@ public:
 	Parser(Lexer lexer);
 
 	void NextToken();
-	Program ParseProgram();
+	std::shared_ptr<Program> ParseProgram();
 	std::shared_ptr<IStatement> ParseStatement();
 
 	std::shared_ptr<IExpression> ParseExpression(const Precedence precedence);
@@ -69,19 +69,19 @@ public:
 	std::shared_ptr<IStatement> ParseExpressionStatement();
 
 
-	bool ExpectPeek(const TokenType expectedType);
-	bool CurrentTokenIs(const TokenType type) const;
-	bool PeekTokenIs(const TokenType type) const;
+	bool ExpectPeek(const TokenType& expectedType);
+	bool CurrentTokenIs(const TokenType& type) const;
+	bool PeekTokenIs(const TokenType& type) const;
 
 	std::vector<std::string> Errors() const;
 	void AddError(const std::string& error);
 
-	void PeekError(const TokenType type);
+	void PeekError(const TokenType& type);
 
 private:
 
-	void RegisterPrefix(TokenType type, PrefixParseFn fn);
-	void RegisterInfix(TokenType type, InfixParseFn fn);
+	void RegisterPrefix(const TokenType& type, PrefixParseFn fn);
+	void RegisterInfix(const TokenType& type, InfixParseFn fn);
 
 	Precedence PeekPrecedence() const;
 	Precedence CurrentPrecedence() const;
@@ -91,8 +91,6 @@ private:
 	Token _nextToken;
 
 	std::vector<std::string> _errors;
-	
-
 	std::map<TokenType, PrefixParseFn> _prefixDispatch;
 	std::map<TokenType, InfixParseFn> _infixDispatch;
 };
