@@ -19,7 +19,11 @@ enum class NodeType
 	BlockStatement,
 	IfExpression,
 	FunctionLiteral,
-	CallExpression
+	CallExpression,
+	WhileExpression,
+	BreakStatement,
+	ContinueStatement,
+	ForExpression
 };
 
 class INode
@@ -241,4 +245,66 @@ struct CallExpression : IExpression
 	Token Token;
 	std::shared_ptr<IExpression> Function;
 	std::vector<std::shared_ptr<IExpression>> Arguments;
+};
+
+struct WhileExpression : IExpression
+{
+	WhileExpression(const Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> action);
+	virtual ~WhileExpression() = default;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<WhileExpression> New(const Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> action);
+
+	Token Token;
+	std::shared_ptr<IExpression> Condition;
+	std::shared_ptr<IStatement> Action;
+};
+
+struct BreakStatement : IStatement
+{
+	BreakStatement(const Token token);
+	virtual ~BreakStatement() = default;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<BreakStatement> New(const Token token);
+
+	Token Token;
+};
+
+struct ContinueStatement : IStatement
+{
+	ContinueStatement(const Token token);
+	virtual ~ContinueStatement() = default;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<ContinueStatement> New(const Token token);
+
+	Token Token;
+};
+
+struct ForExpression : IExpression
+{
+	ForExpression(const Token token, std::shared_ptr<IStatement> init, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> post, std::shared_ptr<IStatement> action);
+	virtual ~ForExpression() = default;
+	std::string TokenLiteral() const override;
+	std::string ToString() const override;
+	TokenType Type() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<ForExpression> New(const Token token, std::shared_ptr<IStatement> init, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> post, std::shared_ptr<IStatement> action);
+
+	Token Token;
+	std::shared_ptr<IStatement> Init;
+	std::shared_ptr<IExpression> Condition;
+	std::shared_ptr<IStatement> Post;
+	std::shared_ptr<IStatement> Action;
 };

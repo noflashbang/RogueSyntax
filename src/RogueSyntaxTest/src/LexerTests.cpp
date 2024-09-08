@@ -264,7 +264,7 @@ let result = add(five, ten);
 
 	SECTION("Test NextToken All")
 	{
-		const std::string testCase = "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^";
+		const std::string testCase = "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^ while break continue";
 
 		Lexer lexer(testCase);
 
@@ -377,6 +377,18 @@ let result = add(five, ten);
 		nt = lexer.NextToken();
 		REQUIRE(nt.Type == TokenType::TOKEN_ILLEGAL);
 		REQUIRE(nt.Literal == "^");
+
+		nt = lexer.NextToken();
+		REQUIRE(nt.Type == TokenType::TOKEN_WHILE);
+		REQUIRE(nt.Literal == "while");
+
+		nt = lexer.NextToken();
+		REQUIRE(nt.Type == TokenType::TOKEN_BREAK);
+		REQUIRE(nt.Literal == "break");
+
+		nt = lexer.NextToken();
+		REQUIRE(nt.Type == TokenType::TOKEN_CONTINUE);
+		REQUIRE(nt.Literal == "continue");
 
 		nt = lexer.NextToken();
 		REQUIRE(nt.Type == TokenType::TOKEN_EOF);

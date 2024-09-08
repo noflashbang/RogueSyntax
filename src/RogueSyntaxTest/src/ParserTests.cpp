@@ -243,6 +243,35 @@ TEST_CASE("Parser Tests")
 		REQUIRE(TestPrefixExpression(expressionStatement->Expression.get(), "-", "15"));
 	}
 
+	SECTION("Test postfix statements")
+	{
+		struct Test
+		{
+			std::string input;
+			std::string expected;
+		};
+
+		std::vector<Test> tests = {
+			{"x++;", "let x = (x + 1);"},
+			{"t--;", "let t = (t - 1);"},
+		};
+
+		for (auto& test : tests)
+		{
+			Lexer lexer(test.input);
+			Parser parser(lexer);
+
+			auto program = parser.ParseProgram();
+			auto errors = parser.Errors();
+			REQUIRE(errors.size() == 0);
+
+			REQUIRE(program.Statements.size() == 1);
+			auto assignStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+			REQUIRE(assignStatement != nullptr);
+			REQUIRE(assignStatement->ToString() == test.expected);
+		}
+	}
+
 	SECTION("Test Infix Expression")
 	{
 		std::string input = "5 + 5;";
@@ -564,4 +593,136 @@ TEST_CASE("Parser Tests")
 		REQUIRE(TestInfixExpression(call->Arguments[1].get(), "2", "*", "3"));
 		REQUIRE(TestInfixExpression(call->Arguments[2].get(), "4", "+", "5"));
 	}
+
+	SECTION("Test While expression")
+	{
+		std::string input = "while (x < y) { let y = y + 1; }";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto expressionStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+		REQUIRE(expressionStatement != nullptr);
+
+		auto whileStatement = dynamic_cast<WhileExpression*>(expressionStatement->Expression.get());
+		REQUIRE(whileStatement != nullptr);
+		REQUIRE(whileStatement->TokenLiteral() == "while");
+
+		REQUIRE(TestInfixExpression(whileStatement->Condition.get(), "x", "<", "y"));
+
+		auto blockStatement = dynamic_cast<BlockStatement*>(whileStatement->Action.get());
+		REQUIRE(blockStatement != nullptr);
+
+		auto statement = dynamic_cast<LetStatement*>(blockStatement->Statements[0].get());
+		REQUIRE(statement != nullptr);
+		REQUIRE(statement->Value.get()->ToString() == "(y + 1)");
+	}
+
+	SECTION("Test Break Statement")
+	{
+		std::string input = "break;";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto breakStatement = dynamic_cast<BreakStatement*>(program.Statements[0].get());
+		REQUIRE(breakStatement != nullptr);
+		REQUIRE(breakStatement->TokenLiteral() == "break");
+	}
+
+	SECTION("Test Continue Statement")
+	{
+		std::string input = "continue;";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto continueStatement = dynamic_cast<ContinueStatement*>(program.Statements[0].get());
+		REQUIRE(continueStatement != nullptr);
+		REQUIRE(continueStatement->TokenLiteral() == "continue");
+	}
+
+	SECTION("Test assignemnt")
+	{
+		std::string input = "x = 5;";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto assignStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+		REQUIRE(assignStatement != nullptr);
+		REQUIRE(assignStatement->Name->Value == "x");
+		REQUIRE(assignStatement->Value->ToString() == "5");
+	}
+
+	SECTION("Test function assignemnt")
+	{
+		std::string input = "x = fn(x){ return x*x;};";
+		Lexer lexer(input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		REQUIRE(errors.size() == 0);
+
+		REQUIRE(program.Statements.size() == 1);
+		auto assignStatement = dynamic_cast<LetStatement*>(program.Statements[0].get());
+		REQUIRE(assignStatement != nullptr);
+		REQUIRE(assignStatement->Name->Value == "x");
+		REQUIRE(assignStatement->Value->ToString() == "fn(x){return (x * x);}");
+	}
+
+	SECTION("Test for parsing")
+	{
+		struct Test
+		{
+			std::string input;
+			std::string expectedValue;
+		};
+
+		std::vector<Test> tests = {
+			{"for(x=6; x<60;x++){ x; }"                       , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
+			{"for(let x=6; x<60;x = x+1){ x; }"               , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
+			{"for(x=6; x!=60;t(x)){ x; }"                     , "for (let x = 6; (x != 60); t(x)) {x}"},
+			{"for (let x = 6; (x < 60); let x = (x + 1)) {x}" , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
+			{"for (let x = 6; (x < 60); let x = (x + 1)) {x}" , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
+			{"for (let x = 6; (x != 60); t(x)) {x}"            , "for (let x = 6; (x != 60); t(x)) {x}"},
+
+		};
+
+		for (auto& test : tests)
+		{
+			Lexer lexer(test.input);
+			Parser parser(lexer);
+
+			auto program = parser.ParseProgram();
+			auto errors = parser.Errors();
+			REQUIRE(errors.size() == 0);
+
+			REQUIRE(program.Statements.size() == 1);
+			auto forStatement = dynamic_cast<ExpressionStatement*>(program.Statements[0].get());
+			REQUIRE(forStatement != nullptr);
+			REQUIRE(forStatement->TokenLiteral() == "for");
+
+			REQUIRE(forStatement->ToString() == test.expectedValue);
+		}
+
+	}
+		
 }

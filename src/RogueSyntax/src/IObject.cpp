@@ -8,6 +8,9 @@ const ObjectType ObjectType::RETURN_OBJ = { 3, "RETURN" };
 const ObjectType ObjectType::ERROR_OBJ = { 4, "ERROR" };
 const ObjectType ObjectType::FUNCTION_OBJ = { 5, "FUNCTION" };
 
+const ObjectType ObjectType::BREAK_OBJ = { 6, "BREAK" };
+const ObjectType ObjectType::CONTINUE_OBJ = { 7, "CONTINUE" };
+
 std::shared_ptr<BooleanObj> BooleanObj::TRUE_OBJ_REF =  BooleanObj::New(true);
 std::shared_ptr<BooleanObj> BooleanObj::FALSE_OBJ_REF = BooleanObj::New(false);
 
@@ -18,6 +21,22 @@ std::shared_ptr<NullObj> NullObj::New()
 {
 	return std::make_shared<NullObj>();
 }
+
+std::shared_ptr<BreakObj> BreakObj::BREAK_OBJ_REF = BreakObj::New();
+
+std::shared_ptr<BreakObj> BreakObj::New()
+{
+	return std::make_shared<BreakObj>();
+}
+
+std::shared_ptr<ContinueObj> ContinueObj::CONTINUE_OBJ_REF = ContinueObj::New();
+
+std::shared_ptr<ContinueObj> ContinueObj::New()
+{
+	return std::make_shared<ContinueObj>();
+}
+
+
 
 std::shared_ptr<IntegerObj> IntegerObj::New(int value)
 {

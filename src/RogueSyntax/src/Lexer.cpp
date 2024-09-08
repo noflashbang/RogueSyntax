@@ -56,11 +56,29 @@ Token Lexer::GetCurrentToken()
 		}
 		case '+':
 		{
-			return Token::New(TokenType::TOKEN_PLUS, _currentChar);
+			if (_peekChar == '+')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				return Token::New(TokenType::TOKEN_INCREMENT, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				return Token::New(TokenType::TOKEN_PLUS, _currentChar);
+			}
 		}
 		case '-':
 		{
-			return Token::New(TokenType::TOKEN_MINUS, _currentChar);
+			if (_peekChar == '-')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				return Token::New(TokenType::TOKEN_DECREMENT, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				return Token::New(TokenType::TOKEN_MINUS, _currentChar);
+			}
 		}
 		case '!':
 		{

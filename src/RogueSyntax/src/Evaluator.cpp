@@ -301,9 +301,20 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		case NodeType::BlockStatement:
 		{
 			auto block = std::dynamic_pointer_cast<BlockStatement>(currentNode);
-			for (auto it = block->Statements.begin(); it != block->Statements.end(); ++it)
+
+			//check the action for return/error
+			if (!results.empty() && (results.top()->Type() == ObjectType::ERROR_OBJ || results.top()->Type() == ObjectType::RETURN_OBJ))
 			{
-				stack.push({ *it, 0, useEnv });
+				break;
+			}
+
+			if (signal < block->Statements.size())
+			{
+				//get the statement for the current signal
+				auto stmt = block->Statements[signal];
+
+				stack.push({ block, signal + 1, useEnv });
+				stack.push({ stmt, 0, useEnv });
 			}
 			break;
 		}
@@ -498,6 +509,139 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				auto extEnv = ExtendFunctionEnv(fn, evalArgs);
 				stack.push({ fn->Body, 0, extEnv });
 			}
+			break;
+		}
+		case NodeType::WhileExpression:
+		{
+			auto whileEx = std::dynamic_pointer_cast<WhileExpression>(currentNode);
+			if (signal == 0)
+			{
+				//check the action for return/error
+				if (!results.empty() && (results.top()->Type() == ObjectType::ERROR_OBJ || results.top()->Type() == ObjectType::RETURN_OBJ))
+				{
+					if (results.top()->Type() == ObjectType::RETURN_OBJ)
+					{
+						auto ret = std::dynamic_pointer_cast<ReturnObj>(results.top());
+						if (ret->Value == BreakObj::BREAK_OBJ_REF)
+						{
+							results.pop();
+							break;
+						}
+						else if (ret->Value == ContinueObj::CONTINUE_OBJ_REF)
+						{
+							results.pop();
+						}
+						else
+						{
+							break;
+						}
+					}
+					else if (results.top()->Type() == ObjectType::ERROR_OBJ)
+					{
+						break;
+					}
+				}
+				stack.push({ whileEx, 1, useEnv });
+				stack.push({ whileEx->Condition, 0, useEnv });
+			}
+			else
+			{
+				auto lastResult = results.top();
+				results.pop();
+
+				lastResult = UnwrapIfReturnObj(lastResult);
+
+				auto booleanObj = EvalAsBoolean(whileEx->Token, lastResult);
+
+				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+				{
+					results.push(booleanObj);
+					break;
+				}
+
+				if (booleanObj == BooleanObj::TRUE_OBJ_REF)
+				{
+					stack.push({ whileEx, 0, useEnv });
+					stack.push({ whileEx->Action, 0, useEnv });
+				}
+			}
+			break;
+		}
+		case NodeType::ForExpression:
+		{
+			auto forEx = std::dynamic_pointer_cast<ForExpression>(currentNode);
+			if (signal == 0)
+			{
+				stack.push({ forEx, 1, useEnv });
+				stack.push({ forEx->Init, 0, useEnv });
+			}
+			else if (signal == 1)
+			{
+				//condition
+				stack.push({ forEx, 2, useEnv });
+				stack.push({ forEx->Condition, 0, useEnv });
+			}
+			else if (signal == 2)
+			{
+				auto lastResult = results.top();
+				results.pop();
+
+				lastResult = UnwrapIfReturnObj(lastResult);
+
+				auto booleanObj = EvalAsBoolean(forEx->Token, lastResult);
+
+				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+				{
+					results.push(booleanObj);
+					break;
+				}
+
+				if (booleanObj == BooleanObj::TRUE_OBJ_REF)
+				{
+					stack.push({ forEx, 3, useEnv });
+					stack.push({ forEx->Action, 0, useEnv });
+				}
+			}
+			else if (signal == 3)
+			{
+				//check the action for return/error
+				if (!results.empty() && (results.top()->Type() == ObjectType::ERROR_OBJ || results.top()->Type() == ObjectType::RETURN_OBJ))
+				{
+					if (results.top()->Type() == ObjectType::RETURN_OBJ)
+					{
+						auto ret = std::dynamic_pointer_cast<ReturnObj>(results.top());
+						if (ret->Value == BreakObj::BREAK_OBJ_REF)
+						{
+							results.pop();
+							break;
+						}
+						else if (ret->Value == ContinueObj::CONTINUE_OBJ_REF)
+						{
+							results.pop();
+						}
+						else
+						{
+							break;
+						}
+					}
+					else if (results.top()->Type() == ObjectType::ERROR_OBJ)
+					{
+						break;
+					}
+				}
+				stack.push({ forEx, 1, useEnv });
+				stack.push({ forEx->Post, 0, useEnv });
+			}
+			break;
+		}
+		case NodeType::BreakStatement:
+		{
+			results.push(ReturnObj::New(BreakObj::BREAK_OBJ_REF));
+			break;
+		}
+		case NodeType::ContinueStatement:
+		{
+			results.push(ReturnObj::New(ContinueObj::CONTINUE_OBJ_REF));
 			break;
 		}
 		default:
@@ -698,6 +842,146 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 
 			auto fn = std::dynamic_pointer_cast<FunctionObj>(function);
 			result = ApplyFunction(fn, evalArgs);
+			break;
+		}
+		case NodeType::WhileExpression:
+		{
+			auto whileEx = std::dynamic_pointer_cast<WhileExpression>(node);
+			auto condition = Eval(whileEx->Condition, env);
+
+			condition = UnwrapIfReturnObj(condition);
+
+			if (condition->Type() == ObjectType::ERROR_OBJ)
+			{
+				return condition;
+			}
+
+			auto booleanObj = EvalAsBoolean(whileEx->Token, condition);
+
+			if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+			{
+				return booleanObj;
+			}
+
+			while (booleanObj == BooleanObj::TRUE_OBJ_REF)
+			{
+				auto evaluated = Eval(whileEx->Action, env);
+				if (evaluated != nullptr)
+				{
+					if (evaluated->Type() == ObjectType::RETURN_OBJ)
+					{
+						auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
+						if (ret->Value == BreakObj::BREAK_OBJ_REF)
+						{
+							break;
+						}
+						
+						if (ret->Value != ContinueObj::CONTINUE_OBJ_REF)
+						{
+							return evaluated;
+						}
+					}
+
+					if (evaluated->Type() == ObjectType::ERROR_OBJ)
+					{
+						return evaluated;
+					}
+				}
+				condition = Eval(whileEx->Condition, env);
+
+				condition = UnwrapIfReturnObj(condition);
+
+				if (condition->Type() == ObjectType::ERROR_OBJ)
+				{
+					return condition;
+				}
+
+				booleanObj = EvalAsBoolean(whileEx->Token, condition);
+
+				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+				{
+					return booleanObj;
+				}
+			}
+			result = NullObj::NULL_OBJ_REF;
+			break;
+		}
+		case NodeType::ForExpression:
+		{
+			auto forEx = std::dynamic_pointer_cast<ForExpression>(node);
+
+			auto init = Eval(forEx->Init, env);
+
+			auto condition = Eval(forEx->Condition, env);
+
+			condition = UnwrapIfReturnObj(condition);
+
+			if (condition->Type() == ObjectType::ERROR_OBJ)
+			{
+				return condition;
+			}
+
+			auto booleanObj = EvalAsBoolean(forEx->Token, condition);
+
+			if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+			{
+				return booleanObj;
+			}
+
+			while (booleanObj == BooleanObj::TRUE_OBJ_REF)
+			{
+				auto evaluated = Eval(forEx->Action, env);
+				if (evaluated != nullptr)
+				{
+					if (evaluated->Type() == ObjectType::RETURN_OBJ)
+					{
+						auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
+						if (ret->Value == BreakObj::BREAK_OBJ_REF)
+						{
+							break;
+						}
+
+						if (ret->Value != ContinueObj::CONTINUE_OBJ_REF)
+						{
+							return evaluated;
+						}
+					}
+
+					if (evaluated->Type() == ObjectType::ERROR_OBJ)
+					{
+						return evaluated;
+					}
+				}
+
+				auto post = Eval(forEx->Post, env);
+
+				condition = Eval(forEx->Condition, env);
+
+				condition = UnwrapIfReturnObj(condition);
+
+				if (condition->Type() == ObjectType::ERROR_OBJ)
+				{
+					return condition;
+				}
+
+				booleanObj = EvalAsBoolean(forEx->Token, condition);
+
+				if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+				{
+					return booleanObj;
+				}
+			}
+			result = NullObj::NULL_OBJ_REF;
+			break;
+		}
+		case NodeType::BreakStatement:
+		{
+			result = ReturnObj::New(BreakObj::BREAK_OBJ_REF);
+			break;
+		}
+		case NodeType::ContinueStatement:
+		{
+			result = ReturnObj::New(ContinueObj::CONTINUE_OBJ_REF);
 			break;
 		}
 		default:

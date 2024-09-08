@@ -65,7 +65,9 @@ struct TokenType
 	// Operators
 	static const TokenType TOKEN_ASSIGN;
 	static const TokenType TOKEN_PLUS;
+	static const TokenType TOKEN_INCREMENT;
 	static const TokenType TOKEN_MINUS;
+	static const TokenType TOKEN_DECREMENT;
 	static const TokenType TOKEN_BANG;
 	static const TokenType TOKEN_ASTERISK;
 	static const TokenType TOKEN_SLASH;
@@ -90,8 +92,10 @@ struct TokenType
 	static const TokenType TOKEN_IF;
 	static const TokenType TOKEN_ELSE;
 	static const TokenType TOKEN_RETURN;
-
-	static const int TOKEN_COUNT = 26;
+	static const TokenType TOKEN_WHILE;
+	static const TokenType TOKEN_BREAK;
+	static const TokenType TOKEN_CONTINUE;
+	static const TokenType TOKEN_FOR;
 
 	static TokenType LookupIdent(const std::string& ident)
 	{

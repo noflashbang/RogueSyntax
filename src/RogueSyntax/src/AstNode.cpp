@@ -479,3 +479,144 @@ NodeType CallExpression::NType() const
 {
 	return NodeType::CallExpression;
 }
+
+WhileExpression::WhileExpression(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> action) : Token(token)
+{
+	Condition = condition;
+	Action = action;
+}
+
+std::shared_ptr<WhileExpression> WhileExpression::New(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> action)
+{
+	return std::make_shared<WhileExpression>(token, condition, action);
+}
+
+std::string WhileExpression::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string WhileExpression::ToString() const
+{
+	std::string result;
+	result.append("while");
+	result.append(Condition->ToString());
+	result.append(" ");
+	result.append(Action->ToString());
+	return result;
+}
+
+TokenType WhileExpression::Type() const
+{
+	return Token.Type;
+}
+
+NodeType WhileExpression::NType() const
+{
+	return NodeType::WhileExpression;
+}
+
+
+BreakStatement::BreakStatement(const ::Token token) : Token(token)
+{
+}
+
+std::shared_ptr<BreakStatement> BreakStatement::New(const ::Token token)
+{
+	return std::make_shared<BreakStatement>(token);
+}
+
+std::string BreakStatement::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string BreakStatement::ToString() const
+{
+	return "break";
+}
+
+TokenType BreakStatement::Type() const
+{
+	return Token.Type;
+}
+
+NodeType BreakStatement::NType() const
+{
+	return NodeType::BreakStatement;
+}
+
+ContinueStatement::ContinueStatement(const ::Token token) : Token(token)
+{
+}
+
+std::shared_ptr<ContinueStatement> ContinueStatement::New(const ::Token token)
+{
+	return std::make_shared<ContinueStatement>(token);
+}
+
+std::string ContinueStatement::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string ContinueStatement::ToString() const
+{
+	return "continue";
+}
+
+TokenType ContinueStatement::Type() const
+{
+	return Token.Type;
+}
+
+NodeType ContinueStatement::NType() const
+{
+	return NodeType::ContinueStatement;
+}
+
+ForExpression::ForExpression(const ::Token token, std::shared_ptr<IStatement> init, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> post, std::shared_ptr<IStatement> action) : Token(token)
+{
+	Init = init;
+	Condition = condition;
+	Post = post;
+	Action = action;
+}
+
+std::shared_ptr<ForExpression> ForExpression::New(const ::Token token, std::shared_ptr<IStatement> init, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> post, std::shared_ptr<IStatement> action)
+{
+	return std::make_shared<ForExpression>(token, init, condition, post, action);
+}
+
+std::string ForExpression::TokenLiteral() const
+{
+	return Token.Literal;
+}
+
+std::string ForExpression::ToString() const
+{
+	std::string result;
+	result.append("for (");
+	result.append(Init->ToString());
+	result.append(" ");
+	result.append(Condition->ToString());
+	result.append("; ");
+	result.append(Post->ToString());
+	if (result.ends_with(";"))
+	{
+		result.pop_back();
+	}
+	result.append(") ");
+	result.append(Action->ToString());
+	return result;
+}
+
+TokenType ForExpression::Type() const
+{
+	return Token.Type;
+}
+
+NodeType ForExpression::NType() const
+{
+	return NodeType::ForExpression;
+}

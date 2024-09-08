@@ -90,10 +90,10 @@ TEST_CASE("Eval Tests")
 	{
 		auto tests = std::vector<std::pair<std::string, int32_t>>
 		{
-			//{"5", 5},
-			//{"10", 10},
-			//{"-5", -5},
-			//{"-10", -10},
+			{"5", 5},
+			{"10", 10},
+			{"-5", -5},
+			{"-10", -10},
 			{"5 + 5 + 5 + 5 - 10", 10},
 			{"2 * 2 * 2 * 2 * 2", 32},
 			{"-50 + 100 + -50", 0},
@@ -308,6 +308,68 @@ TEST_CASE("Eval Tests")
 			{"let x = fn(a) {return a*a;}; let y = fn(b) {return b*b;}; x(y(5));", 625},
 			{"let x = fn(a) {return a*a;}; let y = fn(b) {return b*b;}; x(y(5+x(2)));", 6561},
 			{"fn(x) { x; }(5)", 5}
+		};
+
+		for (auto& eval : evaluators)
+		{
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
+		}
+	}
+
+	SECTION("Test While Loop")
+	{
+		auto tests = std::vector<std::pair<std::string, int32_t>>
+		{
+			{"let i = 0; while (i < 10) { let i = i + 1; }; i;", 10},
+			{"let i = 0; while (i < 10) { let i = i + 1; if(i == 5){ return i; } }; i;", 5},
+			{"let i = 0; while (i < 10) { let i = i + 1; if (i == 5) { break; } }; i;", 5},
+			{"let i = 0; while (i < 10) { let i = i + 1; if (i == 5) { continue; let i = 12; } }; i;", 10}
+		};
+
+		for (auto& eval : evaluators)
+		{
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
+		}
+	}
+
+	SECTION("Test assignment")
+	{
+		auto tests = std::vector<std::pair<std::string, int32_t>>
+		{
+			{"let a = 5; a = 10; a;", 10},
+			{"let a = 5; let b = a; a = 10; b;", 5},
+			{"let a = 5; let b = a; a = 10; a;", 10},
+			{"a = 6; a;", 6}
+		};
+
+		for (auto& eval : evaluators)
+		{
+			for (auto& test : tests)
+			{
+				INFO(test.first);
+				REQUIRE(TestEvalInteger(eval, test.first, test.second));
+			}
+		}
+	}
+
+	SECTION("FOR tests")
+	{
+		auto tests = std::vector<std::pair<std::string, int32_t>>
+		{
+			{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { sum = sum + i; }; sum;", 45},
+			{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { if (i == 5) { break; } sum = sum + i; }; sum;", 10},
+			{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { if (i == 5) { continue; } sum = sum + i; }; sum;", 40},
+			{"sum = 0; for (i = 0; i < 10; i++) { sum = sum + i; }; sum;", 45},
+			{"let plusone = fn(x){ return x+1;}; sum=0; for (i = 0; i < 10; i = plusone(i)) { if (i == 5) { break; } sum = sum + i; }; sum;", 10},
+			{"let xisltten = fn(x){return x<10;}; let sum = 0; for (let i = 0; xisltten(i); i = i + 1) { if (i == 5) { continue; } sum = sum + i; }; sum;", 40}
 		};
 
 		for (auto& eval : evaluators)

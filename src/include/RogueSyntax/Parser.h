@@ -11,6 +11,7 @@ typedef std::function<std::shared_ptr<IExpression>(std::shared_ptr<IExpression>)
 enum class Precedence
 {
 	LOWEST,
+	//ASSIGN,      // =
 	EQUALS,      // ==
 	LESSGREATER, // > or <
 	SUM,         // +
@@ -20,6 +21,9 @@ enum class Precedence
 };
 
 static const std::map<TokenType, Precedence> PRECEDENCES = {
+	//{TokenType::TOKEN_ASSIGN, Precedence::EQUALS},
+	//{TokenType::TOKEN_INCREMENT, Precedence::EQUALS},
+	//{TokenType::TOKEN_DECREMENT, Precedence::EQUALS},
 	{TokenType::TOKEN_EQ, Precedence::EQUALS},
 	{TokenType::TOKEN_NOT_EQ, Precedence::EQUALS},
 	{TokenType::TOKEN_LT, Precedence::LESSGREATER},
@@ -51,10 +55,17 @@ public:
 	std::shared_ptr<IExpression> ParseIfExpression();
 	std::shared_ptr<IExpression> ParseFunctionLiteral();
 	std::shared_ptr<IExpression> ParseCallExpression(std::shared_ptr<IExpression> function);
+	std::shared_ptr<IExpression> ParseWhileExpression();
+	std::shared_ptr<IExpression> ParseForExpression();
 
 	std::shared_ptr<IStatement> ParseBlockStatement();
 	std::shared_ptr<IStatement> ParseLetStatement();
+	std::shared_ptr<IStatement> ParseAssignStatement();
+	std::shared_ptr<IStatement> ParseIncrementStatement();
+	std::shared_ptr<IStatement> ParseDecrementStatement();
 	std::shared_ptr<IStatement> ParseReturnStatement();
+	std::shared_ptr<IStatement> ParseBreakStatement();
+	std::shared_ptr<IStatement> ParseContinueStatement();
 	std::shared_ptr<IStatement> ParseExpressionStatement();
 
 

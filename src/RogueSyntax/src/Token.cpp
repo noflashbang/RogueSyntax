@@ -11,32 +11,40 @@ const TokenType TokenType::TOKEN_INT       = { 3,  "INT" };
 // Operators							   		   
 const TokenType TokenType::TOKEN_ASSIGN    = { 4,  "=" };
 const TokenType TokenType::TOKEN_PLUS      = { 5,  "+" };
-const TokenType TokenType::TOKEN_MINUS     = { 6,  "-" };
-const TokenType TokenType::TOKEN_BANG      = { 7,  "!" };
-const TokenType TokenType::TOKEN_ASTERISK  = { 8,  "*" };
-const TokenType TokenType::TOKEN_SLASH     = { 9,  "/" };
-const TokenType TokenType::TOKEN_LT        = { 10, "<" };
-const TokenType TokenType::TOKEN_GT        = { 11, ">" };
-const TokenType TokenType::TOKEN_EQ        = { 12, "==" };
-const TokenType TokenType::TOKEN_NOT_EQ    = { 13, "!=" };
+const TokenType TokenType::TOKEN_INCREMENT = { 6,  "++" };
+const TokenType TokenType::TOKEN_MINUS     = { 7,  "-" };
+const TokenType TokenType::TOKEN_DECREMENT = { 8,  "--" };
+const TokenType TokenType::TOKEN_BANG      = { 9,  "!" };
+const TokenType TokenType::TOKEN_ASTERISK  = { 10,  "*" };
+const TokenType TokenType::TOKEN_SLASH     = { 11,  "/" };
+const TokenType TokenType::TOKEN_LT        = { 12, "<" };
+const TokenType TokenType::TOKEN_GT        = { 13, ">" };
+const TokenType TokenType::TOKEN_EQ        = { 14, "==" };
+const TokenType TokenType::TOKEN_NOT_EQ    = { 15, "!=" };
 
 // Delimiters							   		   
-const TokenType TokenType::TOKEN_COMMA     = { 14,  "," };
-const TokenType TokenType::TOKEN_SEMICOLON = { 15,  ";" };
+const TokenType TokenType::TOKEN_COMMA     = { 16,  "," };
+const TokenType TokenType::TOKEN_SEMICOLON = { 17,  ";" };
 												   
-const TokenType TokenType::TOKEN_LPAREN    = { 16,  "(" };
-const TokenType TokenType::TOKEN_RPAREN    = { 17,  ")" };
-const TokenType TokenType::TOKEN_LBRACE    = { 18, "{" };
-const TokenType TokenType::TOKEN_RBRACE    = { 19, "}" };
+const TokenType TokenType::TOKEN_LPAREN    = { 18,  "(" };
+const TokenType TokenType::TOKEN_RPAREN    = { 19,  ")" };
+const TokenType TokenType::TOKEN_LBRACE    = { 20, "{" };
+const TokenType TokenType::TOKEN_RBRACE    = { 21, "}" };
 
 // Keywords
-const TokenType TokenType::TOKEN_FUNCTION  = { 20, "FUNCTION" };
-const TokenType TokenType::TOKEN_LET       = { 21, "LET" };
-const TokenType TokenType::TOKEN_TRUE      = { 22, "TRUE" };
-const TokenType TokenType::TOKEN_FALSE     = { 23, "FALSE" };
-const TokenType TokenType::TOKEN_IF        = { 24, "IF" };
-const TokenType TokenType::TOKEN_ELSE      = { 25, "ELSE" };
-const TokenType TokenType::TOKEN_RETURN    = { 26, "RETURN" };
+const TokenType TokenType::TOKEN_FUNCTION  = { 22, "FUNCTION" };
+const TokenType TokenType::TOKEN_LET       = { 23, "LET" };
+const TokenType TokenType::TOKEN_TRUE      = { 24, "TRUE" };
+const TokenType TokenType::TOKEN_FALSE     = { 25, "FALSE" };
+const TokenType TokenType::TOKEN_IF        = { 26, "IF" };
+const TokenType TokenType::TOKEN_ELSE      = { 27, "ELSE" };
+const TokenType TokenType::TOKEN_RETURN    = { 28, "RETURN" };
+const TokenType TokenType::TOKEN_WHILE     = { 29, "WHILE" };
+const TokenType TokenType::TOKEN_BREAK     = { 30, "BREAK" };
+const TokenType TokenType::TOKEN_CONTINUE  = { 31, "CONTINUE" };
+const TokenType TokenType::TOKEN_FOR       = { 32, "FOR" };
+
+
 
 const std::map<std::string, TokenType> TokenType::KEYWORD_TOKEN_MAP = {
 	{"fn",  TokenType::TOKEN_FUNCTION},
@@ -45,7 +53,11 @@ const std::map<std::string, TokenType> TokenType::KEYWORD_TOKEN_MAP = {
 	{"false", TokenType::TOKEN_FALSE},
 	{"if", TokenType::TOKEN_IF},
 	{"else", TokenType::TOKEN_ELSE},
-	{"return", TokenType::TOKEN_RETURN}
+	{"return", TokenType::TOKEN_RETURN},
+	{"while", TokenType::TOKEN_WHILE},
+	{"break", TokenType::TOKEN_BREAK},
+	{"continue", TokenType::TOKEN_CONTINUE},
+	{"for", TokenType::TOKEN_FOR},
 };
 
 void TokenLocation::Advance(const char ch)

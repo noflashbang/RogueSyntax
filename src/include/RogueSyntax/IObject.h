@@ -56,6 +56,10 @@ struct ObjectType
 	static const ObjectType RETURN_OBJ;
 	static const ObjectType ERROR_OBJ;
 	static const ObjectType FUNCTION_OBJ;
+
+	//special flow control objects
+	static const ObjectType BREAK_OBJ;
+	static const ObjectType CONTINUE_OBJ;
 };
 
 class IObject
@@ -85,6 +89,50 @@ public:
 	static std::shared_ptr<NullObj> NULL_OBJ_REF;
 	static std::shared_ptr<NullObj> New();
 	
+private:
+	int _dummy;
+};
+
+class BreakObj : public IObject
+{
+public:
+	BreakObj() { _dummy = 0; }
+
+	ObjectType Type() const override
+	{
+		return ObjectType::BREAK_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return "break";
+	}
+
+	static std::shared_ptr<BreakObj> BREAK_OBJ_REF;
+	static std::shared_ptr<BreakObj> New();
+
+private:
+	int _dummy;
+};
+
+class ContinueObj : public IObject
+{
+public:
+	ContinueObj() { _dummy = 0; }
+
+	ObjectType Type() const override
+	{
+		return ObjectType::CONTINUE_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return "break";
+	}
+
+	static std::shared_ptr<ContinueObj> CONTINUE_OBJ_REF;
+	static std::shared_ptr<ContinueObj> New();
+
 private:
 	int _dummy;
 };
