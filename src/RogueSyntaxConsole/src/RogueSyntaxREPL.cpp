@@ -11,7 +11,7 @@ void Repl::Start()
 		std::cout << _prompt;
 		std::getline(std::cin, input);
 
-		if(input == "")
+		if(input.empty())
 		{
 			break;
 		}
@@ -20,7 +20,7 @@ void Repl::Start()
 		Parser parser(lexer);
 
 		auto program = parser.ParseProgram();
-		if (parser.Errors().size() > 0)
+		if (parser.Errors().empty())
 		{
 			for (const auto& error : parser.Errors())
 			{

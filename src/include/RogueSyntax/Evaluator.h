@@ -23,10 +23,9 @@ protected:
 
 	std::shared_ptr<IObject> EvalAsBoolean(const Token& context, const std::shared_ptr<IObject>& obj) const;
 
-	std::shared_ptr<IObject> MakeError(const std::string& message, const Token& token) const;
-	std::shared_ptr<IObject> UnwrapIfReturnObj(const std::shared_ptr<IObject>& input) const;
-
-	std::shared_ptr<Environment> ExtendFunctionEnv(const std::shared_ptr<FunctionObj>& fn, const std::vector<std::shared_ptr<IObject>>& args) const;
+	static std::shared_ptr<IObject> MakeError(const std::string& message, const Token& token);
+	static std::shared_ptr<IObject> UnwrapIfReturnObj(const std::shared_ptr<IObject>& input);
+	static std::shared_ptr<Environment> ExtendFunctionEnv(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args);
 };
 
 class StackEvaluator : public Evaluator
@@ -42,5 +41,5 @@ public:
 
 private:
 	std::vector<std::shared_ptr<IObject>> EvalExpressions(const std::vector<std::shared_ptr<IExpression>>& expressions, const std::shared_ptr<Environment>& env) const;
-	std::shared_ptr<IObject> ApplyFunction(const std::shared_ptr<FunctionObj>& fn, const std::vector<std::shared_ptr<IObject>>& args) const;
+	std::shared_ptr<IObject> ApplyFunction(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args) const;
 };

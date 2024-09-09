@@ -1,11 +1,4 @@
-#include "AstNode.h"
-#include "AstNode.h"
-#include "AstNode.h"
-#include "AstNode.h"
-#include "AstNode.h"
-#include "AstNode.h"
-#include "AstNode.h"
-#include "AstNode.h"
+#include "pch.h"
 
 NodeType Program::NType() const
 {
@@ -28,13 +21,11 @@ std::shared_ptr<Program>  Program::New()
 	return std::make_shared<Program>();
 }
 
-LetStatement::LetStatement(const ::Token token, std::shared_ptr<Identifier> name, std::shared_ptr<IExpression> value) : IStatement(token)
+LetStatement::LetStatement(const Token& token, const std::shared_ptr<Identifier>& name, const std::shared_ptr<IExpression>& value) : IStatement(token), Name(name), Value(value)
 {
-	Name = name;
-	Value = value;
 }
 
-std::shared_ptr<LetStatement> LetStatement::New(const ::Token token, std::shared_ptr<Identifier> name, std::shared_ptr<IExpression> value)
+std::shared_ptr<LetStatement> LetStatement::New(const Token& token, const std::shared_ptr<Identifier>& name, const std::shared_ptr<IExpression>& value)
 {
 	return std::make_shared<LetStatement>(token, name, value);
 }
@@ -58,11 +49,11 @@ NodeType LetStatement::NType() const
 	return NodeType::LetStatement;
 }
 
-Identifier::Identifier(const ::Token token, const std::string& value) : IExpression(token), Value(value)
+Identifier::Identifier(const ::Token& token, const std::string& value) : IExpression(token), Value(value)
 {
 }
 
-std::shared_ptr<Identifier> Identifier::New(const ::Token token, const std::string& value)
+std::shared_ptr<Identifier> Identifier::New(const Token& token, const std::string& value)
 {
 	return std::make_shared<Identifier>(token, value);
 }
@@ -77,12 +68,11 @@ NodeType Identifier::NType() const
 	return NodeType::Identifier;
 }
 
-ReturnStatement::ReturnStatement(const ::Token token, std::shared_ptr<IExpression> returnValue) : IStatement(token)
+ReturnStatement::ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue) : IStatement(token), ReturnValue(returnValue)
 {
-	ReturnValue = returnValue;
 }
 
-std::shared_ptr<ReturnStatement> ReturnStatement::New(const ::Token token, std::shared_ptr<IExpression> returnValue)
+std::shared_ptr<ReturnStatement> ReturnStatement::New(const Token& token, const std::shared_ptr<IExpression>& returnValue)
 {
 	return std::make_shared<ReturnStatement>(token, returnValue);
 }
@@ -104,12 +94,11 @@ NodeType ReturnStatement::NType() const
 	return NodeType::ReturnStatement;
 }
 
-ExpressionStatement::ExpressionStatement(const ::Token token, std::shared_ptr<IExpression> expression) : IStatement(token)
+ExpressionStatement::ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression) : IStatement(token), Expression(expression)
 {
-	Expression = expression;
 }
 
-std::shared_ptr<ExpressionStatement> ExpressionStatement::New(const ::Token token, std::shared_ptr<IExpression> expression)
+std::shared_ptr<ExpressionStatement> ExpressionStatement::New(const Token& token, const std::shared_ptr<IExpression>& expression)
 {
 	return std::make_shared<ExpressionStatement>(token,  expression);
 }
@@ -128,11 +117,11 @@ NodeType ExpressionStatement::NType() const
 	return NodeType::ExpressionStatement;
 }
 
-IntegerLiteral::IntegerLiteral(const ::Token token, int value) : IExpression(token), Value(value)
+IntegerLiteral::IntegerLiteral(const ::Token& token, int value) : IExpression(token), Value(value)
 {
 }
 
-std::shared_ptr<IntegerLiteral> IntegerLiteral::New(::Token token, int value)
+std::shared_ptr<IntegerLiteral> IntegerLiteral::New(const Token& token, const int value)
 {
 	return std::make_shared<IntegerLiteral>(token, value);
 };
@@ -147,11 +136,11 @@ NodeType IntegerLiteral::NType() const
 	return NodeType::IntegerLiteral;
 }
 
-BooleanLiteral::BooleanLiteral(const ::Token token, bool value) : IExpression(token), Value(value)
+BooleanLiteral::BooleanLiteral(const ::Token& token, bool value) : IExpression(token), Value(value)
 {
 }
 
-std::shared_ptr<BooleanLiteral> BooleanLiteral::New(::Token token, bool value)
+std::shared_ptr<BooleanLiteral> BooleanLiteral::New(const Token& token, const bool value)
 {
 	return std::make_shared<BooleanLiteral>(token, value);
 };
@@ -167,16 +156,14 @@ NodeType BooleanLiteral::NType() const
 	return NodeType::BooleanLiteral;
 }
 
-PrefixExpression::PrefixExpression(const ::Token token, const std::string& op, std::shared_ptr<IExpression> right) : IExpression(token), Operator(op)
+PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Right(right)
 {
-	Right = right;
 }
 
-std::shared_ptr<PrefixExpression> PrefixExpression::New(const ::Token token, const std::string& op, std::shared_ptr<IExpression> right)
+std::shared_ptr<PrefixExpression> PrefixExpression::New(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right)
 {
 	return std::make_shared<PrefixExpression>(token, op, right);
 }
-
 
 std::string PrefixExpression::ToString() const
 {
@@ -193,13 +180,11 @@ NodeType PrefixExpression::NType() const
 	return NodeType::PrefixExpression;
 }
 
-InfixExpression::InfixExpression(const ::Token token, std::shared_ptr<IExpression> left, const std::string& op, std::shared_ptr<IExpression> right) : IExpression(token), Operator(op)
+InfixExpression::InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Left(left), Right(right)
 {
-	Left = left;
-	Right = right;
 }
 
-std::shared_ptr<InfixExpression> InfixExpression::New(const ::Token token, std::shared_ptr<IExpression> left, const std::string& op, std::shared_ptr<IExpression> right)
+std::shared_ptr<InfixExpression> InfixExpression::New(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right)
 {
 	return std::make_shared<InfixExpression>(token, left, op, right);
 }
@@ -220,12 +205,11 @@ NodeType InfixExpression::NType() const
 	return NodeType::InfixExpression;
 }
 
-BlockStatement::BlockStatement(const ::Token token, std::vector<std::shared_ptr<IStatement>>& statements) : IStatement(token)
+BlockStatement::BlockStatement(const ::Token& token, const std::vector<std::shared_ptr<IStatement>>& statements) : IStatement(token), Statements(statements)
 {
-	Statements = statements;
 }
 
-std::shared_ptr<BlockStatement> BlockStatement::New(const ::Token token, std::vector<std::shared_ptr<IStatement>>& statements)
+std::shared_ptr<BlockStatement> BlockStatement::New(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements)
 {
 	return std::make_shared<BlockStatement>(token, statements);
 }
@@ -248,14 +232,11 @@ NodeType BlockStatement::NType() const
 	return NodeType::BlockStatement;
 }
 
-IfExpression::IfExpression(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> consequence, std::shared_ptr<IStatement> alternative) : IExpression(token)
+IfExpression::IfExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative) : IExpression(token), Condition(condition), Consequence(consequence), Alternative(alternative)
 {
-	Condition = condition;
-	Consequence = consequence;
-	Alternative = alternative;
 }
 
-std::shared_ptr<IfExpression> IfExpression::New(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> consequence, std::shared_ptr<IStatement> alternative)
+std::shared_ptr<IfExpression> IfExpression::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative)
 {
 	return std::make_shared<IfExpression>(token, condition, consequence, alternative);
 }
@@ -280,13 +261,12 @@ NodeType IfExpression::NType() const
 	return NodeType::IfExpression;
 }
 
-FunctionLiteral::FunctionLiteral(const ::Token token, std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement> body) : IExpression(token)
+FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : IExpression(token), Parameters(parameters), Body(body)
 {
-	Parameters = parameters;
-	Body = body;
 }
 
-std::shared_ptr<FunctionLiteral> FunctionLiteral::New(const ::Token token, std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement> body)
+
+std::shared_ptr<FunctionLiteral> FunctionLiteral::New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body)
 {
 	return std::make_shared<FunctionLiteral>(token, parameters, body);
 }
@@ -316,13 +296,11 @@ NodeType FunctionLiteral::NType() const
 	return NodeType::FunctionLiteral;
 }
 
-CallExpression::CallExpression(const ::Token token, std::shared_ptr<IExpression> function, std::vector<std::shared_ptr<IExpression>>& arguments) : IExpression(token)
+CallExpression::CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments) : IExpression(token), Function(function), Arguments(arguments)
 {
-	Function = function;
-	Arguments= arguments;
 }
 
-std::shared_ptr<CallExpression> CallExpression::New(const ::Token token, std::shared_ptr<IExpression> function, std::vector<std::shared_ptr<IExpression>>& arguments)
+std::shared_ptr<CallExpression> CallExpression::New(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments)
 {
 	return std::make_shared<CallExpression>(token, function, arguments);
 }
@@ -351,13 +329,11 @@ NodeType CallExpression::NType() const
 	return NodeType::CallExpression;
 }
 
-WhileExpression::WhileExpression(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> action) : IExpression(token)
+WhileExpression::WhileExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action) : IExpression(token), Condition(condition), Action(action)
 {
-	Condition = condition;
-	Action = action;
 }
 
-std::shared_ptr<WhileExpression> WhileExpression::New(const ::Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> action)
+std::shared_ptr<WhileExpression> WhileExpression::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action)
 {
 	return std::make_shared<WhileExpression>(token, condition, action);
 }
@@ -378,11 +354,11 @@ NodeType WhileExpression::NType() const
 }
 
 
-BreakStatement::BreakStatement(const ::Token token) : IStatement(token)
+BreakStatement::BreakStatement(const ::Token& token) : IStatement(token)
 {
 }
 
-std::shared_ptr<BreakStatement> BreakStatement::New(const ::Token token)
+std::shared_ptr<BreakStatement> BreakStatement::New(const ::Token& token)
 {
 	return std::make_shared<BreakStatement>(token);
 }
@@ -397,11 +373,11 @@ NodeType BreakStatement::NType() const
 	return NodeType::BreakStatement;
 }
 
-ContinueStatement::ContinueStatement(const ::Token token) : IStatement(token)
+ContinueStatement::ContinueStatement(const ::Token& token) : IStatement(token)
 {
 }
 
-std::shared_ptr<ContinueStatement> ContinueStatement::New(const ::Token token)
+std::shared_ptr<ContinueStatement> ContinueStatement::New(const ::Token& token)
 {
 	return std::make_shared<ContinueStatement>(token);
 }
@@ -416,15 +392,11 @@ NodeType ContinueStatement::NType() const
 	return NodeType::ContinueStatement;
 }
 
-ForExpression::ForExpression(const ::Token token, std::shared_ptr<IStatement> init, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> post, std::shared_ptr<IStatement> action) : IExpression(token)
+ForExpression::ForExpression(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action) : IExpression(token), Init(init), Condition(condition), Post(post), Action(action)
 {
-	Init = init;
-	Condition = condition;
-	Post = post;
-	Action = action;
 }
 
-std::shared_ptr<ForExpression> ForExpression::New(const ::Token token, std::shared_ptr<IStatement> init, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> post, std::shared_ptr<IStatement> action)
+std::shared_ptr<ForExpression> ForExpression::New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action)
 {
 	return std::make_shared<ForExpression>(token, init, condition, post, action);
 }

@@ -1,4 +1,4 @@
-#include "Token.h"
+#include "pch.h"
 
 // Special tokens
 const TokenType TokenType::TOKEN_ILLEGAL   = { 0,  "ILLEGAL" };

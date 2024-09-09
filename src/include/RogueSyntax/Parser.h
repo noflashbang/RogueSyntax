@@ -38,7 +38,7 @@ static const std::map<TokenType, Precedence> PRECEDENCES = {
 class Parser
 {
 public:
-	Parser(Lexer lexer);
+	Parser(const Lexer& lexer);
 
 	void NextToken();
 	std::shared_ptr<Program> ParseProgram();
@@ -49,12 +49,12 @@ public:
 	std::shared_ptr<IExpression> ParseIdentifier();
 	std::shared_ptr<IExpression> ParseIntegerLiteral();
 	std::shared_ptr<IExpression> ParsePrefixExpression();
-	std::shared_ptr<IExpression> ParseInfixExpression(std::shared_ptr<IExpression> left);
+	std::shared_ptr<IExpression> ParseInfixExpression(const std::shared_ptr<IExpression>& left);
 	std::shared_ptr<IExpression> ParseBoolean();
 	std::shared_ptr<IExpression> ParseGroupedExpression();
 	std::shared_ptr<IExpression> ParseIfExpression();
 	std::shared_ptr<IExpression> ParseFunctionLiteral();
-	std::shared_ptr<IExpression> ParseCallExpression(std::shared_ptr<IExpression> function);
+	std::shared_ptr<IExpression> ParseCallExpression(const std::shared_ptr<IExpression>& function);
 	std::shared_ptr<IExpression> ParseWhileExpression();
 	std::shared_ptr<IExpression> ParseForExpression();
 
@@ -80,8 +80,8 @@ public:
 
 private:
 
-	void RegisterPrefix(const TokenType& type, PrefixParseFn fn);
-	void RegisterInfix(const TokenType& type, InfixParseFn fn);
+	void RegisterPrefix(const TokenType& type, const PrefixParseFn& fn);
+	void RegisterInfix(const TokenType& type, const InfixParseFn& fn);
 
 	Precedence PeekPrecedence() const;
 	Precedence CurrentPrecedence() const;

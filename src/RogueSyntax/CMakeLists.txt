@@ -29,6 +29,8 @@ set( libSource
  "src/Environment.cpp"
 )
 
+set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,modernize-*,bugprone-*,cppcoreguidelines-*,performance-* --extra-arg=/EHsc)
+
 add_library (RogueSyntax STATIC ${libSource} ${libHeaders} ${externHeaders}) 
 target_include_directories( RogueSyntax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/RogueSyntax )
 target_include_directories( RogueSyntax PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src )

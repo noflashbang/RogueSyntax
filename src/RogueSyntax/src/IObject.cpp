@@ -1,4 +1,4 @@
-#include "IObject.h"
+#include "pch.h"
 
 
 const ObjectType ObjectType::NULL_OBJ = { 0, "NULL" };

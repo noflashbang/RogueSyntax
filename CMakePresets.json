@@ -16,6 +16,10 @@
           "lhs": "${hostSystemName}",
           "rhs": "Windows"
         },
+        "environment": {
+          "CFLAGS": "/fsanitize=address",
+          "CXXFLAGS": "/fsanitize=address"
+        },
         "vendor": {
           "microsoft.com/VisualStudioSettings/CMake/1.0": {
             "enableMicrosoftCodeAnalysis": true,
