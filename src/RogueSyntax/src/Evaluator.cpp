@@ -1,3 +1,4 @@
+#include "Evaluator.h"
 #include "pch.h"
 
 std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<Environment>& env)  const
@@ -52,6 +53,14 @@ std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, cons
 	else if (left->Type() == ObjectType::INTEGER_OBJ && right->Type() == ObjectType::INTEGER_OBJ)
 	{
 		result = EvalIntegerInfixExpression(optor, dynamic_cast<IntegerObj*>(left.get()), dynamic_cast<IntegerObj*>(right.get()));
+	}
+	else if (left->Type() == ObjectType::DECIMAL_OBJ && right->Type() == ObjectType::DECIMAL_OBJ)
+	{
+		result = EvalDecimalInfixExpression(optor, dynamic_cast<DecimalObj*>(left.get()), dynamic_cast<DecimalObj*>(right.get()));
+	}
+	else if (left->Type() == ObjectType::STRING_OBJ && right->Type() == ObjectType::STRING_OBJ)
+	{
+		result = EvalStringInfixExpression(optor, dynamic_cast<StringObj*>(left.get()), dynamic_cast<StringObj*>(right.get()));
 	}
 	else if (left->Type() == ObjectType::BOOLEAN_OBJ && right->Type() == ObjectType::BOOLEAN_OBJ)
 	{
@@ -149,6 +158,64 @@ std::shared_ptr<IObject> Evaluator::EvalBooleanInfixExpression(const Token& opto
 	else if (optor.Type == TokenType::TOKEN_NOT_EQ)
 	{
 		result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else
+	{
+		result = MakeError(std::format("unknown operator: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+	}
+	return result;
+}
+
+std::shared_ptr<IObject> Evaluator::EvalDecimalInfixExpression(const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const
+{
+	std::shared_ptr<IObject> result = nullptr;
+
+	if (optor.Type == TokenType::TOKEN_PLUS)
+	{
+		result = DecimalObj::New(left->Value + right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_MINUS)
+	{
+		result = DecimalObj::New(left->Value - right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_ASTERISK)
+	{
+		result = DecimalObj::New(left->Value * right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_SLASH)
+	{
+		result = DecimalObj::New(left->Value / right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_LT)
+	{
+		result = left->Value < right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_GT)
+	{
+		result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_EQ)
+	{
+		result = abs(left->Value - right->Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_NOT_EQ)
+	{
+		result = abs(left->Value - right->Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else
+	{
+		result = MakeError(std::format("unknown operator: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+	}
+	return result;
+}
+
+std::shared_ptr<IObject> Evaluator::EvalStringInfixExpression(const Token& optor, const StringObj* const left, const StringObj* const right) const
+{
+	std::shared_ptr<IObject> result = nullptr;
+
+	if (optor.Type == TokenType::TOKEN_PLUS)
+	{
+		result = StringObj::New(left->Value + right->Value);
 	}
 	else
 	{
@@ -286,6 +353,18 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		{
 			const auto* integer = dynamic_cast<const IntegerLiteral*>(currentNode);
 			results.push(IntegerObj::New(integer->Value));
+			break;
+		}
+		case NodeType::DecimalLiteral:
+		{
+			const auto* decimal = dynamic_cast<const DecimalLiteral*>(currentNode);
+			results.push(DecimalObj::New(decimal->Value));
+			break;
+		}
+		case NodeType::StringLiteral:
+		{
+			const auto* string = dynamic_cast<const StringLiteral*>(currentNode);
+			results.push(StringObj::New(string->Value));
 			break;
 		}
 		case NodeType::BooleanLiteral:
@@ -699,6 +778,18 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		{
 			auto* integer = dynamic_no_copy_cast<IntegerLiteral>(node);
 			result = IntegerObj::New(integer->Value);
+			break;
+		}
+		case NodeType::StringLiteral:
+		{
+			auto* str = dynamic_no_copy_cast<StringLiteral>(node);
+			result = StringObj::New(str->Value);
+			break;
+		}
+		case NodeType::DecimalLiteral:
+		{
+			auto* decimal = dynamic_no_copy_cast<DecimalLiteral>(node);
+			result = DecimalObj::New(decimal->Value);
 			break;
 		}
 		case NodeType::BooleanLiteral:

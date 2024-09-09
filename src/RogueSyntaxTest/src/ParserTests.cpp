@@ -51,6 +51,53 @@ bool TestIntegerLiteral(const IExpression* expression, int expected)
 	return true;
 }
 
+bool TestDecimalLiteral(const IExpression* expression, float expected, const std::string& expectedLiteral)
+{
+	auto decimal = dynamic_cast<const DecimalLiteral*>(expression);
+	if (decimal == nullptr)
+	{
+		throw std::invalid_argument(std::format("Bad expression -> Expected DecimalLiteral GOT {}", expression->ToString()));
+		return false;
+	}
+
+	if (abs(decimal->Value - expected) > FLT_EPSILON)
+	{
+		throw std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, decimal->Value));
+		return false;
+	}
+
+	if (decimal->TokenLiteral() != expectedLiteral)
+	{
+		throw std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, decimal->Value));
+		return false;
+	}
+
+	return true;
+}
+
+bool TestStringLiteral(const IExpression* expression, const std::string& expected, const std::string& expectedLiteral)
+{
+	auto str = dynamic_cast<const StringLiteral*>(expression);
+	if (str == nullptr)
+	{
+		throw std::invalid_argument(std::format("Bad expression -> Expected StringLiteral GOT {}", expression->ToString()));
+		return false;
+	}
+
+	if (str->Value != expected)
+	{
+		throw std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", expected, str->Value));
+		return false;
+	}
+
+	if (str->TokenLiteral() != expectedLiteral)
+	{
+		throw std::invalid_argument(std::format("Bad Literal -> Expected {} GOT {}", expected, str->Value));
+		return false;
+	}
+	return true;
+}
+
 bool TestBooleanLiteral(const IExpression* expression, bool expected)
 {
 	auto boolean = dynamic_cast<const BooleanLiteral*>(expression);
@@ -188,6 +235,55 @@ TEST_CASE("Test Integer Literal")
 	auto integer = dynamic_cast<IntegerLiteral*>(expressionStatement->Expression.get());
 
 	REQUIRE(TestIntegerLiteral(expressionStatement->Expression.get(), 5));
+}
+
+TEST_CASE("Test Decimal Literal")
+{
+	std::string input = "5.5;";
+	Lexer lexer(input);
+	Parser parser(lexer);
+
+	auto program = parser.ParseProgram();
+	auto errors = parser.Errors();
+	if (errors.size() != 0)
+	{
+		for (auto& error : errors)
+		{
+			UNSCOPED_INFO(error);
+		}
+	}
+	REQUIRE(errors.size() == 0);
+
+	REQUIRE(program->Statements.size() == 1);
+	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+	REQUIRE(expressionStatement != nullptr);
+	auto integer = dynamic_cast<IntegerLiteral*>(expressionStatement->Expression.get());
+
+	REQUIRE(TestDecimalLiteral(expressionStatement->Expression.get(), 5.5f, "5.5"));
+}
+
+TEST_CASE("Test String Literal")
+{
+	std::string input = "\"Hello World\";";
+	Lexer lexer(input);
+	Parser parser(lexer);
+
+	auto program = parser.ParseProgram();
+	auto errors = parser.Errors();
+	if (errors.size() != 0)
+	{
+		for (auto& error : errors)
+		{
+			UNSCOPED_INFO(error);
+		}
+	}
+	REQUIRE(errors.size() == 0);
+
+	REQUIRE(program->Statements.size() == 1);
+	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+	REQUIRE(expressionStatement != nullptr);
+
+	REQUIRE(TestStringLiteral(expressionStatement->Expression.get(), "Hello World", "\"Hello World\""));
 }
 
 TEST_CASE("Test Boolean Literal")

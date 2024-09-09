@@ -53,6 +53,9 @@ struct TokenType
 		return Name;
 	}
 
+	// Static integer to track the next available token number
+	static unsigned int NextTokenNumber;
+
 	//================================================================================
 	// Special tokens
 	static const TokenType TOKEN_ILLEGAL;
@@ -61,6 +64,8 @@ struct TokenType
 	// Identifiers + literals
 	static const TokenType TOKEN_IDENT;
 	static const TokenType TOKEN_INT;
+	static const TokenType TOKEN_STRING;
+	static const TokenType TOKEN_DECIMAL;
 
 	// Operators
 	static const TokenType TOKEN_ASSIGN;

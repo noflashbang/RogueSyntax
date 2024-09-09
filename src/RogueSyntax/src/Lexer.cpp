@@ -1,3 +1,4 @@
+#include "Lexer.h"
 #include "pch.h"
 
 Lexer::Lexer(const std::string& input) : _input(input), _position(0), _readPosition(0), _currentChar('\0'), _peekChar('\0')
@@ -137,6 +138,11 @@ Token Lexer::GetCurrentToken()
 			result = Token::New(TokenType::TOKEN_EOF, "");
 			break;
 		}
+		case '"':
+		{
+			result = Token::New(TokenType::TOKEN_STRING, ReadString());
+			break;
+		}
 		default:
 		{
 			if (IsLetter(_currentChar))
@@ -148,7 +154,14 @@ Token Lexer::GetCurrentToken()
 			else if (IsDigit(_currentChar))
 			{
 				auto literal = ReadNumber();
-				result = Token::New(TokenType::TOKEN_INT, literal);
+				if (literal.ends_with('d') || std::any_of(literal.begin(), literal.end(), [](char c) { return c == '.'; }))
+				{
+					result = Token::New(TokenType::TOKEN_DECIMAL, literal);
+				}
+				else
+				{
+					result = Token::New(TokenType::TOKEN_INT, literal);
+				}
 			}
 			else
 			{
@@ -185,7 +198,22 @@ std::string Lexer::ReadNumber()
 {
 	auto position = _position;
 	auto cnt = 1;
-	while (IsDigit(_peekChar))
+	while (IsDigit(_peekChar) || _peekChar == '.' || _peekChar == 'd')
+	{
+		cnt++;
+		ReadChar();
+	}
+	return _input.substr(position, cnt);
+}
+
+std::string Lexer::ReadString()
+{
+	//TODO: handle escape characters
+
+	auto position = _position;
+	auto cnt = 1;
+
+	while ((IsLetter)(_peekChar) || _peekChar == '"' || IsWhitespace(_peekChar))
 	{
 		cnt++;
 		ReadChar();

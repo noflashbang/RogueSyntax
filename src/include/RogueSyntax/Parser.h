@@ -48,6 +48,9 @@ public:
 
 	std::shared_ptr<IExpression> ParseIdentifier();
 	std::shared_ptr<IExpression> ParseIntegerLiteral();
+	std::shared_ptr<IExpression> ParseDecimalLiteral();
+	std::shared_ptr<IExpression> ParseStringLiteral();
+
 	std::shared_ptr<IExpression> ParsePrefixExpression();
 	std::shared_ptr<IExpression> ParseInfixExpression(const std::shared_ptr<IExpression>& left);
 	std::shared_ptr<IExpression> ParseBoolean();

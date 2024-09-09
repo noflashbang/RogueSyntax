@@ -1,6 +1,7 @@
 #include <RogueSyntaxCore.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
+#include <catch2/benchmark/catch_benchmark.hpp>
 
 namespace Catch {
 	template<>
@@ -19,6 +20,13 @@ std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const 
 	
 	auto program = parser.ParseProgram();
 	auto errors = parser.Errors();
+	if (errors.size() > 0)
+	{
+		for (const auto& error : errors)
+		{
+			UNSCOPED_INFO(error);
+		}
+	}
 	REQUIRE(errors.size() == 0);
 
 	auto result = eval->Eval(program, env);
@@ -326,4 +334,77 @@ TEST_CASE("FOR tests")
 
 	CAPTURE(input);
 	REQUIRE(TestEvalInteger(eng, input, expected));
+}
+
+TEST_CASE("Decimal and String tests")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"let a = 5.5; a;", "5.500000"},
+			{"let a = 5d; let b = a; a = 10d; b;", "5.000000"},
+			{"let a = 5.5; let b = a; a = 10.5; a;", "10.500000"},
+			{"let a = 5.5; let b = 10.5; a + b;", "16.000000"},
+			{"let a = 5.5; let b = 10.5; a - b;", "-5.000000"},
+			{"let a = 2.5d; let b = 4; a * b;", "10.000000"},
+			{"let a = 10d; let b = 2.5d; a / b;", "4.000000"},
+			{"let a = 5.5; let b = 10.5; a == b;", "false"},
+			{"let a = 5.5; let b = 10.5; a != b;", "true"},
+			{"let a = 5.5; let b = 10.5; a < b;", "true"},
+			{"let a = 5.5; let b = 10.5; a > b;", "false"},
+			{"let a = 5.5; let b = 10.5; a == 5.5;", "true"},
+			{"let a = 5.5; let b = 10.5; a != 5.5;", "false"},
+			{"let a = 5.5; let b = 10.5; a == 10.5;", "false"},
+			{"let a = 5.5; let b = 10.5; a != 10.5;", "true"},
+			{"a = 6.6; a;", "6.600000"},
+			{"let a = \"Hello\"; a;", "Hello"},
+			{"let a = \"Hello\"; let b = a; a = \"World\"; b;", "Hello"},
+			{"let a = \"Hello\"; let b = a; a = \"World\"; a;", "World"},
+			{"let a = \"Hello\"; let b = \"World\"; a + b;", "HelloWorld"},
+			{"a = \"Hello\"; a;", "Hello"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+TEST_CASE("BENCHMARK STACK EVALUATOR")
+{
+	auto eng = std::make_shared<StackEvaluator>();
+	auto input = "let x = 0; for (let i = 0; i < 100; i = i + 1) { x = x + i; }; x;";
+	auto expected = 4950;
+	
+	SECTION("BENCHMARK STACK EVALUATOR - VERIFY")
+	{
+		REQUIRE(TestEvalInteger(eng, input, expected));
+	}
+	
+	SECTION("BENCHMARK STACK EVALUATOR - TIME")
+	{
+		BENCHMARK("BENCHMARK STACK EVALUATOR")
+		{
+			return TestEvalInteger(eng, input, expected);
+		};
+	}
+}
+
+TEST_CASE("BENCHMARK RECURSIVE EVALUATOR")
+{
+	auto eng = std::make_shared<RecursiveEvaluator>();
+	auto input = "let x = 0; for (let i = 0; i < 100; i = i + 1) { x = x + i; }; x;";
+	auto expected = 4950;
+
+	SECTION("BENCHMARK RECURSIVE EVALUATOR - VERIFY")
+	{
+		REQUIRE(TestEvalInteger(eng, input, expected));
+	}
+
+	SECTION("BENCHMARK RECURSIVE EVALUATOR - TIME")
+	{
+		BENCHMARK("BENCHMARK RECURSIVE EVALUATOR")
+		{
+			return TestEvalInteger(eng, input, expected);
+		};
+	}
 }

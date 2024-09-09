@@ -1,48 +1,53 @@
 #include "pch.h"
 
+// Initialize the static integer
+unsigned int TokenType::NextTokenNumber = 0;
+
 // Special tokens
-const TokenType TokenType::TOKEN_ILLEGAL   = { 0,  "ILLEGAL" };
-const TokenType TokenType::TOKEN_EOF       = { 1,  "EOF" };
+const TokenType TokenType::TOKEN_ILLEGAL   = { TokenType::NextTokenNumber++,  "ILLEGAL" };
+const TokenType TokenType::TOKEN_EOF       = { TokenType::NextTokenNumber++,  "EOF" };
 										   		   
 // Identifiers + literals				   		   
-const TokenType TokenType::TOKEN_IDENT     = { 2,  "IDENT" };
-const TokenType TokenType::TOKEN_INT       = { 3,  "INT" };
+const TokenType TokenType::TOKEN_IDENT     = { TokenType::NextTokenNumber++,  "IDENT" };
+const TokenType TokenType::TOKEN_INT       = { TokenType::NextTokenNumber++,  "INT" };
+const TokenType TokenType::TOKEN_STRING    = { TokenType::NextTokenNumber++,  "STRING" };
+const TokenType TokenType::TOKEN_DECIMAL   = { TokenType::NextTokenNumber++,  "DECIMAL" };
 										   		   
 // Operators							   		   
-const TokenType TokenType::TOKEN_ASSIGN    = { 4,  "=" };
-const TokenType TokenType::TOKEN_PLUS      = { 5,  "+" };
-const TokenType TokenType::TOKEN_INCREMENT = { 6,  "++" };
-const TokenType TokenType::TOKEN_MINUS     = { 7,  "-" };
-const TokenType TokenType::TOKEN_DECREMENT = { 8,  "--" };
-const TokenType TokenType::TOKEN_BANG      = { 9,  "!" };
-const TokenType TokenType::TOKEN_ASTERISK  = { 10,  "*" };
-const TokenType TokenType::TOKEN_SLASH     = { 11,  "/" };
-const TokenType TokenType::TOKEN_LT        = { 12, "<" };
-const TokenType TokenType::TOKEN_GT        = { 13, ">" };
-const TokenType TokenType::TOKEN_EQ        = { 14, "==" };
-const TokenType TokenType::TOKEN_NOT_EQ    = { 15, "!=" };
+const TokenType TokenType::TOKEN_ASSIGN    = { TokenType::NextTokenNumber++,  "=" };
+const TokenType TokenType::TOKEN_PLUS      = { TokenType::NextTokenNumber++,  "+" };
+const TokenType TokenType::TOKEN_INCREMENT = { TokenType::NextTokenNumber++,  "++" };
+const TokenType TokenType::TOKEN_MINUS     = { TokenType::NextTokenNumber++,  "-" };
+const TokenType TokenType::TOKEN_DECREMENT = { TokenType::NextTokenNumber++,  "--" };
+const TokenType TokenType::TOKEN_BANG      = { TokenType::NextTokenNumber++,  "!" };
+const TokenType TokenType::TOKEN_ASTERISK  = { TokenType::NextTokenNumber++,  "*" };
+const TokenType TokenType::TOKEN_SLASH     = { TokenType::NextTokenNumber++,  "/" };
+const TokenType TokenType::TOKEN_LT        = { TokenType::NextTokenNumber++, "<" };
+const TokenType TokenType::TOKEN_GT        = { TokenType::NextTokenNumber++, ">" };
+const TokenType TokenType::TOKEN_EQ        = { TokenType::NextTokenNumber++, "==" };
+const TokenType TokenType::TOKEN_NOT_EQ    = { TokenType::NextTokenNumber++, "!=" };
 
 // Delimiters							   		   
-const TokenType TokenType::TOKEN_COMMA     = { 16,  "," };
-const TokenType TokenType::TOKEN_SEMICOLON = { 17,  ";" };
+const TokenType TokenType::TOKEN_COMMA     = { TokenType::NextTokenNumber++,  "," };
+const TokenType TokenType::TOKEN_SEMICOLON = { TokenType::NextTokenNumber++,  ";" };
 												   
-const TokenType TokenType::TOKEN_LPAREN    = { 18,  "(" };
-const TokenType TokenType::TOKEN_RPAREN    = { 19,  ")" };
-const TokenType TokenType::TOKEN_LBRACE    = { 20, "{" };
-const TokenType TokenType::TOKEN_RBRACE    = { 21, "}" };
+const TokenType TokenType::TOKEN_LPAREN    = { TokenType::NextTokenNumber++,  "(" };
+const TokenType TokenType::TOKEN_RPAREN    = { TokenType::NextTokenNumber++,  ")" };
+const TokenType TokenType::TOKEN_LBRACE    = { TokenType::NextTokenNumber++, "{" };
+const TokenType TokenType::TOKEN_RBRACE    = { TokenType::NextTokenNumber++, "}" };
 
 // Keywords
-const TokenType TokenType::TOKEN_FUNCTION  = { 22, "FUNCTION" };
-const TokenType TokenType::TOKEN_LET       = { 23, "LET" };
-const TokenType TokenType::TOKEN_TRUE      = { 24, "TRUE" };
-const TokenType TokenType::TOKEN_FALSE     = { 25, "FALSE" };
-const TokenType TokenType::TOKEN_IF        = { 26, "IF" };
-const TokenType TokenType::TOKEN_ELSE      = { 27, "ELSE" };
-const TokenType TokenType::TOKEN_RETURN    = { 28, "RETURN" };
-const TokenType TokenType::TOKEN_WHILE     = { 29, "WHILE" };
-const TokenType TokenType::TOKEN_BREAK     = { 30, "BREAK" };
-const TokenType TokenType::TOKEN_CONTINUE  = { 31, "CONTINUE" };
-const TokenType TokenType::TOKEN_FOR       = { 32, "FOR" };
+const TokenType TokenType::TOKEN_FUNCTION  = { TokenType::NextTokenNumber++, "FUNCTION" };
+const TokenType TokenType::TOKEN_LET       = { TokenType::NextTokenNumber++, "LET" };
+const TokenType TokenType::TOKEN_TRUE      = { TokenType::NextTokenNumber++, "TRUE" };
+const TokenType TokenType::TOKEN_FALSE     = { TokenType::NextTokenNumber++, "FALSE" };
+const TokenType TokenType::TOKEN_IF        = { TokenType::NextTokenNumber++, "IF" };
+const TokenType TokenType::TOKEN_ELSE      = { TokenType::NextTokenNumber++, "ELSE" };
+const TokenType TokenType::TOKEN_RETURN    = { TokenType::NextTokenNumber++, "RETURN" };
+const TokenType TokenType::TOKEN_WHILE     = { TokenType::NextTokenNumber++, "WHILE" };
+const TokenType TokenType::TOKEN_BREAK     = { TokenType::NextTokenNumber++, "BREAK" };
+const TokenType TokenType::TOKEN_CONTINUE  = { TokenType::NextTokenNumber++, "CONTINUE" };
+const TokenType TokenType::TOKEN_FOR       = { TokenType::NextTokenNumber++, "FOR" };
 
 
 

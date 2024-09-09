@@ -423,3 +423,42 @@ NodeType ForExpression::NType() const
 {
 	return NodeType::ForExpression;
 }
+
+StringLiteral::StringLiteral(const Token& token, const std::string& value) : IExpression(token), Value(value)
+{
+}
+
+std::shared_ptr<StringLiteral> StringLiteral::New(const Token& token, const std::string& value)
+{
+	return std::make_shared<StringLiteral>(token, value);
+}
+
+std::string StringLiteral::ToString() const
+{
+	return Value;
+}
+
+NodeType StringLiteral::NType() const
+{
+	return NodeType::StringLiteral;
+}
+
+DecimalLiteral::DecimalLiteral(const Token& token, float value) : IExpression(token), Value(value)
+{
+}
+
+std::shared_ptr<DecimalLiteral> DecimalLiteral::New(const Token& token, float value)
+{
+	return std::make_shared<DecimalLiteral>(token, value);
+}
+
+std::string DecimalLiteral::ToString() const
+{
+	return std::to_string(Value);
+}
+
+NodeType DecimalLiteral::NType() const
+{
+	return NodeType::DecimalLiteral;
+}
+

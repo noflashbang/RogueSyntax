@@ -12,6 +12,15 @@ namespace Catch {
 	};
 }
 
+namespace Catch {
+	template<>
+	struct StringMaker<Token> {
+		static std::string convert(Token const& value) {
+			return std::format("Token:{},{}", value.Type.Name, value.Literal);
+		}
+	};
+}
+
 static bool operator==(const Token& lhs, const Token& rhs)
 {
 	return lhs.Type == rhs.Type && lhs.Literal == rhs.Literal;
@@ -90,7 +99,7 @@ TEST_CASE("Test NextToken 2")
 TEST_CASE("Test NextToken 3")
 {
 
-	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^ while break continue for",
+	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^ while break continue for 23d 2.3 \"some string\"",
 		{
 			{TokenType::TOKEN_LET, "let"},
 			{TokenType::TOKEN_RETURN, "return"},
@@ -123,6 +132,9 @@ TEST_CASE("Test NextToken 3")
 			{TokenType::TOKEN_BREAK, "break"},
 			{TokenType::TOKEN_CONTINUE, "continue"},
 			{TokenType::TOKEN_FOR, "for"},
+			{TokenType::TOKEN_DECIMAL, "23d"},
+			{TokenType::TOKEN_DECIMAL, "2.3"},
+			{TokenType::TOKEN_STRING, "\"some string\""},
 			{TokenType::TOKEN_EOF, ""}
 		} };
 

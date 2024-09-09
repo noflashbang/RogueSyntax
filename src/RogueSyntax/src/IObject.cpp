@@ -1,15 +1,18 @@
 #include "pch.h"
 
+unsigned int ObjectType::NextObjectType = 0;
 
-const ObjectType ObjectType::NULL_OBJ = { 0, "NULL" };
-const ObjectType ObjectType::INTEGER_OBJ = { 1, "INTEGER" };
-const ObjectType ObjectType::BOOLEAN_OBJ = { 2, "BOOLEAN" };
-const ObjectType ObjectType::RETURN_OBJ = { 3, "RETURN" };
-const ObjectType ObjectType::ERROR_OBJ = { 4, "ERROR" };
-const ObjectType ObjectType::FUNCTION_OBJ = { 5, "FUNCTION" };
+const ObjectType ObjectType::NULL_OBJ      = { NextObjectType++, "NULL" };
+const ObjectType ObjectType::INTEGER_OBJ   = { NextObjectType++, "INTEGER" };
+const ObjectType ObjectType::DECIMAL_OBJ   = { NextObjectType++, "DECIMAL" };
+const ObjectType ObjectType::STRING_OBJ    = { NextObjectType++, "STRING" };
+const ObjectType ObjectType::BOOLEAN_OBJ   = { NextObjectType++, "BOOLEAN" };
+const ObjectType ObjectType::RETURN_OBJ    = { NextObjectType++, "RETURN" };
+const ObjectType ObjectType::ERROR_OBJ     = { NextObjectType++, "ERROR" };
+const ObjectType ObjectType::FUNCTION_OBJ  = { NextObjectType++, "FUNCTION" };
 
-const ObjectType ObjectType::BREAK_OBJ = { 6, "BREAK" };
-const ObjectType ObjectType::CONTINUE_OBJ = { 7, "CONTINUE" };
+const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
+const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
 
 std::shared_ptr<BooleanObj> BooleanObj::TRUE_OBJ_REF =  BooleanObj::New(true);
 std::shared_ptr<BooleanObj> BooleanObj::FALSE_OBJ_REF = BooleanObj::New(false);
@@ -37,10 +40,19 @@ std::shared_ptr<ContinueObj> ContinueObj::New()
 }
 
 
-
 std::shared_ptr<IntegerObj> IntegerObj::New(int value)
 {
 	return std::make_shared<IntegerObj>(value);
+}
+
+std::shared_ptr<DecimalObj> DecimalObj::New(float value)
+{
+	return std::make_shared<DecimalObj>(value);
+}
+
+std::shared_ptr<StringObj> StringObj::New(const std::string& value)
+{
+	return std::make_shared<StringObj>(value);
 }
 
 std::shared_ptr<BooleanObj> BooleanObj::New(bool value)

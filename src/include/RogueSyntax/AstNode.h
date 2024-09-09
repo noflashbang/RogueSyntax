@@ -23,7 +23,9 @@ enum class NodeType
 	WhileExpression,
 	BreakStatement,
 	ContinueStatement,
-	ForExpression
+	ForExpression,
+	StringLiteral,
+	DecimalLiteral,
 };
 
 class INode
@@ -263,4 +265,28 @@ struct ForExpression : IExpression
 	std::shared_ptr<IExpression> Condition;
 	std::shared_ptr<IStatement> Post;
 	std::shared_ptr<IStatement> Action;
+};
+
+struct StringLiteral : IExpression
+{
+	StringLiteral(const Token& token, const std::string& value);
+	virtual ~StringLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<StringLiteral> New(const Token& token, const std::string& value);
+
+	std::string Value;
+};
+
+struct DecimalLiteral : IExpression
+{
+	DecimalLiteral(const Token& token, const float value);
+	virtual ~DecimalLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<DecimalLiteral> New(const Token& token, const float value);
+
+	float Value;
 };

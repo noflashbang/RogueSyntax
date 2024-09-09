@@ -1,6 +1,8 @@
 #pragma once
 
 #include "StandardLib.h"
+#include "Token.h"
+#include "AstNode.h"
 
 struct Environment;
 
@@ -49,9 +51,12 @@ struct ObjectType
 		return Name;
 	}
 
+	static unsigned int NextObjectType;
 	//TYPES
 	static const ObjectType NULL_OBJ;
 	static const ObjectType INTEGER_OBJ;
+	static const ObjectType DECIMAL_OBJ;
+	static const ObjectType STRING_OBJ;
 	static const ObjectType BOOLEAN_OBJ;
 	static const ObjectType RETURN_OBJ;
 	static const ObjectType ERROR_OBJ;
@@ -158,6 +163,48 @@ public:
 	int32_t Value;
 
 	static std::shared_ptr<IntegerObj> New(int value);
+};
+
+class DecimalObj : public IObject
+{
+public:
+	DecimalObj(float value) : Value(value) {};
+	virtual ~DecimalObj() = default;
+
+	ObjectType Type() const override
+	{
+		return ObjectType::DECIMAL_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return std::to_string(Value);
+	}
+
+	float Value;
+
+	static std::shared_ptr<DecimalObj> New(float value);
+};
+
+class StringObj : public IObject
+{
+public:
+	StringObj(const std::string& value) : Value(value) {}
+	virtual ~StringObj() = default;
+
+	ObjectType Type() const override
+	{
+		return ObjectType::STRING_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return Value;
+	}
+
+	std::string Value;
+
+	static std::shared_ptr<StringObj> New(const std::string& value);
 };
 
 class BooleanObj : public IObject

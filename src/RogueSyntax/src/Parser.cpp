@@ -1,9 +1,12 @@
+#include "Parser.h"
 #include "pch.h"
 
 Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 {
 	_prefixDispatch[TokenType::TOKEN_IDENT] = std::bind(&Parser::ParseIdentifier, this);
 	_prefixDispatch[TokenType::TOKEN_INT] = std::bind(&Parser::ParseIntegerLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_DECIMAL] = std::bind(&Parser::ParseDecimalLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_STRING] = std::bind(&Parser::ParseStringLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_BANG] = std::bind(&Parser::ParsePrefixExpression, this);
 	_prefixDispatch[TokenType::TOKEN_MINUS] = std::bind(&Parser::ParsePrefixExpression, this);
 	_prefixDispatch[TokenType::TOKEN_FALSE] = std::bind(&Parser::ParseBoolean, this);
@@ -135,6 +138,34 @@ std::shared_ptr<IExpression> Parser::ParseIntegerLiteral()
 		AddError(e.what());
 		return nullptr;
 	}
+}
+
+std::shared_ptr<IExpression> Parser::ParseDecimalLiteral()
+{
+	try
+	{
+		//remove the trailing d
+		if (_currentToken.Literal.ends_with('d'))
+		{
+			_currentToken.Literal.pop_back();
+		}
+		return DecimalLiteral::New(_currentToken, std::stof(_currentToken.Literal));
+	}
+	catch (const std::invalid_argument& e)
+	{
+		std::string error = "could not parse " + _currentToken.Literal + " as decimal";
+		AddError(error);
+		AddError(e.what());
+		return nullptr;
+	}
+}
+
+std::shared_ptr<IExpression> Parser::ParseStringLiteral()
+{
+	//remove the quotes
+	std::string result(_currentToken.Literal.begin() + 1, _currentToken.Literal.end() - 1);
+
+	return StringLiteral::New(_currentToken, result);
 }
 
 std::shared_ptr<IExpression> Parser::ParsePrefixExpression()
