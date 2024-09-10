@@ -21,6 +21,12 @@ public:
 
 	//Built-in functions
 	std::shared_ptr<IObject> Len(const std::vector<std::shared_ptr<IObject>>& args, const Token& token);
+	std::shared_ptr<IObject> First(const std::vector<std::shared_ptr<IObject>>& args, const Token& token);
+	std::shared_ptr<IObject> Last(const std::vector<std::shared_ptr<IObject>>& args, const Token& token);
+	std::shared_ptr<IObject> Rest(const std::vector<std::shared_ptr<IObject>>& args, const Token& token);
+	std::shared_ptr<IObject> Push(const std::vector<std::shared_ptr<IObject>>& args, const Token& token);
+	std::shared_ptr<IObject> PrintLine(const std::vector<std::shared_ptr<IObject>>& args, const Token& token);
+
 private:
 	std::map<std::string, std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args, const Token& token)>> _builtins;
 };

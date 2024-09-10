@@ -128,6 +128,19 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 			result = arr->Elements[idx->Value];
 		}
 	}
+	else if (operand->Type() == ObjectType::STRING_OBJ && index->Type() == ObjectType::INTEGER_OBJ)
+	{
+		auto str = std::dynamic_pointer_cast<StringObj>(operand);
+		auto idx = std::dynamic_pointer_cast<IntegerObj>(index);
+		if (idx->Value < 0 || idx->Value >= str->Value.size())
+		{
+			result = NullObj::NULL_OBJ_REF;
+		}
+		else
+		{
+			result = StringObj::New(std::string(1, str->Value[idx->Value]));
+		}
+	}
 	else
 	{
 		result = MakeError(std::format("index operator not supported: {}", operand->Type().Name), op);
