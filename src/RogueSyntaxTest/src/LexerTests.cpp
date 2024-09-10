@@ -99,7 +99,7 @@ TEST_CASE("Test NextToken 2")
 TEST_CASE("Test NextToken 3")
 {
 
-	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^ while break continue for 23d 2.3 \"some string\"",
+	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^ while break continue for 23d 2.3 \"some string\" [ ]",
 		{
 			{TokenType::TOKEN_LET, "let"},
 			{TokenType::TOKEN_RETURN, "return"},
@@ -135,6 +135,8 @@ TEST_CASE("Test NextToken 3")
 			{TokenType::TOKEN_DECIMAL, "23d"},
 			{TokenType::TOKEN_DECIMAL, "2.3"},
 			{TokenType::TOKEN_STRING, "\"some string\""},
+			{TokenType::TOKEN_LBRACKET, "["},
+			{TokenType::TOKEN_RBRACKET, "]"},
 			{TokenType::TOKEN_EOF, ""}
 		} };
 

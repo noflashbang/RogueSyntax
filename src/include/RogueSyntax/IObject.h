@@ -61,6 +61,7 @@ struct ObjectType
 	static const ObjectType RETURN_OBJ;
 	static const ObjectType ERROR_OBJ;
 	static const ObjectType FUNCTION_OBJ;
+	static const ObjectType BUILTIN_OBJ;
 
 	//special flow control objects
 	static const ObjectType BREAK_OBJ;
@@ -314,3 +315,22 @@ public:
 	static std::shared_ptr<FunctionObj> New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env);
 };
 
+class BuiltInObj : public IObject
+{
+public:
+	BuiltInObj(const std::string& name) : Name(name) {}
+	virtual ~BuiltInObj() = default;
+
+	ObjectType Type() const override
+	{
+		return ObjectType::BUILTIN_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return "builtin function";
+	}
+
+	std::string Name;
+	static std::shared_ptr<BuiltInObj> New(const std::string& name);
+};

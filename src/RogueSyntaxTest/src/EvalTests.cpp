@@ -15,6 +15,7 @@ namespace Catch {
 std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input)
 {
 	auto env = Environment::New();
+	auto builtins = BuiltIn::New();
 	Lexer lexer(input);
 	Parser parser(lexer);
 	
@@ -29,7 +30,7 @@ std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const 
 	}
 	REQUIRE(errors.size() == 0);
 
-	auto result = eval->Eval(program, env);
+	auto result = eval->Eval(program, env, builtins);
 	return result;
 }
 
@@ -213,8 +214,6 @@ TEST_CASE("Test Error Obj")
 	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
 	auto tests = std::vector<std::pair<std::string, std::string>>
 	{
-		{"5 + true;", "type mismatch: INTEGER + BOOLEAN"},
-		{"5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"},
 		{"-true", "unknown operator: -BOOLEAN"},
 		{"true + false;", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
@@ -362,6 +361,59 @@ TEST_CASE("Decimal and String tests")
 			{"let a = \"Hello\"; let b = a; a = \"World\"; a;", "World"},
 			{"let a = \"Hello\"; let b = \"World\"; a + b;", "HelloWorld"},
 			{"a = \"Hello\"; a;", "Hello"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+TEST_CASE("Coerce Tests")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"5 + 5.5;", "10.500000"},
+			{"5.5 + 5;", "10.500000"},
+			{"5 == 5.5;", "false"},
+			{"5.5 == 5;", "false"},
+			{"5 != 5.5;", "true"},
+			{"5.5 != 5;", "true"},
+			{"5 < 5.5;", "true"},
+			{"5.5 < 5;", "false"},
+			{"5 > 5.5;", "false"},
+			{"5.5 > 5;", "true"},
+			{"5 == true;", "true"},
+			{"5 != true;", "false"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+TEST_CASE("Built In method test")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"len(\"\");", "0"},
+			{"len(\"four\");", "4"},
+			{"len(\"hello world\");", "11"},
+			{"len(1);", "ERROR: argument to `len` not supported, got INTEGER"},
+			{"len(\"one\", \"two\");", "ERROR: wrong number of arguments. got=2, wanted=1"},
+			//{"len([1, 2, 3]);", "3"},
+			//{"len([]);", "0"},
+			//{"first([1, 2, 3]);", "1"},
+			//{"first([]);", "null"},
+			//{"first(1);", "argument to `first` must be ARRAY, got INTEGER"},
+			//{"last([1, 2, 3]);", "3"},
+			//{"last([]);", "null"},
+			//{"last(1);", "argument to `last` must be ARRAY, got INTEGER"},
+			//{"rest([1, 2, 3]);", "[2, 3]"},
+			//{"rest([]);", "null"},
+			//{"push([], 1);", "[1]"},
+			//{"push(1, 1);", "argument to `push` must be ARRAY, got INTEGER"}
 		}));
 
 	CAPTURE(input);

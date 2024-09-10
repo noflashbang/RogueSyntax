@@ -462,3 +462,35 @@ NodeType DecimalLiteral::NType() const
 	return NodeType::DecimalLiteral;
 }
 
+ArrayLiteral::ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements) : IExpression(token), Elements(elements)
+{
+}
+
+std::shared_ptr<ArrayLiteral> ArrayLiteral::New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements)
+{
+	return std::make_shared<ArrayLiteral>(token, elements);
+}
+
+std::string ArrayLiteral::ToString() const
+{
+	std::string result;
+	result.append("[");
+	std::for_each(Elements.begin(), Elements.end(), [&result](const auto& element)
+		{
+			result.append(element->ToString());
+			result.append(", ");
+		});
+
+	//remove the last comma
+	result.pop_back();
+	result.pop_back();
+
+	result.append("]");
+	return result;
+}
+
+NodeType ArrayLiteral::NType() const
+{
+	return NodeType::ArrayLiteral;
+}
+

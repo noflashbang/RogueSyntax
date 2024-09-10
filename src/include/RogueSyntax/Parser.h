@@ -60,6 +60,7 @@ public:
 	std::shared_ptr<IExpression> ParseCallExpression(const std::shared_ptr<IExpression>& function);
 	std::shared_ptr<IExpression> ParseWhileExpression();
 	std::shared_ptr<IExpression> ParseForExpression();
+	std::shared_ptr<IExpression> ParseArrayLiteral();
 
 	std::shared_ptr<IStatement> ParseBlockStatement();
 	std::shared_ptr<IStatement> ParseLetStatement();

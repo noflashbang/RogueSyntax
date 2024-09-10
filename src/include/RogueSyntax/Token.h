@@ -81,6 +81,7 @@ struct TokenType
 	static const TokenType TOKEN_EQ;
 	static const TokenType TOKEN_NOT_EQ;
 
+
 	// Delimiters
 	static const TokenType TOKEN_COMMA;
 	static const TokenType TOKEN_SEMICOLON;
@@ -88,6 +89,8 @@ struct TokenType
 	static const TokenType TOKEN_RPAREN;
 	static const TokenType TOKEN_LBRACE;
 	static const TokenType TOKEN_RBRACE;
+	static const TokenType TOKEN_LBRACKET;
+	static const TokenType TOKEN_RBRACKET;
 
 	// Keywords
 	static const TokenType TOKEN_FUNCTION;

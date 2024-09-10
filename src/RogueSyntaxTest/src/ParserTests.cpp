@@ -128,6 +128,8 @@ bool TestBooleanLiteral(const IExpression* expression, bool expected)
 	return true;
 }
 
+
+
 bool TestLiteralExpression(const IExpression* expression, const std::string& expected)
 {
 	if (expression->Type() == TokenType::TOKEN_IDENT)
@@ -146,6 +148,38 @@ bool TestLiteralExpression(const IExpression* expression, const std::string& exp
 	{
 		throw std::invalid_argument(std::format("Bad expression -> Expected Literal GOT {}", expression->ToString()));
 		return false;
+	}
+
+	return true;
+}
+
+bool TestNonLiteralExpression(const IExpression* expression, const std::string& expected)
+{
+	return expression->ToString() == expected;
+}
+
+bool TestArrayLiteral(const IExpression* expression, std::vector<std::string> elements)
+{
+	auto arr = dynamic_cast<const ArrayLiteral*>(expression);
+	if (arr == nullptr)
+	{
+		throw std::invalid_argument(std::format("Bad expression -> Expected ArrayLiteral GOT {}", expression->ToString()));
+		return false;
+	}
+
+	auto size = elements.size();
+	if (arr->Elements.size() != size)
+	{
+		throw std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", size, arr->Elements.size()));
+		return false;
+	}
+
+	for (size_t i = 0; i < size; i++)
+	{
+		if (!TestNonLiteralExpression(arr->Elements[i].get(), elements[i]))
+		{
+			return false;
+		}
 	}
 
 	return true;
@@ -302,6 +336,24 @@ TEST_CASE("Test Boolean Literal")
 
 	REQUIRE(TestBooleanLiteral(expressionStatement->Expression.get(), true));
 }
+
+TEST_CASE("Test Array Literal")
+{
+	std::string input = "[4, 4 + 4, 4 * 4];";
+	Lexer lexer(input);
+	Parser parser(lexer);
+
+	auto program = parser.ParseProgram();
+	auto errors = parser.Errors();
+	REQUIRE(errors.size() == 0);
+
+	REQUIRE(program->Statements.size() == 1);
+	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+	REQUIRE(expressionStatement != nullptr);
+
+	REQUIRE(TestArrayLiteral(expressionStatement->Expression.get(), {"4","(4 + 4)","(4 * 4)"}));
+}
+
 
 TEST_CASE("Test Prefix Expression BANG")
 {

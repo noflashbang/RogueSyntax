@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "Parser.h"
 #include "pch.h"
 
 Parser::Parser(const Lexer& lexer) : _lexer(lexer)
@@ -16,6 +17,7 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_prefixDispatch[TokenType::TOKEN_FUNCTION] = std::bind(&Parser::ParseFunctionLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_WHILE] = std::bind(&Parser::ParseWhileExpression, this);
 	_prefixDispatch[TokenType::TOKEN_FOR] = std::bind(&Parser::ParseForExpression, this);
+	_prefixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseArrayLiteral, this);
 
 	//register infix operators
 	_infixDispatch[TokenType::TOKEN_PLUS] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
@@ -27,6 +29,7 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_infixDispatch[TokenType::TOKEN_LT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_GT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseCallExpression, this, std::placeholders::_1);
+	//_infixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseIndexExpression, this, std::placeholders::_1);
 
 	//load the first two tokens
 	NextToken();
@@ -328,6 +331,30 @@ std::shared_ptr<IExpression> Parser::ParseForExpression()
 	auto action = ParseBlockStatement();
 
 	return ForExpression::New(token, init, condition, post, action);
+}
+
+std::shared_ptr<IExpression> Parser::ParseArrayLiteral()
+{
+	auto token = _currentToken;
+
+	std::vector<std::shared_ptr<IExpression>> arguments;
+
+	while (!PeekTokenIs(TokenType::TOKEN_RBRACKET))
+	{
+		NextToken();
+		if (!CurrentTokenIs(TokenType::TOKEN_COMMA))
+		{
+			auto arg = ParseExpression(Precedence::LOWEST);
+			arguments.emplace_back(arg);
+		}
+	}
+
+	if (!ExpectPeek(TokenType::TOKEN_RBRACKET))
+	{
+		return nullptr;
+	}
+
+	return ArrayLiteral::New(token, arguments);
 }
 
 std::shared_ptr<IStatement> Parser::ParseBlockStatement()

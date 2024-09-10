@@ -133,6 +133,16 @@ Token Lexer::GetCurrentToken()
 			result = Token::New(TokenType::TOKEN_RBRACE, _currentChar);
 			break;
 		}
+		case '[':
+		{
+			result = Token::New(TokenType::TOKEN_LBRACKET, _currentChar);
+			break;
+		}
+		case ']':
+		{
+			result = Token::New(TokenType::TOKEN_RBRACKET, _currentChar);
+			break;
+		}
 		case '\0':
 		{
 			result = Token::New(TokenType::TOKEN_EOF, "");
@@ -213,11 +223,14 @@ std::string Lexer::ReadString()
 	auto position = _position;
 	auto cnt = 1;
 
-	while ((IsLetter)(_peekChar) || _peekChar == '"' || IsWhitespace(_peekChar))
+	while (_peekChar != '"')
 	{
 		cnt++;
 		ReadChar();
 	}
+	cnt++;
+	ReadChar();
+
 	return _input.substr(position, cnt);
 }
 

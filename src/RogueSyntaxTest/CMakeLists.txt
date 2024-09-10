@@ -24,6 +24,7 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/IObject.h
     ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
+    ${PARENT_DIR}/include/RogueSyntax/Builtin.h
 )
 
 set( testSource 

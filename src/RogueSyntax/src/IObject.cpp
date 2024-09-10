@@ -10,6 +10,7 @@ const ObjectType ObjectType::BOOLEAN_OBJ   = { NextObjectType++, "BOOLEAN" };
 const ObjectType ObjectType::RETURN_OBJ    = { NextObjectType++, "RETURN" };
 const ObjectType ObjectType::ERROR_OBJ     = { NextObjectType++, "ERROR" };
 const ObjectType ObjectType::FUNCTION_OBJ  = { NextObjectType++, "FUNCTION" };
+const ObjectType ObjectType::BUILTIN_OBJ   = { NextObjectType++, "BUILTIN" };
 
 const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
 const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
@@ -73,6 +74,11 @@ std::shared_ptr<ReturnObj> ReturnObj::New(const std::shared_ptr<IObject>& value)
 std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env)
 {
 	return std::make_shared<FunctionObj>(parameters, body, env);
+}
+
+std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
+{
+	return std::make_shared<BuiltInObj>(name);
 }
 
 

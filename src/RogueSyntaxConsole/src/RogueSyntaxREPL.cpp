@@ -5,6 +5,7 @@ void Repl::Start()
 {
 	std::string input;
 	auto env = Environment::New();
+	auto builtins = BuiltIn::New();
 
 	while (true)
 	{
@@ -20,7 +21,7 @@ void Repl::Start()
 		Parser parser(lexer);
 
 		auto program = parser.ParseProgram();
-		if (parser.Errors().empty())
+		if (!parser.Errors().empty())
 		{
 			for (const auto& error : parser.Errors())
 			{
@@ -30,7 +31,7 @@ void Repl::Start()
 		}
 
 		std::shared_ptr<Evaluator> eval = std::make_shared<StackEvaluator>();
-		auto result = eval->Eval(program, env);
+		auto result = eval->Eval(program, env, builtins);
 
 		if (result == nullptr)
 		{
