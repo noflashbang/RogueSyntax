@@ -54,6 +54,7 @@ struct ObjectType
 	static unsigned int NextObjectType;
 	//TYPES
 	static const ObjectType NULL_OBJ;
+	static const ObjectType VOID_OBJ;
 	static const ObjectType INTEGER_OBJ;
 	static const ObjectType DECIMAL_OBJ;
 	static const ObjectType STRING_OBJ;
@@ -95,11 +96,39 @@ public:
 	}
 
 	static std::shared_ptr<NullObj> NULL_OBJ_REF;
+
+protected:
 	static std::shared_ptr<NullObj> New();
 	
 private:
 	int _dummy;
 };
+
+class VoidObj : public IObject
+{
+public:
+	VoidObj() { _dummy = 0; }
+	virtual ~VoidObj() = default;
+
+	ObjectType Type() const override
+	{
+		return ObjectType::NULL_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return "null";
+	}
+
+	static std::shared_ptr<VoidObj> VOID_OBJ_REF;
+
+protected:
+	static std::shared_ptr<VoidObj> New();
+
+private:
+	int _dummy;
+};
+
 
 class BreakObj : public IObject
 {

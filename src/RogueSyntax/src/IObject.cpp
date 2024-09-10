@@ -3,6 +3,7 @@
 unsigned int ObjectType::NextObjectType = 0;
 
 const ObjectType ObjectType::NULL_OBJ      = { NextObjectType++, "NULL" };
+const ObjectType ObjectType::VOID_OBJ      = { NextObjectType++, "VOID" };
 const ObjectType ObjectType::INTEGER_OBJ   = { NextObjectType++, "INTEGER" };
 const ObjectType ObjectType::DECIMAL_OBJ   = { NextObjectType++, "DECIMAL" };
 const ObjectType ObjectType::STRING_OBJ    = { NextObjectType++, "STRING" };
@@ -16,6 +17,7 @@ const ObjectType ObjectType::ARRAY_OBJ     = { NextObjectType++, "ARRAY" };
 const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
 const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
 
+
 std::shared_ptr<BooleanObj> BooleanObj::TRUE_OBJ_REF =  BooleanObj::New(true);
 std::shared_ptr<BooleanObj> BooleanObj::FALSE_OBJ_REF = BooleanObj::New(false);
 
@@ -25,6 +27,13 @@ std::shared_ptr<NullObj> NullObj::NULL_OBJ_REF = NullObj::New();
 std::shared_ptr<NullObj> NullObj::New()
 {
 	return std::make_shared<NullObj>();
+}
+
+std::shared_ptr<VoidObj> VoidObj::VOID_OBJ_REF = VoidObj::New();
+
+std::shared_ptr<VoidObj> VoidObj::New()
+{
+	return std::make_shared<VoidObj>();
 }
 
 std::shared_ptr<BreakObj> BreakObj::BREAK_OBJ_REF = BreakObj::New();

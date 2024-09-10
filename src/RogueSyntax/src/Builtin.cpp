@@ -66,7 +66,7 @@ std::shared_ptr<IObject> BuiltIn::First(const std::vector<std::shared_ptr<IObjec
 		return arr->Elements[0];
 	}
 
-	return NullObj::New();
+	return NullObj::NULL_OBJ_REF;
 }
 
 std::shared_ptr<IObject> BuiltIn::Last(const std::vector<std::shared_ptr<IObject>>& args, const Token& token)
@@ -88,7 +88,7 @@ std::shared_ptr<IObject> BuiltIn::Last(const std::vector<std::shared_ptr<IObject
 		return arr->Elements[length - 1];
 	}
 
-	return NullObj::New();
+	return NullObj::NULL_OBJ_REF;
 }
 
 std::shared_ptr<IObject> BuiltIn::Rest(const std::vector<std::shared_ptr<IObject>>& args, const Token& token)
@@ -115,7 +115,7 @@ std::shared_ptr<IObject> BuiltIn::Rest(const std::vector<std::shared_ptr<IObject
 		return ArrayObj::New(newElements);
 	}
 
-	return NullObj::New();
+	return NullObj::NULL_OBJ_REF;
 }
 
 std::shared_ptr<IObject> BuiltIn::Push(const std::vector<std::shared_ptr<IObject>>& args, const Token& token)
@@ -142,6 +142,6 @@ std::shared_ptr<IObject> BuiltIn::PrintLine(const std::vector<std::shared_ptr<IO
 	{
 		std::cout << arg->Inspect() << std::endl;
 	}
-	return NullObj::New();
+	return VoidObj::VOID_OBJ_REF;
 }
 

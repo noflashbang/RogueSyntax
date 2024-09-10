@@ -891,7 +891,11 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 						break;
 					}
 					auto result = builtInToCall(evalArgs, call->BaseToken);
-					results.push(result);
+
+					if (result != VoidObj::VOID_OBJ_REF) //check for a "void" return
+					{
+						results.push(result);
+					}
 				}
 				else
 				{
@@ -1452,6 +1456,12 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			result = NullObj::NULL_OBJ_REF;
 		}
 	}
+
+	if (VoidObj::VOID_OBJ_REF == result)
+	{
+		return nullptr;
+	}
+
 	return result;
 }
 
