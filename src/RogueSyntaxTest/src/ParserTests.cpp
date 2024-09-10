@@ -467,6 +467,9 @@ TEST_CASE("Test Operator Precedence Parsing")
 		{"!(true == true)", "(!(true == true))"},
 		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
 		{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+		{"add(a + b + c * d / f + g)", "add((((a + b) + ((c * d) / f)) + g))"},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
 	};
 
 	for (auto& test : tests)
@@ -795,6 +798,33 @@ TEST_CASE("Test Call Expression")
 	REQUIRE(TestLiteralExpression(call->Arguments[0].get(), "1"));
 	REQUIRE(TestInfixExpression(call->Arguments[1].get(), "2", "*", "3"));
 	REQUIRE(TestInfixExpression(call->Arguments[2].get(), "4", "+", "5"));
+}
+
+TEST_CASE("Test Index expression")
+{
+	std::string input = "array[1 + 1];";
+	Lexer lexer(input);
+	Parser parser(lexer);
+
+	auto program = parser.ParseProgram();
+	auto errors = parser.Errors();
+	if (errors.size() != 0)
+	{
+		for (auto& error : errors)
+		{
+			UNSCOPED_INFO(error);
+		}
+	}
+	REQUIRE(errors.size() == 0);
+
+	REQUIRE(program->Statements.size() == 1);
+	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+	REQUIRE(expressionStatement != nullptr);
+
+	auto index = dynamic_cast<IndexExpression*>(expressionStatement->Expression.get());
+	REQUIRE(index != nullptr);
+	REQUIRE(index->Left->TokenLiteral() == "array");
+	REQUIRE(TestInfixExpression(index->Index.get(), "1", "+", "1"));
 }
 
 TEST_CASE("Test While expression")

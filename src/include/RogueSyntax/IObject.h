@@ -58,6 +58,7 @@ struct ObjectType
 	static const ObjectType DECIMAL_OBJ;
 	static const ObjectType STRING_OBJ;
 	static const ObjectType BOOLEAN_OBJ;
+	static const ObjectType ARRAY_OBJ;
 	static const ObjectType RETURN_OBJ;
 	static const ObjectType ERROR_OBJ;
 	static const ObjectType FUNCTION_OBJ;
@@ -234,6 +235,43 @@ public:
 	static std::shared_ptr<BooleanObj> New(bool value);
 };
 
+class ArrayObj : public IObject
+{
+public:
+	ArrayObj(const std::vector<std::shared_ptr<IObject>>& elements) : Elements(elements) {}
+	virtual ~ArrayObj() = default;
+
+	ObjectType Type() const override
+	{
+		return ObjectType::ARRAY_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		std::string out = "[";
+
+		std::for_each(Elements.begin(), Elements.end(), [&out](const auto& elem)
+		{
+			out.append(elem->Inspect());
+			out.append(", ");
+		});
+
+		if (Elements.size() > 0)
+		{
+			//remove the last comma
+			out.pop_back();
+			out.pop_back();
+		}
+
+		out += "]";
+		return out;
+	}
+
+	std::vector<std::shared_ptr<IObject>> Elements;
+
+	static std::shared_ptr<ArrayObj> New(const std::vector<std::shared_ptr<IObject>>& elements);
+};
+
 class ReturnObj : public IObject
 {
 public:
@@ -298,9 +336,12 @@ public:
 			out.append(", ");
 		});
 
-		//remove the last comma
-		out.pop_back();
-		out.pop_back();
+		if (Parameters.size() > 0)
+		{
+			//remove the last comma
+			out.pop_back();
+			out.pop_back();
+		}
 
 		out += ") {\n";
 		out += Body->ToString();

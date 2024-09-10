@@ -18,6 +18,7 @@ enum class Precedence
 	PRODUCT,     // *
 	PREFIX,      // -X or !X
 	CALL,        // myFunction(X)
+	INDEX,       // array[index]
 };
 
 static const std::map<TokenType, Precedence> PRECEDENCES = {
@@ -33,6 +34,7 @@ static const std::map<TokenType, Precedence> PRECEDENCES = {
 	{TokenType::TOKEN_SLASH, Precedence::PRODUCT},
 	{TokenType::TOKEN_ASTERISK, Precedence::PRODUCT},
 	{TokenType::TOKEN_LPAREN, Precedence::CALL},
+	{TokenType::TOKEN_LBRACKET, Precedence::INDEX},
 };
 
 class Parser
@@ -61,6 +63,7 @@ public:
 	std::shared_ptr<IExpression> ParseWhileExpression();
 	std::shared_ptr<IExpression> ParseForExpression();
 	std::shared_ptr<IExpression> ParseArrayLiteral();
+	std::shared_ptr<IExpression> ParseIndexExpression(const std::shared_ptr<IExpression>& left);
 
 	std::shared_ptr<IStatement> ParseBlockStatement();
 	std::shared_ptr<IStatement> ParseLetStatement();

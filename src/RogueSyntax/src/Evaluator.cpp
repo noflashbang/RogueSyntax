@@ -112,6 +112,30 @@ std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, cons
 	return result;
 }
 
+std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const std::shared_ptr<IObject>& operand, const std::shared_ptr<IObject>& index) const
+{
+	std::shared_ptr<IObject> result = nullptr;
+	if (operand->Type() == ObjectType::ARRAY_OBJ && index->Type() == ObjectType::INTEGER_OBJ)
+	{
+		auto arr = std::dynamic_pointer_cast<ArrayObj>(operand);
+		auto idx = std::dynamic_pointer_cast<IntegerObj>(index);
+		if (idx->Value < 0 || idx->Value >= arr->Elements.size())
+		{
+			result = NullObj::NULL_OBJ_REF;
+		}
+		else
+		{
+			result = arr->Elements[idx->Value];
+		}
+	}
+	else
+	{
+		result = MakeError(std::format("index operator not supported: {}", operand->Type().Name), op);
+	}
+	return result;
+
+}
+
 bool Evaluator::CanCoerceTypes(const IObject* const left, const IObject* const right) const
 {
 	auto leftCoercion = _coercionTable.find(left->Type());
@@ -546,6 +570,70 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 			results.push(boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF);
 			break;
 		}
+		case NodeType::ArrayLiteral:
+		{
+			const auto* array = dynamic_cast<const ArrayLiteral*>(currentNode);
+			std::vector<std::shared_ptr<IObject>> elements;
+
+			if (signal == 0)
+			{
+				stack.push({ currentNode, 1, useEnv });
+
+				for (const auto& elem : array->Elements)
+				{
+					stack.push({ elem.get(), 0, useEnv });
+				}
+			}
+			else
+			{
+				std::vector<std::shared_ptr<IObject>> evalArgs;
+				if (results.size() < array->Elements.size())
+				{
+					results.push(MakeError("failed to evaluate all array elements", array->BaseToken));
+					break;
+				}
+
+				for (size_t i = 0; i < array->Elements.size(); i++)
+				{
+					auto arg = results.top();
+					results.pop();
+
+					if (arg->Type() == ObjectType::ERROR_OBJ)
+					{
+						results.push(arg);
+						break;
+					}
+
+					arg = UnwrapIfReturnObj(arg);
+
+					evalArgs.push_back(arg);
+				}
+				results.push(ArrayObj::New(evalArgs));
+			}
+			break;
+		}
+		case NodeType::IndexExpression:
+		{
+			const auto* index = dynamic_cast<const IndexExpression*>(currentNode);
+			if (signal == 0)
+			{
+				stack.push({ currentNode, 1, useEnv });
+				stack.push({ index->Left.get(), 0, useEnv });
+				stack.push({ index->Index.get(), 0, useEnv });
+			}
+			else
+			{
+				auto left = results.top();
+				results.pop();
+
+				auto indexObj = results.top();
+				results.pop();
+
+				auto result = EvalIndexExpression(index->BaseToken, left, indexObj);
+				results.push(result);
+			}
+			break;
+		}
 		case NodeType::PrefixExpression:
 		{
 			const auto* prefix = dynamic_cast<const PrefixExpression*>(currentNode);
@@ -746,7 +834,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				// Evaluate arguments
 
-				for (const auto& iter : call->Arguments | std::views::reverse)
+				for (const auto& iter : call->Arguments)
 				{
 					stack.push({ iter.get(), 0, useEnv });
 				}
@@ -990,6 +1078,45 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 		{
 			auto* boolean = dynamic_no_copy_cast<BooleanLiteral>(node);
 			result = boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+			break;
+		}
+		case NodeType::ArrayLiteral:
+		{
+			auto* array = dynamic_no_copy_cast<ArrayLiteral>(node);
+			std::vector<std::shared_ptr<IObject>> elements;
+			for (const auto& elem : array->Elements)
+			{
+				auto eval = Eval(elem, env, builtIn);
+				if (eval->Type() == ObjectType::ERROR_OBJ)
+				{
+					return eval;
+				}
+				elements.push_back(eval);
+			}
+			result = ArrayObj::New(elements);
+			break;
+		}
+		case NodeType::IndexExpression:
+		{
+			auto* index = dynamic_no_copy_cast<IndexExpression>(node);
+			auto left = Eval(index->Left, env, builtIn);
+			auto indexObj = Eval(index->Index, env, builtIn);
+
+			left = UnwrapIfReturnObj(left);
+
+			if (left->Type() == ObjectType::ERROR_OBJ)
+			{
+				return left;
+			}
+
+			indexObj = UnwrapIfReturnObj(indexObj);
+
+			if (indexObj->Type() == ObjectType::ERROR_OBJ)
+			{
+				return indexObj;
+			}
+
+			result = EvalIndexExpression(index->BaseToken, left, indexObj);
 			break;
 		}
 		case NodeType::PrefixExpression:

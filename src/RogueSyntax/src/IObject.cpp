@@ -11,6 +11,7 @@ const ObjectType ObjectType::RETURN_OBJ    = { NextObjectType++, "RETURN" };
 const ObjectType ObjectType::ERROR_OBJ     = { NextObjectType++, "ERROR" };
 const ObjectType ObjectType::FUNCTION_OBJ  = { NextObjectType++, "FUNCTION" };
 const ObjectType ObjectType::BUILTIN_OBJ   = { NextObjectType++, "BUILTIN" };
+const ObjectType ObjectType::ARRAY_OBJ     = { NextObjectType++, "ARRAY" };
 
 const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
 const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
@@ -61,6 +62,11 @@ std::shared_ptr<BooleanObj> BooleanObj::New(bool value)
 	return std::make_shared<BooleanObj>(value);
 }
 
+std::shared_ptr<ArrayObj> ArrayObj::New(const std::vector<std::shared_ptr<IObject>>& elements)
+{
+	return std::make_shared<ArrayObj>(elements);
+}
+
 std::shared_ptr<ErrorObj> ErrorObj::New(const std::string& message, const ::Token& token)
 {
 	return std::make_shared<ErrorObj>(message, token);
@@ -80,6 +86,7 @@ std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
 {
 	return std::make_shared<BuiltInObj>(name);
 }
+
 
 
 

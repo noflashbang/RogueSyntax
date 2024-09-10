@@ -368,6 +368,43 @@ TEST_CASE("Decimal and String tests")
 	REQUIRE(result->Inspect() == expected);
 }
 
+TEST_CASE("Array Literal Tests")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"[]", "[]"},
+			{"[1, 2, 3]", "[1, 2, 3]"},
+			{"[1 + 2, 3 * 4, 5 + 6]", "[3, 12, 11]"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+TEST_CASE("Index Expression Test")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"[1, 2, 3][0]", "1"},
+			{"[1, 2, 3][1]", "2"},
+			{"[1, 2, 3][2]", "3"},
+			{"let i = 0; [1][i];", "1"},
+			{"[1, 2, 3][1 + 1];", "3"},
+			{"let myArray = [1, 2, 3]; myArray[2];", "3"},
+			{"let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", "6"},
+			{"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];", "2"},
+			{"[1, 2, 3][3]", "null"},
+			{"[1, 2, 3][-1]", "null"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
 TEST_CASE("Coerce Tests")
 {
 	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));

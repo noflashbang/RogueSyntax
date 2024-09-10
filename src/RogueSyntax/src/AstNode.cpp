@@ -494,3 +494,30 @@ NodeType ArrayLiteral::NType() const
 	return NodeType::ArrayLiteral;
 }
 
+IndexExpression::IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index) : IExpression(token), Left(left), Index(index)
+{
+}
+
+std::shared_ptr<IndexExpression> IndexExpression::New(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index)
+{
+	return std::make_shared<IndexExpression>(token, left, index);
+}
+
+std::string IndexExpression::ToString() const
+{
+	std::string result;
+	result.append("(");
+	result.append(Left->ToString());
+	result.append("[");
+	result.append(Index->ToString());
+	result.append("])");
+	return result;
+}
+
+NodeType IndexExpression::NType() const
+{
+	return NodeType::IndexExpression;
+}
+
+
+

@@ -27,6 +27,7 @@ enum class NodeType
 	StringLiteral,
 	DecimalLiteral,
 	ArrayLiteral,
+	IndexExpression,
 };
 
 class INode
@@ -302,4 +303,17 @@ struct ArrayLiteral : IExpression
 	static std::shared_ptr<ArrayLiteral> New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements);
 
 	std::vector<std::shared_ptr<IExpression>> Elements;
+};
+
+struct IndexExpression : IExpression
+{
+	IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index);
+	virtual ~IndexExpression() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<IndexExpression> New(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index);
+
+	std::shared_ptr<IExpression> Left;
+	std::shared_ptr<IExpression> Index;
 };

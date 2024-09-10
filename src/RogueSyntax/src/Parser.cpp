@@ -1,5 +1,6 @@
 #include "Parser.h"
 #include "Parser.h"
+#include "Parser.h"
 #include "pch.h"
 
 Parser::Parser(const Lexer& lexer) : _lexer(lexer)
@@ -29,7 +30,7 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_infixDispatch[TokenType::TOKEN_LT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_GT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseCallExpression, this, std::placeholders::_1);
-	//_infixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseIndexExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseIndexExpression, this, std::placeholders::_1);
 
 	//load the first two tokens
 	NextToken();
@@ -355,6 +356,20 @@ std::shared_ptr<IExpression> Parser::ParseArrayLiteral()
 	}
 
 	return ArrayLiteral::New(token, arguments);
+}
+
+std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<IExpression>& left)
+{
+	NextToken();
+	
+	auto index = ParseExpression(Precedence::LOWEST);
+
+	if (!ExpectPeek(TokenType::TOKEN_RBRACKET))
+	{
+		return nullptr;
+	}
+
+	return IndexExpression::New(_currentToken, left, index);
 }
 
 std::shared_ptr<IStatement> Parser::ParseBlockStatement()
