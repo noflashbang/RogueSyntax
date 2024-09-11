@@ -512,8 +512,18 @@ std::shared_ptr<IExpression> Parser::ParseCallExpression(const std::shared_ptr<I
 std::shared_ptr<IStatement> Parser::ParseLetStatement()
 {
 	auto token = _currentToken;
+	
+	NextToken();
 
-	auto left = ParseExpression(Precedence::LOWEST);
+	std::shared_ptr<IExpression> holder = nullptr;
+	if (_currentToken.Type == TokenType::TOKEN_IDENT)
+	{
+		holder = Identifier::New(_currentToken, _currentToken.Literal);
+	}
+	else
+	{
+		holder = ParseExpression(Precedence::LOWEST);
+	}
 
 	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
 	{
@@ -529,14 +539,22 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 		NextToken();
 	}
 
-	return LetStatement::New(token, left, value);
+	return LetStatement::New(token, holder, value);
 }
 
 std::shared_ptr<IStatement> Parser::ParseAssignStatement()
 {
 	auto token = _currentToken;
 
-	auto left = ParseExpression(Precedence::LOWEST);
+	std::shared_ptr<IExpression> holder = nullptr;
+	if (_currentToken.Type == TokenType::TOKEN_IDENT)
+	{
+		holder = Identifier::New(_currentToken, _currentToken.Literal);
+	}
+	else
+	{
+		holder = ParseExpression(Precedence::LOWEST);
+	}
 
 	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
 	{
@@ -552,7 +570,7 @@ std::shared_ptr<IStatement> Parser::ParseAssignStatement()
 		NextToken();
 	}
 
-	return LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), left, value);
+	return LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), holder, value);
 }
 
 std::shared_ptr<IStatement> Parser::ParseReturnStatement()
