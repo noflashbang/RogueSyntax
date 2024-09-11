@@ -23,7 +23,9 @@ set( consoleSource
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxREPL.cpp
 )
-set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,modernize-*,bugprone-*,cppcoreguidelines-*,performance-*)
+if(CMAKE_TIDY_ENABLED)
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,modernize-*,bugprone-*,cppcoreguidelines-*,performance-*)
+endif()
 
 add_executable(RogueSyntaxConsole ${testSource} ${externHeaders} ${consoleHeaders})
 target_link_libraries(RogueSyntaxConsole PUBLIC RogueSyntax)

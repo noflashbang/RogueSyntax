@@ -22,6 +22,7 @@ protected:
 	std::shared_ptr<IObject> EvalInfixExpression(const Token& op, const std::shared_ptr<IObject>& left, const std::shared_ptr<IObject>& right) const;
 	std::shared_ptr<IObject> EvalIndexExpression(const Token& op, const std::shared_ptr<IObject>& operand, const std::shared_ptr<IObject>& index) const;
 
+	std::shared_ptr<IObject> EvalNullInfixExpression(const Token& op, const IObject* const left, const IObject* const right) const;
 	std::shared_ptr<IObject> EvalIntegerInfixExpression(const Token& op, const IntegerObj* const left, const IntegerObj* const right) const;
 	std::shared_ptr<IObject> EvalBooleanInfixExpression(const Token& op, const BooleanObj* const left, const BooleanObj* const right) const;
 	std::shared_ptr<IObject> EvalDecimalInfixExpression(const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const;
@@ -30,6 +31,8 @@ protected:
 	//convertion functions - the left hand type is the type of the object that the coercion is being applied to
 	bool CanCoerceTypes(const IObject* const left, const IObject* const right) const;
 	std::tuple<std::shared_ptr<IObject>, std::shared_ptr<IObject>> CoerceTypes(const Token& context, const IObject* const left, const IObject* const right) const;
+	std::shared_ptr<IObject>  CoerceThis(const Token& context, const IObject* const source, const IObject* const target) const;
+
 	std::shared_ptr<IObject> EvalAsBoolean(const Token& context, const IObject* const obj) const;
 	std::shared_ptr<IObject> EvalAsDecimal(const Token& context, const IObject* const obj) const;
 	std::shared_ptr<IObject> EvalAsInteger(const Token& context, const IObject* const obj) const;

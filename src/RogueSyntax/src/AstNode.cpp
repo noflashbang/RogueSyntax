@@ -21,11 +21,11 @@ std::shared_ptr<Program>  Program::New()
 	return std::make_shared<Program>();
 }
 
-LetStatement::LetStatement(const Token& token, const std::shared_ptr<Identifier>& name, const std::shared_ptr<IExpression>& value) : IStatement(token), Name(name), Value(value)
+LetStatement::LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value) : IStatement(token), Name(name), Value(value)
 {
 }
 
-std::shared_ptr<LetStatement> LetStatement::New(const Token& token, const std::shared_ptr<Identifier>& name, const std::shared_ptr<IExpression>& value)
+std::shared_ptr<LetStatement> LetStatement::New(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value)
 {
 	return std::make_shared<LetStatement>(token, name, value);
 }
@@ -117,6 +117,25 @@ NodeType ExpressionStatement::NType() const
 	return NodeType::ExpressionStatement;
 }
 
+NullLiteral::NullLiteral(const ::Token& token) : IExpression(token)
+{
+}
+
+std::shared_ptr<NullLiteral> NullLiteral::New(const Token& token)
+{
+	return std::make_shared<NullLiteral>(token);
+}
+
+std::string NullLiteral::ToString() const
+{
+	return "null";
+}
+
+NodeType NullLiteral::NType() const
+{
+	return NodeType::NullLiteral;
+}
+
 IntegerLiteral::IntegerLiteral(const ::Token& token, int value) : IExpression(token), Value(value)
 {
 }
@@ -154,6 +173,42 @@ std::string BooleanLiteral::ToString() const
 NodeType BooleanLiteral::NType() const
 {
 	return NodeType::BooleanLiteral;
+}
+
+HashLiteral::HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs) : IExpression(token), Elements(pairs)
+{
+}
+
+std::shared_ptr<HashLiteral> HashLiteral::New(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs)
+{
+	return std::make_shared<HashLiteral>(token, pairs);
+}
+
+std::string HashLiteral::ToString() const
+{
+	std::string result;
+	result.append("{");
+	std::for_each(Elements.begin(), Elements.end(), [&result](const auto& pair)
+		{
+			result.append(pair.first->ToString());
+			result.append(": ");
+			result.append(pair.second->ToString());
+			result.append(", ");
+		});
+
+	//remove the last comma
+	if (result.size() > 1)
+	{
+		result.pop_back();
+		result.pop_back();
+	}
+	result.append("}");
+	return result;
+}
+
+NodeType HashLiteral::NType() const
+{
+	return NodeType::HashLiteral;
 }
 
 PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Right(right)

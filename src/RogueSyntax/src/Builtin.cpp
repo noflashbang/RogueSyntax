@@ -45,6 +45,12 @@ std::shared_ptr<IObject> BuiltIn::Len(const std::vector<std::shared_ptr<IObject>
 		return IntegerObj::New(arr->Elements.size());
 	}
 
+	if (args[0]->Type() == ObjectType::HASH_OBJ)
+	{
+		auto hash = std::dynamic_pointer_cast<HashObj>(args[0]);
+		return IntegerObj::New(hash->Elements.size());
+	}
+
 	return ErrorObj::New(std::format("argument to `len` not supported, got {}", args[0].get()->Type().Name), token);
 }
 

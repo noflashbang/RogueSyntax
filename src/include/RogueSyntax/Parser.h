@@ -11,7 +11,6 @@ typedef std::function<std::shared_ptr<IExpression>(std::shared_ptr<IExpression>)
 enum class Precedence
 {
 	LOWEST,
-	//ASSIGN,      // =
 	EQUALS,      // ==
 	LESSGREATER, // > or <
 	SUM,         // +
@@ -19,12 +18,13 @@ enum class Precedence
 	PREFIX,      // -X or !X
 	CALL,        // myFunction(X)
 	INDEX,       // array[index]
+	ASSIGN,      // =
 };
 
 static const std::map<TokenType, Precedence> PRECEDENCES = {
-	//{TokenType::TOKEN_ASSIGN, Precedence::EQUALS},
-	//{TokenType::TOKEN_INCREMENT, Precedence::EQUALS},
-	//{TokenType::TOKEN_DECREMENT, Precedence::EQUALS},
+	{TokenType::TOKEN_ASSIGN, Precedence::EQUALS},
+	{TokenType::TOKEN_INCREMENT, Precedence::SUM},
+	{TokenType::TOKEN_DECREMENT, Precedence::SUM},
 	{TokenType::TOKEN_EQ, Precedence::EQUALS},
 	{TokenType::TOKEN_NOT_EQ, Precedence::EQUALS},
 	{TokenType::TOKEN_LT, Precedence::LESSGREATER},
@@ -49,9 +49,12 @@ public:
 	std::shared_ptr<IExpression> ParseExpression(const Precedence precedence);
 
 	std::shared_ptr<IExpression> ParseIdentifier();
+	std::shared_ptr<IExpression> ParseNullLiteral();
 	std::shared_ptr<IExpression> ParseIntegerLiteral();
 	std::shared_ptr<IExpression> ParseDecimalLiteral();
 	std::shared_ptr<IExpression> ParseStringLiteral();
+	std::shared_ptr<IExpression> ParseArrayLiteral();
+	std::shared_ptr<IExpression> ParseHashLiteral();
 
 	std::shared_ptr<IExpression> ParsePrefixExpression();
 	std::shared_ptr<IExpression> ParseInfixExpression(const std::shared_ptr<IExpression>& left);
@@ -62,14 +65,15 @@ public:
 	std::shared_ptr<IExpression> ParseCallExpression(const std::shared_ptr<IExpression>& function);
 	std::shared_ptr<IExpression> ParseWhileExpression();
 	std::shared_ptr<IExpression> ParseForExpression();
-	std::shared_ptr<IExpression> ParseArrayLiteral();
 	std::shared_ptr<IExpression> ParseIndexExpression(const std::shared_ptr<IExpression>& left);
+	//std::shared_ptr<IExpression> ParseAssignExpression(const std::shared_ptr<IExpression>& left);
+	std::shared_ptr<IExpression> ParseIncrementExpression(const std::shared_ptr<IExpression>& left);
 
 	std::shared_ptr<IStatement> ParseBlockStatement();
 	std::shared_ptr<IStatement> ParseLetStatement();
 	std::shared_ptr<IStatement> ParseAssignStatement();
-	std::shared_ptr<IStatement> ParseIncrementStatement();
-	std::shared_ptr<IStatement> ParseDecrementStatement();
+	//std::shared_ptr<IStatement> ParseIncrementStatement();
+	//std::shared_ptr<IStatement> ParseDecrementStatement();
 	std::shared_ptr<IStatement> ParseReturnStatement();
 	std::shared_ptr<IStatement> ParseBreakStatement();
 	std::shared_ptr<IStatement> ParseContinueStatement();

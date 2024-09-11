@@ -8,8 +8,13 @@ struct Environment;
 
 struct ObjectType
 {
-	unsigned int Type;
-	std::string Name;
+	const unsigned int Type;
+	const std::string Name;
+
+	std::string ToString() const
+	{
+		return Name;
+	}
 
 	constexpr bool operator==(const ObjectType& other) const
 	{
@@ -41,12 +46,12 @@ struct ObjectType
 		return Type >= other.Type;
 	}
 
-	explicit constexpr operator unsigned int() const
+	explicit constexpr operator const unsigned int() const
 	{
 		return Type;
 	}
 
-	explicit constexpr operator std::string() const
+	explicit constexpr operator const std::string() const
 	{
 		return Name;
 	}
@@ -60,6 +65,8 @@ struct ObjectType
 	static const ObjectType STRING_OBJ;
 	static const ObjectType BOOLEAN_OBJ;
 	static const ObjectType ARRAY_OBJ;
+	static const ObjectType HASH_OBJ;
+	static const ObjectType IDENT_OBJ;
 	static const ObjectType RETURN_OBJ;
 	static const ObjectType ERROR_OBJ;
 	static const ObjectType FUNCTION_OBJ;
@@ -73,10 +80,20 @@ struct ObjectType
 class IObject
 {
 public:
-	virtual ObjectType Type() const = 0;
+	virtual const ObjectType& Type() const = 0;
 	virtual std::string Inspect() const = 0;
+	virtual std::shared_ptr<IObject> Clone() const = 0;
 
 	virtual ~IObject() = default;
+};
+
+class IAssignableObject : public IObject
+{
+public:
+	
+	virtual std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) = 0;
+	
+	virtual ~IAssignableObject() = default;
 };
 
 class NullObj : public IObject
@@ -85,7 +102,7 @@ public:
 	NullObj() { _dummy = 0; }
 	virtual ~NullObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::NULL_OBJ;
 	}
@@ -93,6 +110,11 @@ public:
 	std::string Inspect() const override
 	{
 		return "null";
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return NULL_OBJ_REF;
 	}
 
 	static std::shared_ptr<NullObj> NULL_OBJ_REF;
@@ -110,7 +132,7 @@ public:
 	VoidObj() { _dummy = 0; }
 	virtual ~VoidObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::NULL_OBJ;
 	}
@@ -118,6 +140,11 @@ public:
 	std::string Inspect() const override
 	{
 		return "null";
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return VOID_OBJ_REF;
 	}
 
 	static std::shared_ptr<VoidObj> VOID_OBJ_REF;
@@ -136,7 +163,7 @@ public:
 	BreakObj() { _dummy = 0; }
 	virtual ~BreakObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::BREAK_OBJ;
 	}
@@ -144,6 +171,11 @@ public:
 	std::string Inspect() const override
 	{
 		return "break";
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return BREAK_OBJ_REF;
 	}
 
 	static std::shared_ptr<BreakObj> BREAK_OBJ_REF;
@@ -158,14 +190,19 @@ class ContinueObj : public IObject
 public:
 	ContinueObj() { _dummy = 0; }
 	virtual ~ContinueObj() = default;
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::CONTINUE_OBJ;
 	}
 
 	std::string Inspect() const override
 	{
-		return "break";
+		return "continue";
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return CONTINUE_OBJ_REF;
 	}
 
 	static std::shared_ptr<ContinueObj> CONTINUE_OBJ_REF;
@@ -181,7 +218,7 @@ public:
 	IntegerObj(int value) : Value(value) {};
 	virtual ~IntegerObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::INTEGER_OBJ;
 	}
@@ -189,6 +226,11 @@ public:
 	std::string Inspect() const override
 	{
 		return std::to_string(Value);
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Value);
 	}
 
 	int32_t Value;
@@ -202,7 +244,7 @@ public:
 	DecimalObj(float value) : Value(value) {};
 	virtual ~DecimalObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::DECIMAL_OBJ;
 	}
@@ -210,6 +252,11 @@ public:
 	std::string Inspect() const override
 	{
 		return std::to_string(Value);
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Value);
 	}
 
 	float Value;
@@ -223,7 +270,7 @@ public:
 	StringObj(const std::string& value) : Value(value) {}
 	virtual ~StringObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::STRING_OBJ;
 	}
@@ -231,6 +278,11 @@ public:
 	std::string Inspect() const override
 	{
 		return Value;
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Value);
 	}
 
 	std::string Value;
@@ -244,7 +296,7 @@ public:
 	BooleanObj(bool value) : Value(value) {}
 	virtual ~BooleanObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::BOOLEAN_OBJ;
 	}
@@ -252,6 +304,11 @@ public:
 	std::string Inspect() const override
 	{
 		return Value ? "true" : "false";
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Value);
 	}
 
 	bool Value;
@@ -264,13 +321,13 @@ public:
 	static std::shared_ptr<BooleanObj> New(bool value);
 };
 
-class ArrayObj : public IObject
+class ArrayObj : public IAssignableObject
 {
 public:
 	ArrayObj(const std::vector<std::shared_ptr<IObject>>& elements) : Elements(elements) {}
 	virtual ~ArrayObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::ARRAY_OBJ;
 	}
@@ -296,9 +353,132 @@ public:
 		return out;
 	}
 
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Elements);
+	}
+	std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) override;
+
 	std::vector<std::shared_ptr<IObject>> Elements;
 
 	static std::shared_ptr<ArrayObj> New(const std::vector<std::shared_ptr<IObject>>& elements);
+};
+
+
+
+struct HashKey
+{
+	HashKey(ObjectType type, const std::string& key) : Type(std::hash<std::string>{}(type.Name)), Key(std::hash<std::string>{}(key)) {}
+
+	bool operator==(const HashKey& other) const
+	{
+		return Type == other.Type && Key == other.Key;
+	}
+
+	std::size_t Type;
+	std::size_t Key;
+
+	std::size_t Hash() const
+	{
+		return Type ^ Key;
+	}
+};
+
+namespace std
+{
+	template <>
+	struct hash<HashKey>
+	{
+		std::size_t operator()(HashKey const& in) const
+		{
+			return in.Hash();
+		}
+	};
+}
+
+struct HashEntry
+{
+	std::shared_ptr<IObject> Key;
+	std::shared_ptr<IObject> Value;
+};
+
+class HashObj : public IAssignableObject
+{
+public:
+	HashObj(const std::unordered_map<HashKey, HashEntry>& elements) : Elements(elements) {}
+	virtual ~HashObj() = default;
+
+	const ObjectType& Type() const override
+	{
+		return ObjectType::HASH_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		std::string out = "{";
+
+		std::for_each(Elements.begin(), Elements.end(), [&out](const auto& elem)
+			{
+				auto [key, value] = elem;
+				out.append(value.Key->Inspect());
+				out.append(": ");
+				out.append(value.Value->Inspect());
+				out.append(", ");
+			});
+
+		if (Elements.size() > 0)
+		{
+			//remove the last comma
+			out.pop_back();
+			out.pop_back();
+		}
+
+		out += "}";
+		return out;
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Elements);
+	}
+
+	std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) override;
+
+	std::unordered_map<HashKey, HashEntry> Elements;
+
+	static std::shared_ptr<HashObj> New(const std::unordered_map<HashKey, HashEntry>& elements);
+};
+
+class IdentifierObj : public IAssignableObject
+{
+public:
+	IdentifierObj(const std::string& name, const std::shared_ptr<IObject>& value, const std::shared_ptr<Environment> scope) : Name(name), Value(value), _scope(scope) {}
+	virtual ~IdentifierObj() = default;
+
+	const ObjectType& Type() const override
+	{
+		return ObjectType::IDENT_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return Value->Inspect();
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Name, Value->Clone(), _scope);
+	}
+
+	std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) override;
+
+	std::string Name;
+	std::shared_ptr<IObject> Value;
+
+	static std::shared_ptr<IdentifierObj> New(const std::string& name, const std::shared_ptr<IObject>& value, const std::shared_ptr<Environment> scope);
+
+private:
+	const std::shared_ptr<Environment> _scope;
 };
 
 class ReturnObj : public IObject
@@ -307,7 +487,7 @@ public:
 	ReturnObj(const std::shared_ptr<IObject>& value) : Value(value) {}
 	virtual ~ReturnObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::RETURN_OBJ;
 	}
@@ -315,6 +495,11 @@ public:
 	std::string Inspect() const override
 	{
 		return Value->Inspect();
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Value->Clone());
 	}
 
 	std::shared_ptr<IObject> Value;
@@ -328,7 +513,7 @@ public:
 	ErrorObj(const std::string& message, const Token& token) : Message(message), Token(token) {}
 	virtual ~ErrorObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::ERROR_OBJ;
 	}
@@ -336,6 +521,11 @@ public:
 	std::string Inspect() const override
 	{
 		return "ERROR: " + Message;
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Message, Token);
 	}
 
 	std::string Message;
@@ -350,7 +540,7 @@ public:
 	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env) : Parameters(parameters), Body(body), Env(env) {}
 	virtual ~FunctionObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::FUNCTION_OBJ;
 	}
@@ -378,6 +568,11 @@ public:
 		return out;
 	}
 
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Parameters, Body, Env);
+	}
+
 	std::vector<std::shared_ptr<IExpression>> Parameters;
 	std::shared_ptr<IStatement> Body;
 	std::shared_ptr<Environment> Env;
@@ -391,7 +586,7 @@ public:
 	BuiltInObj(const std::string& name) : Name(name) {}
 	virtual ~BuiltInObj() = default;
 
-	ObjectType Type() const override
+	const ObjectType& Type() const override
 	{
 		return ObjectType::BUILTIN_OBJ;
 	}
@@ -399,6 +594,11 @@ public:
 	std::string Inspect() const override
 	{
 		return "builtin function";
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Name);
 	}
 
 	std::string Name;

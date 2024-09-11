@@ -4,6 +4,7 @@
 #include "Evaluator.h"
 #include "Evaluator.h"
 #include "Evaluator.h"
+#include "Evaluator.h"
 #include "pch.h"
 
 Evaluator::Evaluator()
@@ -76,7 +77,11 @@ std::shared_ptr<IObject> Evaluator::EvalPrefixExpression(const Token& optor, con
 std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, const std::shared_ptr<IObject>& left, const std::shared_ptr<IObject>& right) const
 {
 	std::shared_ptr<IObject> result = nullptr;
-	if (left->Type() != right->Type())
+	if (left->Type() == ObjectType::NULL_OBJ || right->Type() == ObjectType::NULL_OBJ)
+	{
+		result = EvalNullInfixExpression(optor, left.get(), right.get());
+	}
+	else if (left->Type() != right->Type())
 	{
 		if (CanCoerceTypes(left.get(), right.get()))
 		{
@@ -141,6 +146,22 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 			result = StringObj::New(std::string(1, str->Value[idx->Value]));
 		}
 	}
+	else if (operand->Type() == ObjectType::HASH_OBJ)
+	{
+		auto hash = std::dynamic_pointer_cast<HashObj>(operand);
+		auto key = HashKey { index->Type(), index->Inspect() };
+
+		auto entry = hash->Elements.find(key);
+		if (entry != hash->Elements.end())
+		{
+			result = entry->second.Value;
+		}
+
+		if (result == nullptr)
+		{
+			result = NullObj::NULL_OBJ_REF;
+		}
+	}
 	else
 	{
 		result = MakeError(std::format("index operator not supported: {}", operand->Type().Name), op);
@@ -164,55 +185,39 @@ bool Evaluator::CanCoerceTypes(const IObject* const left, const IObject* const r
 
 std::tuple<std::shared_ptr<IObject>, std::shared_ptr<IObject>> Evaluator::CoerceTypes(const Token& context, const IObject* const left, const IObject* const right) const
 {
-	std::shared_ptr<IObject> leftResult = nullptr;
-	std::shared_ptr<IObject> rightResult = nullptr;
-	auto leftCoercion = _coercionTable.find(left->Type());
-	if (leftCoercion != _coercionTable.end())
-	{
-		auto rightTarget = leftCoercion->second.find(right->Type());
-		if (rightTarget == leftCoercion->second.end())
-		{
-			rightResult = MakeError(std::format("type mismatch can not coerce types: {} -> {}", right->Type().Name, left->Type().Name), context);
-		}
+	std::string rName = right->Type().ToString();
+	std::string lName = left->Type().ToString();
 
-		auto rightTT = rightTarget->second;
-		auto coercion = _coercionMap.find(rightTT);
-		if (coercion == _coercionMap.end())
-		{
-			rightResult = MakeError(std::format("type mismatch can not coerce types: {} -> {}", right->Type().Name, left->Type().Name), context);
-		}
-	
-		rightResult = coercion->second(context, right);
-	}
-	else
-	{
-		rightResult = MakeError(std::format("type mismatch can not coerce types: {} -> {}", right->Type().Name, left->Type().Name), context);
-	}
-
-	auto rightCoercion = _coercionTable.find(right->Type());
-	if (rightCoercion != _coercionTable.end())
-	{
-		auto leftTarget = rightCoercion->second.find(left->Type());
-		if (leftTarget == rightCoercion->second.end())
-		{
-			leftResult = MakeError(std::format("type mismatch can not coerce types: {} -> {}", right->Type().Name, left->Type().Name), context);
-		}
-
-		auto leftTT = leftTarget->second;
-		auto coercion = _coercionMap.find(leftTT);
-		if (coercion == _coercionMap.end())
-		{
-			leftResult = MakeError(std::format("type mismatch can not coerce types: {} -> {}", right->Type().Name, left->Type().Name), context);
-		}
-
-		leftResult = coercion->second(context, left);
-	}
-	else
-	{
-		leftResult = MakeError(std::format("type mismatch can not coerce types: {} -> {}", right->Type().Name, left->Type().Name), context);
-	}
+	std::shared_ptr<IObject> leftResult = CoerceThis(context, right, left);
+	std::shared_ptr<IObject> rightResult = CoerceThis(context, left, right);
 
 	return std::make_tuple(leftResult, rightResult);
+}
+
+std::shared_ptr<IObject> Evaluator::CoerceThis(const Token& context, const IObject* const source, const IObject* const target) const
+{
+	std::shared_ptr<IObject> result = nullptr;
+
+	auto sourceCoercion = _coercionTable.find(source->Type());
+	if (sourceCoercion != _coercionTable.end())
+	{
+		auto targetCoercion = sourceCoercion->second.find(target->Type());
+		if (targetCoercion != sourceCoercion->second.end())
+		{
+			auto rightTT = targetCoercion->second;
+			auto coercion = _coercionMap.find(rightTT);
+			if (coercion != _coercionMap.end())
+			{
+				result = coercion->second(context, target);
+			}
+		}
+	}
+
+	if (result == nullptr)
+	{
+		result = MakeError(std::format("type mismatch can not coerce types: {} -> {}", source->Type().Name, target->Type().Name), context);
+	}
+	return result;
 }
 
 std::shared_ptr<IObject> Evaluator::EvalAsBoolean(const Token& context, const IObject* const obj) const
@@ -309,9 +314,75 @@ std::shared_ptr<IObject> Evaluator::EvalAsInteger(const Token& context, const IO
 
 	if (result == nullptr)
 	{
-		result = MakeError(std::format("illegal expression, type {} can not be evaluated as boolean: {}", obj->Type().Name, obj->Inspect()), context);
+		result = MakeError(std::format("illegal expression, type {} can not be evaluated as integer: {}", obj->Type().Name, obj->Inspect()), context);
 	}
 
+	return result;
+}
+
+std::shared_ptr<IObject> Evaluator::EvalNullInfixExpression(const Token& op, const IObject* const left, const IObject* const right) const
+{
+	//check what side the null is on
+	std::shared_ptr<IObject> result = nullptr;
+
+	const IObject* nullObj = nullptr;
+	const IObject* mightBeNullObj = nullptr;
+
+	bool nullOnLeft = false;
+	if (left->Type() == ObjectType::NULL_OBJ)
+	{
+		nullObj = left;
+		mightBeNullObj = right;
+		nullOnLeft = true;
+	}
+	else
+	{
+		nullObj = right;
+		mightBeNullObj = left;
+		nullOnLeft = false;
+	}
+	
+	if (mightBeNullObj->Type() == ObjectType::NULL_OBJ)
+	{
+		if (op.Type == TokenType::TOKEN_EQ)
+		{
+			result = BooleanObj::TRUE_OBJ_REF;
+		}
+		else if (op.Type == TokenType::TOKEN_NOT_EQ)
+		{
+			result = BooleanObj::FALSE_OBJ_REF;
+		}
+		else
+		{
+			//any other operator on two nulls produces a null
+			result = NullObj::NULL_OBJ_REF;
+		}
+	}
+	else
+	{
+		//check for equality
+		if (op.Type == TokenType::TOKEN_EQ)
+		{
+			result = BooleanObj::FALSE_OBJ_REF;
+		}
+		else if (op.Type == TokenType::TOKEN_NOT_EQ)
+		{
+			result = BooleanObj::TRUE_OBJ_REF;
+		}
+		else
+		{
+			if (nullOnLeft)
+			{
+				//any other operator on a null and a non-null produces the same non null value
+				result = EvalInfixExpression(op, IntegerObj::New(0), mightBeNullObj->Clone());
+			}
+			else
+			{
+				//any other operator on a null and a non-null produces the same non null value
+				result = EvalInfixExpression(op, mightBeNullObj->Clone(), IntegerObj::New(0));
+			}
+		}
+	}
 	return result;
 }
 
@@ -559,6 +630,11 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 			stack.push({ expression->Expression.get(), 0, useEnv});
 			break;
 		}
+		case NodeType::NullLiteral:
+		{
+			results.push(NullObj::NULL_OBJ_REF);
+			break;
+		}
 		case NodeType::IntegerLiteral:
 		{
 			const auto* integer = dynamic_cast<const IntegerLiteral*>(currentNode);
@@ -622,6 +698,59 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					evalArgs.push_back(arg);
 				}
 				results.push(ArrayObj::New(evalArgs));
+			}
+			break;
+		}
+		case NodeType::HashLiteral:
+		{
+			const auto* hash = dynamic_cast<const HashLiteral*>(currentNode);
+			std::vector<std::shared_ptr<IObject>> elements;
+
+			if (signal == 0)
+			{
+				stack.push({ currentNode, 1, useEnv });
+
+				for (const auto& [key, value] : hash->Elements)
+				{
+					stack.push({ key.get(), 0, useEnv});
+					stack.push({ value.get(), 0, useEnv });
+				}
+			}
+			else
+			{
+				std::unordered_map<HashKey, HashEntry> evalArgs;
+				if (results.size() < hash->Elements.size())
+				{
+					results.push(MakeError("failed to evaluate all hash elements", hash->BaseToken));
+					break;
+				}
+
+				for (size_t i = 0; i < hash->Elements.size(); i++)
+				{
+					auto key = results.top();
+					results.pop();
+
+					if (key->Type() == ObjectType::ERROR_OBJ)
+					{
+						results.push(key);
+						break;
+					}
+
+					key = UnwrapIfReturnObj(key);
+
+					auto value = results.top();
+					results.pop();
+
+					if (value->Type() == ObjectType::ERROR_OBJ)
+					{
+						results.push(value);
+						break;
+					}
+
+					value = UnwrapIfReturnObj(value);
+					evalArgs[HashKey{ key->Type(), key->Inspect() }] = HashEntry{ key, value };
+				}
+				results.push(HashObj::New(evalArgs));
 			}
 			break;
 		}
@@ -781,40 +910,115 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		case NodeType::LetStatement:
 		{
 			const auto* let = dynamic_cast<const LetStatement*>(currentNode);
-			if (signal == 0)
+			if (let->Name->NType() == NodeType::Identifier)
 			{
-				stack.push({ currentNode, 1, useEnv });
-				stack.push({ let->Value.get(), 0, useEnv });
+				if (signal == 0)
+				{
+					stack.push({ currentNode, 1, useEnv });
+					stack.push({ let->Value.get(), 0, useEnv });
+					stack.push({ let->Name.get(), 0, useEnv });
+				}
+				else
+				{
+					auto value = results.top();
+					results.pop();
+
+					value = UnwrapIfReturnObj(value);
+
+					if (value->Type() == ObjectType::ERROR_OBJ)
+					{
+						return value;
+					}
+
+					auto identResult = results.top();
+					results.pop();
+
+					identResult = UnwrapIfReturnObj(identResult);
+
+					if (identResult->Type() == ObjectType::ERROR_OBJ)
+					{
+						return identResult;
+					}
+
+
+					auto* ident = dynamic_no_copy_cast<IdentifierObj>(identResult);
+					auto result = ident->Set(nullptr, value);
+					results.push(result);
+				}
+			}
+			else if (let->Name->NType() == NodeType::IndexExpression)
+			{
+				if (signal == 0)
+				{
+					auto* index = dynamic_no_copy_cast<IndexExpression>(let->Name);
+
+					stack.push({ currentNode, 1, useEnv });
+					stack.push({ let->Value.get(), 0, useEnv });
+					stack.push({ index->Left.get(), 0, useEnv});
+					stack.push({ index->Index.get(), 0, useEnv});
+				}
+				else
+				{
+					auto value = results.top();
+					results.pop();
+
+					value = UnwrapIfReturnObj(value);
+
+					if (value->Type() == ObjectType::ERROR_OBJ)
+					{
+						return value;
+					}
+
+					auto left = results.top();
+					results.pop();
+
+					left = UnwrapIfReturnObj(left);
+
+					if (left->Type() == ObjectType::ERROR_OBJ)
+					{
+						return left;
+					}
+
+					auto index = results.top();
+					results.pop();
+
+					index = UnwrapIfReturnObj(index);
+
+					if (index->Type() == ObjectType::ERROR_OBJ)
+					{
+						return index;
+					}
+
+					auto* assignable = dynamic_no_copy_cast<IAssignableObject>(left);
+					auto result = assignable->Set(index, value);
+					results.push(result);
+				}
 			}
 			else
 			{
-				auto lastResult = results.top();
-				results.pop();
-
-				lastResult = UnwrapIfReturnObj(lastResult);
-
-				useEnv->Set(let->Name->Value, lastResult);
+				results.push(MakeError("let target must be identifier or index expression", let->BaseToken));
 			}
 			break;
 		}
 		case NodeType::Identifier:
 		{
 			const auto* ident = dynamic_cast<const Identifier*>(currentNode);
-			auto value = useEnv->Get(ident->Value);
-			if (value != nullptr)
+			if (builtIn->IsBuiltIn(ident->Value))
 			{
-				results.push(value);
+				results.push(BuiltInObj::New(ident->Value));
 			}
 			else
 			{
-				if (builtIn->IsBuiltIn(ident->Value))
+				auto value = env->Get(ident->Value);
+				if (value != nullptr)
 				{
-					results.push(BuiltInObj::New(ident->Value));
+					results.push(IdentifierObj::New(ident->Value, value, env));
 				}
 				else
 				{
-					results.push(MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken));
+					results.push(IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF, env));
 				}
+				//result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
 			}
 			break;
 		}
@@ -1073,6 +1277,11 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			result = Eval(expression->Expression, env, builtIn);
 			break;
 		}
+		case NodeType::NullLiteral:
+		{
+			result = NullObj::NULL_OBJ_REF;
+			break;
+		}
 		case NodeType::IntegerLiteral:
 		{
 			auto* integer = dynamic_no_copy_cast<IntegerLiteral>(node);
@@ -1113,27 +1322,26 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			result = ArrayObj::New(elements);
 			break;
 		}
-		case NodeType::IndexExpression:
+		case NodeType::HashLiteral:
 		{
-			auto* index = dynamic_no_copy_cast<IndexExpression>(node);
-			auto left = Eval(index->Left, env, builtIn);
-			auto indexObj = Eval(index->Index, env, builtIn);
-
-			left = UnwrapIfReturnObj(left);
-
-			if (left->Type() == ObjectType::ERROR_OBJ)
+			auto* hash = dynamic_no_copy_cast<HashLiteral>(node);
+			std::unordered_map<HashKey, HashEntry> elems;
+			for (const auto& [key, value] : hash->Elements)
 			{
-				return left;
+				auto keyObj = Eval(key, env, builtIn);
+				if (keyObj->Type() == ObjectType::ERROR_OBJ)
+				{
+					return keyObj;
+				}
+
+				auto valueObj = Eval(value, env, builtIn);
+				if (valueObj->Type() == ObjectType::ERROR_OBJ)
+				{
+					return valueObj;
+				}
+				elems[HashKey{ keyObj->Type(), keyObj->Inspect() }] = HashEntry{ keyObj, valueObj };
 			}
-
-			indexObj = UnwrapIfReturnObj(indexObj);
-
-			if (indexObj->Type() == ObjectType::ERROR_OBJ)
-			{
-				return indexObj;
-			}
-
-			result = EvalIndexExpression(index->BaseToken, left, indexObj);
+			result = HashObj::New(elems);
 			break;
 		}
 		case NodeType::PrefixExpression:
@@ -1242,28 +1450,94 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			{
 				return value;
 			}
-			env->Set(let->Name->Value, value);
+
+			if (let->Name->NType() == NodeType::Identifier)
+			{
+				auto target = Eval(let->Name, env, builtIn);
+				if (target->Type() == ObjectType::ERROR_OBJ)
+				{
+					return target;
+				}
+				auto* ident = dynamic_no_copy_cast<IdentifierObj>(target);
+				result = ident->Set(nullptr, value);
+			}
+			else if (let->Name->NType() == NodeType::IndexExpression)
+			{
+				auto* index = dynamic_no_copy_cast<IndexExpression>(let->Name);
+				auto left = Eval(index->Left, env, builtIn);
+				auto indexObj = Eval(index->Index, env, builtIn);
+
+				left = UnwrapIfReturnObj(left);
+
+				if (left->Type() == ObjectType::ERROR_OBJ)
+				{
+					return left;
+				}
+
+				indexObj = UnwrapIfReturnObj(indexObj);
+
+				if (indexObj->Type() == ObjectType::ERROR_OBJ)
+				{
+					return indexObj;
+				}
+
+				auto* assignable = dynamic_no_copy_cast<IAssignableObject>(left);
+				if (assignable == nullptr)
+				{
+					return MakeError("left side of assignment is not assignable", index->BaseToken);
+				}
+				result = assignable->Set(indexObj, value);
+			}
+			else
+			{
+				return MakeError("let target must be identifier or index expression", let->BaseToken);
+			}
 			break;
 		}
 		case NodeType::Identifier:
 		{
 			auto* ident = dynamic_no_copy_cast<Identifier>(node);
-			auto value = env->Get(ident->Value);
-			if (value != nullptr)
+
+			if (builtIn->IsBuiltIn(ident->Value))
 			{
-				result = value;
+				result = BuiltInObj::New(ident->Value);
 			}
 			else
 			{
-				if (builtIn->IsBuiltIn(ident->Value))
+				auto value = env->Get(ident->Value);
+				if (value != nullptr)
 				{
-					result = BuiltInObj::New(ident->Value);
+					result = IdentifierObj::New(ident->Value, value, env);
 				}
 				else
 				{
-					result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
+					result = IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF, env);
 				}
+				//result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
 			}
+			break;
+		}
+		case NodeType::IndexExpression:
+		{
+			auto* index = dynamic_no_copy_cast<IndexExpression>(node);
+			auto left = Eval(index->Left, env, builtIn);
+			auto indexObj = Eval(index->Index, env, builtIn);
+
+			left = UnwrapIfReturnObj(left);
+
+			if (left->Type() == ObjectType::ERROR_OBJ)
+			{
+				return left;
+			}
+
+			indexObj = UnwrapIfReturnObj(indexObj);
+
+			if (indexObj->Type() == ObjectType::ERROR_OBJ)
+			{
+				return indexObj;
+			}
+
+			result = EvalIndexExpression(index->BaseToken, left, indexObj);
 			break;
 		}
 		case NodeType::FunctionLiteral:

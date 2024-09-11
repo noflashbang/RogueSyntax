@@ -46,6 +46,11 @@ Token Lexer::GetCurrentToken()
 			result = Token::New(TokenType::TOKEN_SEMICOLON, _currentChar);
 			break;
 		}
+		case ':':
+		{
+			result = Token::New(TokenType::TOKEN_COLON, _currentChar);
+			break;
+		}
 		case '(':
 		{
 			result = Token::New(TokenType::TOKEN_LPAREN, _currentChar);

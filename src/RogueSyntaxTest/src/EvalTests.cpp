@@ -459,6 +459,39 @@ TEST_CASE("Built In method test")
 	REQUIRE(result->Inspect() == expected);
 }
 
+TEST_CASE("Null Tests")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"let a = null; a;", "null"},
+			{"let a = null; let b = a; b;", "null"},
+			{"let a = null; let b = a; a = 10; b;", "null"},
+			{"a = null; a;", "null"},
+			{"null == null;", "true"},
+			{"null != null;", "false"},
+			{"null == 5;", "false"},
+			{"null != 5;", "true"},
+			{"null == true;", "false"},
+			{"null != true;", "true"},
+			{"null == false;", "false"},
+			{"null != false;", "true"},
+			{"null == \"Hello\";", "false"},
+			{"null != \"Hello\";", "true"},
+			{"null == [1, 2, 3];", "false"},
+			{"null != [1, 2, 3];", "true"},
+			{"null == {\"key\": \"value\"};", "false"},
+			{"null != {\"key\": \"value\"};", "true"},
+			{"null == fn(x) { x; };", "false"},
+			{"null != fn(x) { x; };", "true"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+
 TEST_CASE("BENCHMARK STACK EVALUATOR")
 {
 	auto eng = std::make_shared<StackEvaluator>();

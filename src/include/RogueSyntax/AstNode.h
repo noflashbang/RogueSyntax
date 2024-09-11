@@ -9,6 +9,7 @@ enum class NodeType
 	Expression,
 	Statement,
 	Identifier,
+	NullLiteral,
 	LetStatement,
 	ReturnStatement,
 	ExpressionStatement,
@@ -28,6 +29,7 @@ enum class NodeType
 	DecimalLiteral,
 	ArrayLiteral,
 	IndexExpression,
+	HashLiteral
 };
 
 class INode
@@ -83,13 +85,13 @@ struct Identifier : IExpression
 
 struct LetStatement : IStatement
 {
-	LetStatement(const Token& token, const std::shared_ptr<Identifier>& name, const std::shared_ptr<IExpression>& value);
+	LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value);
 	virtual ~LetStatement() = default;
 	std::string ToString() const override;
 	NodeType NType() const override;
 	
-	static std::shared_ptr<LetStatement> New(const Token& token, const std::shared_ptr<Identifier>& name, const std::shared_ptr<IExpression>& value);
-	std::shared_ptr<Identifier> Name;
+	static std::shared_ptr<LetStatement> New(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value);
+	std::shared_ptr<IExpression> Name;
 	std::shared_ptr<IExpression> Value;
 };
 
@@ -117,6 +119,16 @@ struct ExpressionStatement : IStatement
 	std::shared_ptr<IExpression> Expression;
 };
 
+struct NullLiteral : IExpression
+{
+	NullLiteral(const Token& token);
+	virtual ~NullLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<NullLiteral> New(const Token& token);
+};
+
 struct IntegerLiteral : IExpression
 {
 	IntegerLiteral(const Token& token, const int value);
@@ -139,6 +151,18 @@ struct BooleanLiteral : IExpression
 	static std::shared_ptr<BooleanLiteral> New(const Token& token, const bool value);
 
 	bool Value;
+};
+
+struct HashLiteral : IExpression
+{
+	HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs);
+	virtual ~HashLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<HashLiteral> New(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs);
+
+	std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>> Elements;
 };
 
 struct PrefixExpression : IExpression

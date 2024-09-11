@@ -1,12 +1,17 @@
 #include "Parser.h"
 #include "Parser.h"
 #include "Parser.h"
+#include "Parser.h"
+#include "Parser.h"
+#include "Parser.h"
+#include "Parser.h"
 #include "pch.h"
 
 Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 {
 	_prefixDispatch[TokenType::TOKEN_IDENT] = std::bind(&Parser::ParseIdentifier, this);
 	_prefixDispatch[TokenType::TOKEN_INT] = std::bind(&Parser::ParseIntegerLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_NULL] = std::bind(&Parser::ParseNullLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_DECIMAL] = std::bind(&Parser::ParseDecimalLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_STRING] = std::bind(&Parser::ParseStringLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_BANG] = std::bind(&Parser::ParsePrefixExpression, this);
@@ -19,6 +24,7 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_prefixDispatch[TokenType::TOKEN_WHILE] = std::bind(&Parser::ParseWhileExpression, this);
 	_prefixDispatch[TokenType::TOKEN_FOR] = std::bind(&Parser::ParseForExpression, this);
 	_prefixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseArrayLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_LBRACE] = std::bind(&Parser::ParseHashLiteral, this);
 
 	//register infix operators
 	_infixDispatch[TokenType::TOKEN_PLUS] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
@@ -31,6 +37,9 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_infixDispatch[TokenType::TOKEN_GT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseCallExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseIndexExpression, this, std::placeholders::_1);
+	//_infixDispatch[TokenType::TOKEN_ASSIGN] = std::bind(&Parser::ParseAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_INCREMENT] = std::bind(&Parser::ParseIncrementExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_DECREMENT] = std::bind(&Parser::ParseIncrementExpression, this, std::placeholders::_1);
 
 	//load the first two tokens
 	NextToken();
@@ -66,18 +75,18 @@ std::shared_ptr<IStatement> Parser::ParseStatement()
 	{
 		statement = ParseLetStatement();
 	}
-	else if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type == TokenType::TOKEN_ASSIGN)
+	else if (_nextToken.Type == TokenType::TOKEN_ASSIGN)
 	{
 		statement = ParseAssignStatement();
 	}
-	else if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type == TokenType::TOKEN_INCREMENT)
-	{
-		statement = ParseIncrementStatement();
-	}
-	else if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type == TokenType::TOKEN_DECREMENT)
-	{
-		statement = ParseDecrementStatement();
-	}
+	//else if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type == TokenType::TOKEN_INCREMENT)
+	//{
+	//	statement = ParseIncrementStatement();
+	//}
+	//else if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type == TokenType::TOKEN_DECREMENT)
+	//{
+	//	statement = ParseDecrementStatement();
+	//}
 	else if(_currentToken.Type == TokenType::TOKEN_RETURN)
 	{
 		statement = ParseReturnStatement();
@@ -127,6 +136,11 @@ std::shared_ptr<IExpression> Parser::ParseExpression(const Precedence precedence
 std::shared_ptr<IExpression> Parser::ParseIdentifier()
 {
 	return Identifier::New(_currentToken, _currentToken.Literal);
+}
+
+std::shared_ptr<IExpression> Parser::ParseNullLiteral()
+{
+	return NullLiteral::New(_currentToken);
 }
 
 std::shared_ptr<IExpression> Parser::ParseIntegerLiteral()
@@ -358,6 +372,38 @@ std::shared_ptr<IExpression> Parser::ParseArrayLiteral()
 	return ArrayLiteral::New(token, arguments);
 }
 
+std::shared_ptr<IExpression> Parser::ParseHashLiteral()
+{
+	// hashes look like {expression: expression, expression: expression}
+	//assume the current is {
+	auto token = _currentToken;
+
+	std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>> pairs;
+
+	while (!PeekTokenIs(TokenType::TOKEN_RBRACE))
+	{
+		NextToken();
+		if (!CurrentTokenIs(TokenType::TOKEN_COMMA))
+		{
+			auto key = ParseExpression(Precedence::LOWEST);
+
+			if (!ExpectPeek(TokenType::TOKEN_COLON))
+			{
+				return nullptr;
+			}
+
+			NextToken();
+
+			auto value = ParseExpression(Precedence::LOWEST);
+
+			pairs[key] = value;
+		}
+	}
+	NextToken();
+
+	return HashLiteral::New(token, pairs);
+}
+
 std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<IExpression>& left)
 {
 	NextToken();
@@ -370,6 +416,16 @@ std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<
 	}
 
 	return IndexExpression::New(_currentToken, left, index);
+}
+
+std::shared_ptr<IExpression> Parser::ParseIncrementExpression(const std::shared_ptr<IExpression>& left)
+{
+	auto token = _currentToken;
+	auto op = _currentToken.Type == TokenType::TOKEN_INCREMENT ? TokenType::TOKEN_PLUS.Name : TokenType::TOKEN_MINUS.Name;
+
+	NextToken();
+
+	return InfixExpression::New(token, left, op, IntegerLiteral::New(token, 1));
 }
 
 std::shared_ptr<IStatement> Parser::ParseBlockStatement()
@@ -457,12 +513,7 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 {
 	auto token = _currentToken;
 
-	if (!ExpectPeek(TokenType::TOKEN_IDENT))
-	{
-		return nullptr;
-	}
-
-	auto identifier = Identifier::New(_currentToken, _currentToken.Literal);
+	auto left = ParseExpression(Precedence::LOWEST);
 
 	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
 	{
@@ -478,14 +529,14 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 		NextToken();
 	}
 
-	return LetStatement::New(token, identifier, value);
+	return LetStatement::New(token, left, value);
 }
 
 std::shared_ptr<IStatement> Parser::ParseAssignStatement()
 {
 	auto token = _currentToken;
 
-	auto identifier = Identifier::New(_currentToken, _currentToken.Literal);
+	auto left = ParseExpression(Precedence::LOWEST);
 
 	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
 	{
@@ -501,46 +552,7 @@ std::shared_ptr<IStatement> Parser::ParseAssignStatement()
 		NextToken();
 	}
 
-	return LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), identifier, value);
-}
-
-std::shared_ptr<IStatement> Parser::ParseIncrementStatement()
-{
-	auto token = _currentToken;
-
-	auto identifier = Identifier::New(_currentToken, _currentToken.Literal);
-
-	if (!ExpectPeek(TokenType::TOKEN_INCREMENT))
-	{
-		return nullptr;
-	}
-
-	if (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
-	{
-		NextToken();
-	}
-
-	auto letStmt = LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), identifier, InfixExpression::New(Token::New(TokenType::TOKEN_PLUS, "+"), Identifier::New(token, token.Literal), "+", IntegerLiteral::New(Token::New(TokenType::TOKEN_INT, "1"), 1)));
-	return letStmt;
-}
-
-std::shared_ptr<IStatement> Parser::ParseDecrementStatement()
-{
-	auto token = _currentToken;
-	auto identifier = Identifier::New(_currentToken, _currentToken.Literal);
-
-	if (!ExpectPeek(TokenType::TOKEN_DECREMENT))
-	{
-		return nullptr;
-	}
-
-	if (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
-	{
-		NextToken();
-	}
-
-	auto letStmt = LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), identifier, InfixExpression::New(Token::New(TokenType::TOKEN_MINUS, "-"), Identifier::New(token, token.Literal), "-", IntegerLiteral::New(Token::New(TokenType::TOKEN_INT, "1"), 1)));
-	return letStmt;
+	return LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), left, value);
 }
 
 std::shared_ptr<IStatement> Parser::ParseReturnStatement()

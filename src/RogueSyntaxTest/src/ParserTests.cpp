@@ -185,6 +185,31 @@ bool TestArrayLiteral(const IExpression* expression, std::vector<std::string> el
 	return true;
 }
 
+bool TestHashLiteral(const IExpression* expression, std::vector<std::string> elements)
+{
+	auto hash = dynamic_cast<const HashLiteral*>(expression);
+	if (hash == nullptr)
+	{
+		throw std::invalid_argument(std::format("Bad expression -> Expected HashLiteral GOT {}", expression->ToString()));
+		return false;
+	}
+
+	auto size = elements.size();
+	if (hash->Elements.size() != size)
+	{
+		throw std::invalid_argument(std::format("Bad Value -> Expected {} GOT {}", size, hash->Elements.size()));
+		return false;
+	}
+	int i = 0;
+	for (auto [first, second] : hash->Elements)
+	{
+		auto pair = std::format("({}):({})", first->ToString(), second->ToString());
+		REQUIRE(pair == elements[i]);
+		i++;
+	}
+	return true;
+}
+
 bool TestInfixExpression(const IExpression* expression, const std::string& left, const std::string& op, const std::string& right)
 {
 	auto infix = dynamic_cast<const InfixExpression*>(expression);
@@ -354,6 +379,31 @@ TEST_CASE("Test Array Literal")
 	REQUIRE(TestArrayLiteral(expressionStatement->Expression.get(), {"4","(4 + 4)","(4 * 4)"}));
 }
 
+TEST_CASE("Test Hash Literal")
+{
+	std::string input = "{1:4,2:5}; ";
+	Lexer lexer(input);
+	Parser parser(lexer);
+
+	auto program = parser.ParseProgram();
+	auto errors = parser.Errors();
+
+	if (errors.size() != 0)
+	{
+		for (auto& error : errors)
+		{
+			UNSCOPED_INFO(error);
+		}
+	}
+	REQUIRE(errors.size() == 0);
+
+	REQUIRE(program->Statements.size() == 1);
+	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+	REQUIRE(expressionStatement != nullptr);
+
+	REQUIRE(TestHashLiteral(expressionStatement->Expression.get(), { "(1):(4)","(2):(5)"}));
+}
+
 
 TEST_CASE("Test Prefix Expression BANG")
 {
@@ -398,8 +448,8 @@ TEST_CASE("Test postfix statements")
 	};
 
 	std::vector<Test> tests = {
-		{"x++;", "let x = (x + 1);"},
-		{"t--;", "let t = (t - 1);"},
+		{"x++;", "(x + 1)"},
+		{"t--;", "(t - 1)"},
 	};
 
 	for (auto& test : tests)
@@ -412,7 +462,7 @@ TEST_CASE("Test postfix statements")
 		REQUIRE(errors.size() == 0);
 
 		REQUIRE(program->Statements.size() == 1);
-		auto assignStatement = dynamic_cast<LetStatement*>(program->Statements[0].get());
+		auto assignStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(assignStatement != nullptr);
 		REQUIRE(assignStatement->ToString() == test.expected);
 	}
@@ -928,7 +978,7 @@ TEST_CASE("Test assignemnt")
 	REQUIRE(program->Statements.size() == 1);
 	auto assignStatement = dynamic_cast<LetStatement*>(program->Statements[0].get());
 	REQUIRE(assignStatement != nullptr);
-	REQUIRE(assignStatement->Name->Value == "x");
+	REQUIRE(assignStatement->Name->ToString() == "x");
 	REQUIRE(assignStatement->Value->ToString() == "5");
 }
 
@@ -952,7 +1002,7 @@ TEST_CASE("Test function assignemnt")
 	REQUIRE(program->Statements.size() == 1);
 	auto assignStatement = dynamic_cast<LetStatement*>(program->Statements[0].get());
 	REQUIRE(assignStatement != nullptr);
-	REQUIRE(assignStatement->Name->Value == "x");
+	REQUIRE(assignStatement->Name->ToString() == "x");
 	REQUIRE(assignStatement->Value->ToString() == "fn(x){return (x * x);}");
 }
 

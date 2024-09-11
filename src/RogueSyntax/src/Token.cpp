@@ -29,7 +29,8 @@ const TokenType TokenType::TOKEN_NOT_EQ        = { TokenType::NextTokenNumber++,
 
 // Delimiters							   		   
 const TokenType TokenType::TOKEN_COMMA         = { TokenType::NextTokenNumber++, "," };
-const TokenType TokenType::TOKEN_SEMICOLON     = { TokenType::NextTokenNumber++, ";" };   
+const TokenType TokenType::TOKEN_SEMICOLON     = { TokenType::NextTokenNumber++, ";" };
+const TokenType TokenType::TOKEN_COLON         = { TokenType::NextTokenNumber++, ":" };
 const TokenType TokenType::TOKEN_LPAREN        = { TokenType::NextTokenNumber++, "(" };
 const TokenType TokenType::TOKEN_RPAREN        = { TokenType::NextTokenNumber++, ")" };
 const TokenType TokenType::TOKEN_LBRACE        = { TokenType::NextTokenNumber++, "{" };
@@ -38,6 +39,7 @@ const TokenType TokenType::TOKEN_LBRACKET      = { TokenType::NextTokenNumber++,
 const TokenType TokenType::TOKEN_RBRACKET      = { TokenType::NextTokenNumber++, "]" };
 
 // Keywords
+const TokenType TokenType::TOKEN_NULL          = { TokenType::NextTokenNumber++, "NULL" };
 const TokenType TokenType::TOKEN_FUNCTION      = { TokenType::NextTokenNumber++, "FUNCTION" };
 const TokenType TokenType::TOKEN_LET           = { TokenType::NextTokenNumber++, "LET" };
 const TokenType TokenType::TOKEN_TRUE          = { TokenType::NextTokenNumber++, "TRUE" };
@@ -62,6 +64,7 @@ const std::map<std::string, TokenType> TokenType::KEYWORD_TOKEN_MAP = {
 	{"break", TokenType::TOKEN_BREAK},
 	{"continue", TokenType::TOKEN_CONTINUE},
 	{"for", TokenType::TOKEN_FOR},
+	{"null", TokenType::TOKEN_NULL}
 };
 
 void TokenLocation::Advance(const char ch)
