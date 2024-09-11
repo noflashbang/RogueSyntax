@@ -53,10 +53,10 @@ public:
 	virtual ~IExpression() = default;
 };
 
-class IStatement : public INode
+class IStatement : public IExpression
 {
 public:
-	IStatement(const Token& token) : INode(token) {}
+	IStatement(const Token& token) : IExpression(token) {}
 	virtual ~IStatement() = default;
 };
 

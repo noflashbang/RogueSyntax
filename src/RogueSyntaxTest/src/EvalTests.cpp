@@ -383,7 +383,22 @@ TEST_CASE("Array Literal Tests")
 	REQUIRE(result->Inspect() == expected);
 }
 
-TEST_CASE("Index Expression Test")
+TEST_CASE("Hash Literal Tests")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"{}", "{}"},
+			{"{1: 2, 2: 3}", "{1: 2, 2: 3}"},
+			{"{1 + 1: 2 * 2, 3 + 3: 4 * 4}", "{2: 4, 6: 16}"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+TEST_CASE("Index Array Expression Test")
 {
 	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
@@ -398,6 +413,46 @@ TEST_CASE("Index Expression Test")
 			{"let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];", "2"},
 			{"[1, 2, 3][3]", "null"},
 			{"[1, 2, 3][-1]", "null"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+TEST_CASE("Index Hash Expression Test")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"{1: 1, 2: 2}[1]", "1"},
+			{"{1: 1, 2: 2}[2]", "2"},
+			{"let i = 1; {1: 1, 2: 2}[i];", "1"},
+			{"{1: 1, 2: 2}[1 + 1];", "2"},
+			{"let myHash = {1: 1, 2: 2}; myHash[2];", "2"},
+			{"let myHash = {1: 1, 2: 2}; myHash[1 + 1];", "2"},
+			{"{1: 1, 2: 2}[3]", "null"},
+			{"{1: 1, 2: 2}[-1]", "null"}
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
+TEST_CASE("Index Assignment Test")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"let x = {1: 1, 2: 2}; x[1] = 2; x[1]", "2"},
+			{"let x = {1: 1, 2: 2}; x[2] = 3; x[2]", "3"},
+			{"let i = [1,2,3,4,5]; i[1] = 9; i;", "[1, 9, 3, 4, 5]"},
+			{"let h = {1: 1, 2: 2}; h[3] = 5; h[3]", "5"},
+			{"let x = {1: 1, 2: 2}; let x[1] = 2; x[1]", "2"},
+			{"let x = {1: 1, 2: 2}; let x[2] = 3; x[2]", "3"},
+			{"let i = [1,2,3,4,5];  let i[1] = 9; i;", "[1, 9, 3, 4, 5]"},
+			{"let h = {1: 1, 2: 2}; let h[3] = 5; h[3]", "5"},
 		}));
 
 	CAPTURE(input);

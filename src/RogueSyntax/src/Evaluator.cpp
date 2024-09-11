@@ -580,8 +580,11 @@ std::shared_ptr<Environment> Evaluator::ExtendFunctionEnv(const std::shared_ptr<
 			continue;
 		}
 
+		auto argUnwrapped = UnwrapIfReturnObj(args[i]);
+		argUnwrapped = UnwrapIfIdentObj(argUnwrapped);
+
 		auto* ident = dynamic_cast<Identifier*>(param);
-		env->Set(ident->Value, args[i]);
+		env->Set(ident->Value, argUnwrapped);
 	}
 	return env;
 }
@@ -1811,7 +1814,17 @@ std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const 
 		if (evaluated->Type() == ObjectType::RETURN_OBJ)
 		{
 			auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
-			result.push_back(ret->Value);
+
+			auto unwrapped = UnwrapIfReturnObj(ret->Value);
+			unwrapped = UnwrapIfIdentObj(unwrapped);
+			
+			result.push_back(unwrapped);
+		}
+		else if (evaluated->Type() == ObjectType::IDENT_OBJ)
+		{
+			auto ident = std::dynamic_pointer_cast<IdentifierObj>(evaluated);
+			auto unwrapped = UnwrapIfIdentObj(ident);
+			result.push_back(unwrapped);
 		}
 		else
 		{

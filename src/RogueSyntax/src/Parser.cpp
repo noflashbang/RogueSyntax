@@ -5,6 +5,7 @@
 #include "Parser.h"
 #include "Parser.h"
 #include "Parser.h"
+#include "Parser.h"
 #include "pch.h"
 
 Parser::Parser(const Lexer& lexer) : _lexer(lexer)
@@ -37,7 +38,7 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_infixDispatch[TokenType::TOKEN_GT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseCallExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseIndexExpression, this, std::placeholders::_1);
-	//_infixDispatch[TokenType::TOKEN_ASSIGN] = std::bind(&Parser::ParseAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_ASSIGN] = std::bind(&Parser::ParseAssignExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_INCREMENT] = std::bind(&Parser::ParseIncrementExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_DECREMENT] = std::bind(&Parser::ParseIncrementExpression, this, std::placeholders::_1);
 
@@ -417,6 +418,21 @@ std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<
 	return IndexExpression::New(_currentToken, left, index);
 }
 
+std::shared_ptr<IExpression> Parser::ParseAssignExpression(const std::shared_ptr<IExpression>& left)
+{
+	auto token = _currentToken;
+	NextToken();
+
+	auto right = ParseExpression(Precedence::LOWEST);
+
+	if (!ExpectPeek(TokenType::TOKEN_SEMICOLON))
+	{
+		return nullptr;
+	}
+
+	return LetStatement::New(token, left, right);
+}
+
 std::shared_ptr<IExpression> Parser::ParseIncrementExpression(const std::shared_ptr<IExpression>& left)
 {
 	auto token = _currentToken;
@@ -523,13 +539,17 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 	NextToken();
 
 	std::shared_ptr<IExpression> holder = nullptr;
-	if (_currentToken.Type == TokenType::TOKEN_IDENT)
+	if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type != TokenType::TOKEN_LBRACKET)
 	{
 		holder = Identifier::New(_currentToken, _currentToken.Literal);
 	}
 	else
 	{
 		holder = ParseExpression(Precedence::LOWEST);
+		if (holder != NULL && holder->NType() == NodeType::LetStatement)
+		{
+			return dynamic_pointer_cast<LetStatement>(holder);
+		}
 	}
 
 	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
