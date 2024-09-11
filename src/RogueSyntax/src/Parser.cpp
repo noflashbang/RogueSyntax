@@ -324,17 +324,17 @@ std::shared_ptr<IExpression> Parser::ParseForExpression()
 
 	auto post = Parser::ParseStatement();
 
-	if (post->NType() == NodeType::ExpressionStatement)
-	{
-		auto* initStmt = static_cast<LetStatement*>(init.get());
-		auto* postStmt = static_cast<ExpressionStatement*>(post.get());
-		Token token = post->BaseToken;
-		token.Literal = "let";
-		auto modifiedPost = LetStatement::New(token, initStmt->Name, postStmt->Expression);
-		post = modifiedPost;
-
-		NextToken();
-	}
+	//if (post->NType() == NodeType::ExpressionStatement)
+	//{
+	//	auto* initStmt = static_cast<LetStatement*>(init.get());
+	//	auto* postStmt = static_cast<ExpressionStatement*>(post.get());
+	//	Token token = post->BaseToken;
+	//	token.Literal = "let";
+	//	auto modifiedPost = LetStatement::New(token, initStmt->Name, postStmt->Expression);
+	//	post = modifiedPost;
+	//
+	//	NextToken();
+	//}
 
 
 	if (!ExpectPeek(TokenType::TOKEN_LBRACE))
@@ -436,18 +436,25 @@ std::shared_ptr<IExpression> Parser::ParseAssignExpression(const std::shared_ptr
 std::shared_ptr<IExpression> Parser::ParseIncrementExpression(const std::shared_ptr<IExpression>& left)
 {
 	auto token = _currentToken;
-	if (_currentToken.Type == TokenType::TOKEN_INCREMENT)
+	NextToken();
+	if (token.Type == TokenType::TOKEN_INCREMENT)
 	{
 		Token opToken = Token::New(TokenType::TOKEN_PLUS, "+");
 		opToken.Location = token.Location;
-		return InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
 	}
 	else
 	{
 		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
 		opToken.Location = token.Location;
-		return InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+		auto right =  InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
 
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
 	}	
 }
 

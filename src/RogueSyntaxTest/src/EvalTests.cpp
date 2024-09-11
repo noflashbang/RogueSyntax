@@ -546,6 +546,23 @@ TEST_CASE("Null Tests")
 	REQUIRE(result->Inspect() == expected);
 }
 
+TEST_CASE("Incrementer Tests")
+{
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"let a = 1; a++;", "2"},
+			{"let a = 1; a--;", "0"},
+			{"let a = [1,2,3]; a[1]++;", "3"},
+			{"let a = {1:2,3:4}; a[1]++;", "3"},
+			{"let a = {1:2,3:4}; a[1]++; a;", "{1: 3, 3: 4}"},
+		}));
+
+	CAPTURE(input);
+	auto result = EvalTest(eng, input);
+	REQUIRE(result->Inspect() == expected);
+}
+
 
 TEST_CASE("BENCHMARK STACK EVALUATOR")
 {
