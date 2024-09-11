@@ -1017,10 +1017,10 @@ TEST_CASE("Test for parsing")
 	std::vector<Test> tests = {
 		{"for(x=6; x<60;x++){ x; }"                       , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
 		{"for(let x=6; x<60;x = x+1){ x; }"               , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
-		{"for(x=6; x!=60;t(x)){ x; }"                     , "for (let x = 6; (x != 60); t(x)) {x}"},
+		{"for(x=6; x!=60;t(x)){ x; }"                     , "for (let x = 6; (x != 60); let x = t(x)) {x}"},
 		{"for (let x = 6; (x < 60); let x = (x + 1)) {x}" , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
 		{"for (let x = 6; (x < 60); let x = (x + 1)) {x}" , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
-		{"for (let x = 6; (x != 60); t(x)) {x}"           , "for (let x = 6; (x != 60); t(x)) {x}"},
+		{"for (let x = 6; (x != 60); t(x)) {x}"           , "for (let x = 6; (x != 60); let x = t(x)) {x}"},
 
 	};
 

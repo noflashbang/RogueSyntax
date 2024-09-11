@@ -39,6 +39,8 @@ protected:
 
 	static std::shared_ptr<IObject> MakeError(const std::string& message, const Token& token);
 	static std::shared_ptr<IObject> UnwrapIfReturnObj(const std::shared_ptr<IObject>& input);
+	static std::shared_ptr<IObject> UnwrapIfIdentObj(const std::shared_ptr<IObject>& input);
+
 	static std::shared_ptr<Environment> ExtendFunctionEnv(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args);
 
 private:

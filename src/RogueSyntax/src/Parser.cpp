@@ -314,28 +314,27 @@ std::shared_ptr<IExpression> Parser::ParseForExpression()
 
 	auto init = Parser::ParseStatement();
 
-	if (!CurrentTokenIs(TokenType::TOKEN_SEMICOLON))
-	{
-		return nullptr;
-	}
-
 	NextToken();
 
 	auto condition = ParseExpression(Precedence::LOWEST);
-
-	if (!ExpectPeek(TokenType::TOKEN_SEMICOLON))
-	{
-		return nullptr;
-	}
 	
+	NextToken();
 	NextToken();
 
 	auto post = Parser::ParseStatement();
 
-	if (!ExpectPeek(TokenType::TOKEN_RPAREN))
+	if (post->NType() == NodeType::ExpressionStatement)
 	{
-		return nullptr;
+		auto* initStmt = static_cast<LetStatement*>(init.get());
+		auto* postStmt = static_cast<ExpressionStatement*>(post.get());
+		Token token = post->BaseToken;
+		token.Literal = "let";
+		auto modifiedPost = LetStatement::New(token, initStmt->Name, postStmt->Expression);
+		post = modifiedPost;
+
+		NextToken();
 	}
+
 
 	if (!ExpectPeek(TokenType::TOKEN_LBRACE))
 	{
@@ -421,11 +420,19 @@ std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<
 std::shared_ptr<IExpression> Parser::ParseIncrementExpression(const std::shared_ptr<IExpression>& left)
 {
 	auto token = _currentToken;
-	auto op = _currentToken.Type == TokenType::TOKEN_INCREMENT ? TokenType::TOKEN_PLUS.Name : TokenType::TOKEN_MINUS.Name;
+	if (_currentToken.Type == TokenType::TOKEN_INCREMENT)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_PLUS, "+");
+		opToken.Location = token.Location;
+		return InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+	}
+	else
+	{
+		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
+		opToken.Location = token.Location;
+		return InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
 
-	NextToken();
-
-	return InfixExpression::New(token, left, op, IntegerLiteral::New(token, 1));
+	}	
 }
 
 std::shared_ptr<IStatement> Parser::ParseBlockStatement()
@@ -534,7 +541,18 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 	
 	auto value = ParseExpression(Precedence::LOWEST);
 
-	if(PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	if (!PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	{
+		if (!PeekTokenIs(TokenType::TOKEN_RPAREN))
+		{
+			return nullptr;
+		}
+		else
+		{
+			NextToken();
+		}
+	}
+	else
 	{
 		NextToken();
 	}
@@ -565,7 +583,18 @@ std::shared_ptr<IStatement> Parser::ParseAssignStatement()
 
 	auto value = ParseExpression(Precedence::LOWEST);
 
-	if (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	if (!PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	{
+		if (!PeekTokenIs(TokenType::TOKEN_RPAREN))
+		{
+			return nullptr;
+		}
+		else
+		{
+			NextToken();
+		}
+	}
+	else
 	{
 		NextToken();
 	}

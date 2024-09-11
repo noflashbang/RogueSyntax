@@ -45,9 +45,22 @@ std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program
 
 		if (result->Type() == ObjectType::RETURN_OBJ)
 		{
-			result = std::dynamic_pointer_cast<ReturnObj>(result)->Value;
+			result = UnwrapIfReturnObj(result);
+			
+			if (result->Type() == ObjectType::IDENT_OBJ)
+			{
+				result = UnwrapIfIdentObj(result);
+				break;
+			}
 			break;
 		}
+
+		if (result->Type() == ObjectType::IDENT_OBJ)
+		{
+			result = UnwrapIfIdentObj(result);
+			break;
+		}
+
 		if (result->Type() == ObjectType::ERROR_OBJ)
 		{
 			break;
@@ -582,6 +595,16 @@ std::shared_ptr<IObject> Evaluator::UnwrapIfReturnObj(const std::shared_ptr<IObj
 	return input;
 }
 
+std::shared_ptr<IObject> Evaluator::UnwrapIfIdentObj(const std::shared_ptr<IObject>& input)
+{
+	if (input != nullptr && input->Type() == ObjectType::IDENT_OBJ)
+	{
+		return dynamic_cast<IdentifierObj*>(input.get())->Value;
+	}
+	return input;
+}
+
+
 std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) const
 {
 	std::stack<std::tuple<const INode*, int32_t, std::shared_ptr<Environment>>> stack;
@@ -694,6 +717,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					}
 
 					arg = UnwrapIfReturnObj(arg);
+					arg = UnwrapIfIdentObj(arg);
 
 					evalArgs.push_back(arg);
 				}
@@ -737,6 +761,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					}
 
 					key = UnwrapIfReturnObj(key);
+					key = UnwrapIfIdentObj(key);
 
 					auto value = results.top();
 					results.pop();
@@ -748,6 +773,8 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					}
 
 					value = UnwrapIfReturnObj(value);
+					value = UnwrapIfIdentObj(value);
+
 					evalArgs[HashKey{ key->Type(), key->Inspect() }] = HashEntry{ key, value };
 				}
 				results.push(HashObj::New(evalArgs));
@@ -771,6 +798,9 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				auto indexObj = results.top();
 				results.pop();
 
+				left = UnwrapIfIdentObj(left);
+				indexObj = UnwrapIfIdentObj(indexObj);
+
 				auto result = EvalIndexExpression(index->BaseToken, left, indexObj);
 				results.push(result);
 			}
@@ -791,6 +821,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				//unwrap any return objects
 				lastResult = UnwrapIfReturnObj(lastResult);
+				lastResult = UnwrapIfIdentObj(lastResult);
 
 				results.push(EvalPrefixExpression(prefix->BaseToken, lastResult));
 			}
@@ -831,6 +862,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 				//unwrap any return objects
 				lastResult = UnwrapIfReturnObj(lastResult);
+				lastResult = UnwrapIfIdentObj(lastResult);
 
 				auto evalBool = EvalAsBoolean(ifex->BaseToken, lastResult.get());
 
@@ -880,11 +912,13 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				results.pop();
 
 				right = UnwrapIfReturnObj(right);
+				right = UnwrapIfIdentObj(right);
 
 				auto left = results.top();
 				results.pop();
 
 				left = UnwrapIfReturnObj(left);
+				left = UnwrapIfIdentObj(left);
 
 				auto result = EvalInfixExpression(infix->BaseToken, left, right);
 				results.push(result);
@@ -924,6 +958,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					results.pop();
 
 					value = UnwrapIfReturnObj(value);
+					value = UnwrapIfIdentObj(value);
 
 					if (value->Type() == ObjectType::ERROR_OBJ)
 					{
@@ -963,6 +998,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					results.pop();
 
 					value = UnwrapIfReturnObj(value);
+					value = UnwrapIfIdentObj(value);
 
 					if (value->Type() == ObjectType::ERROR_OBJ)
 					{
@@ -973,6 +1009,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					results.pop();
 
 					left = UnwrapIfReturnObj(left);
+					left = UnwrapIfIdentObj(left);
 
 					if (left->Type() == ObjectType::ERROR_OBJ)
 					{
@@ -983,6 +1020,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 					results.pop();
 
 					index = UnwrapIfReturnObj(index);
+					index = UnwrapIfIdentObj(index);
 
 					if (index->Type() == ObjectType::ERROR_OBJ)
 					{
@@ -1009,14 +1047,14 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 			}
 			else
 			{
-				auto value = env->Get(ident->Value);
+				auto value = useEnv->Get(ident->Value);
 				if (value != nullptr)
 				{
-					results.push(IdentifierObj::New(ident->Value, value, env));
+					results.push(IdentifierObj::New(ident->Value, value, useEnv));
 				}
 				else
 				{
-					results.push(IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF, env));
+					results.push(IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF, useEnv));
 				}
 				//result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
 			}
@@ -1039,6 +1077,8 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 			else if (signal == 1)
 			{
 				auto& lastResult = results.top();
+
+				lastResult = UnwrapIfIdentObj(lastResult);
 
 				if (lastResult->Type() != ObjectType::FUNCTION_OBJ && lastResult->Type() != ObjectType::BUILTIN_OBJ)
 				{
@@ -1079,6 +1119,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 					//unwrap any return objects
 					arg = UnwrapIfReturnObj(arg);
+					arg = UnwrapIfIdentObj(arg);
 
 					evalArgs.push_back(arg);
 				}
@@ -1149,6 +1190,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				results.pop();
 
 				lastResult = UnwrapIfReturnObj(lastResult);
+				lastResult = UnwrapIfIdentObj(lastResult);
 
 				auto booleanObj = EvalAsBoolean(whileEx->BaseToken, lastResult.get());
 
@@ -1186,6 +1228,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 				results.pop();
 
 				lastResult = UnwrapIfReturnObj(lastResult);
+				lastResult = UnwrapIfIdentObj(lastResult);
 
 				auto booleanObj = EvalAsBoolean(forEx->BaseToken, lastResult.get());
 
@@ -1350,6 +1393,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto right = Eval(prefix->Right, env, builtIn);
 
 			right = UnwrapIfReturnObj(right);
+			right = UnwrapIfIdentObj(right);
 
 			if (right->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1383,6 +1427,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto condition = Eval(ifex->Condition, env, builtIn);
 
 			condition = UnwrapIfReturnObj(condition);
+			condition = UnwrapIfIdentObj(condition);
 
 			if (condition->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1416,6 +1461,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto left = Eval(infix->Left, env, builtIn);
 
 			left = UnwrapIfReturnObj(left);
+			left = UnwrapIfIdentObj(left);
 
 			if (left->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1424,6 +1470,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto right = Eval(infix->Right, env, builtIn);
 
 			right = UnwrapIfReturnObj(right);
+			right = UnwrapIfIdentObj(right);
 
 			if (right->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1445,6 +1492,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto value = Eval(let->Value, env, builtIn);
 
 			value = UnwrapIfReturnObj(value);
+			value = UnwrapIfIdentObj(value);
 
 			if (value->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1468,6 +1516,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				auto indexObj = Eval(index->Index, env, builtIn);
 
 				left = UnwrapIfReturnObj(left);
+				left = UnwrapIfIdentObj(left);
 
 				if (left->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -1475,6 +1524,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				}
 
 				indexObj = UnwrapIfReturnObj(indexObj);
+				indexObj = UnwrapIfIdentObj(indexObj);
 
 				if (indexObj->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -1524,6 +1574,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto indexObj = Eval(index->Index, env, builtIn);
 
 			left = UnwrapIfReturnObj(left);
+			left = UnwrapIfIdentObj(left);
 
 			if (left->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1531,6 +1582,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			}
 
 			indexObj = UnwrapIfReturnObj(indexObj);
+			indexObj = UnwrapIfIdentObj(indexObj);
 
 			if (indexObj->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1554,6 +1606,8 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			{
 				return function;
 			}
+
+			function = UnwrapIfIdentObj(function);
 
 			if (function->Type() != ObjectType::FUNCTION_OBJ && function->Type() != ObjectType::BUILTIN_OBJ)
 			{
@@ -1591,6 +1645,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto condition = Eval(whileEx->Condition, env, builtIn);
 
 			condition = UnwrapIfReturnObj(condition);
+			condition = UnwrapIfIdentObj(condition);
 
 			if (condition->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1631,6 +1686,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				condition = Eval(whileEx->Condition, env, builtIn);
 
 				condition = UnwrapIfReturnObj(condition);
+				condition = UnwrapIfIdentObj(condition);
 
 				if (condition->Type() == ObjectType::ERROR_OBJ)
 				{
@@ -1656,6 +1712,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 			auto condition = Eval(forEx->Condition, env, builtIn);
 
 			condition = UnwrapIfReturnObj(condition);
+			condition = UnwrapIfIdentObj(condition);
 
 			if (condition->Type() == ObjectType::ERROR_OBJ)
 			{
@@ -1699,6 +1756,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				condition = Eval(forEx->Condition, env, builtIn);
 
 				condition = UnwrapIfReturnObj(condition);
+				condition = UnwrapIfIdentObj(condition);
 
 				if (condition->Type() == ObjectType::ERROR_OBJ)
 				{
