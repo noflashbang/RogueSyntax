@@ -981,7 +981,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 					auto* ident = dynamic_no_copy_cast<IdentifierObj>(identResult);
 					auto result = ident->Set(nullptr, value);
-					results.push(result);
+					//results.push(result);
 				}
 			}
 			else if (let->Name->NType() == NodeType::IndexExpression)
@@ -1032,7 +1032,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 					auto* assignable = dynamic_no_copy_cast<IAssignableObject>(left);
 					auto result = assignable->Set(index, value);
-					results.push(result);
+					//results.push(result);
 				}
 			}
 			else
@@ -1510,7 +1510,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 					return target;
 				}
 				auto* ident = dynamic_no_copy_cast<IdentifierObj>(target);
-				result = ident->Set(nullptr, value);
+				ident->Set(nullptr, value);
 			}
 			else if (let->Name->NType() == NodeType::IndexExpression)
 			{
@@ -1539,7 +1539,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 				{
 					return MakeError("left side of assignment is not assignable", index->BaseToken);
 				}
-				result = assignable->Set(indexObj, value);
+				assignable->Set(indexObj, value);
 			}
 			else
 			{

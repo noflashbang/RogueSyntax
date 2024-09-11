@@ -612,7 +612,7 @@ std::shared_ptr<IStatement> Parser::ParseAssignStatement()
 
 	if (!PeekTokenIs(TokenType::TOKEN_SEMICOLON))
 	{
-		if (!PeekTokenIs(TokenType::TOKEN_RPAREN))
+		if (!(PeekTokenIs(TokenType::TOKEN_RPAREN) || PeekTokenIs(TokenType::TOKEN_EOF)))
 		{
 			return nullptr;
 		}
