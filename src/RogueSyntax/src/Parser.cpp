@@ -17,6 +17,7 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_prefixDispatch[TokenType::TOKEN_STRING] = std::bind(&Parser::ParseStringLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_BANG] = std::bind(&Parser::ParsePrefixExpression, this);
 	_prefixDispatch[TokenType::TOKEN_MINUS] = std::bind(&Parser::ParsePrefixExpression, this);
+	_prefixDispatch[TokenType::TOKEN_BITWISE_NOT] = std::bind(&Parser::ParsePrefixExpression, this);
 	_prefixDispatch[TokenType::TOKEN_FALSE] = std::bind(&Parser::ParseBoolean, this);
 	_prefixDispatch[TokenType::TOKEN_TRUE] = std::bind(&Parser::ParseBoolean, this);
 	_prefixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseGroupedExpression, this);
@@ -31,16 +32,33 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_infixDispatch[TokenType::TOKEN_PLUS] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_MINUS] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_SLASH] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_MODULO] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_ASTERISK] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_NOT_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_GT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_AND] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_OR] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_BITWISE_AND] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_BITWISE_OR] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_BITWISE_XOR] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_SHIFT_LEFT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_SHIFT_RIGHT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_LT_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_GT_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	
+	_infixDispatch[TokenType::TOKEN_PLUS_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_MINUS_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_ASTERISK_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_SLASH_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_MODULO_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+
 	_infixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseCallExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseIndexExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_ASSIGN] = std::bind(&Parser::ParseAssignExpression, this, std::placeholders::_1);
-	_infixDispatch[TokenType::TOKEN_INCREMENT] = std::bind(&Parser::ParseIncrementExpression, this, std::placeholders::_1);
-	_infixDispatch[TokenType::TOKEN_DECREMENT] = std::bind(&Parser::ParseIncrementExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_INCREMENT] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_DECREMENT] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
 
 	//load the first two tokens
 	NextToken();
@@ -433,7 +451,7 @@ std::shared_ptr<IExpression> Parser::ParseAssignExpression(const std::shared_ptr
 	return LetStatement::New(token, left, right);
 }
 
-std::shared_ptr<IExpression> Parser::ParseIncrementExpression(const std::shared_ptr<IExpression>& left)
+std::shared_ptr<IExpression> Parser::ParseOpAssignExpression(const std::shared_ptr<IExpression>& left)
 {
 	auto token = _currentToken;
 	NextToken();
@@ -447,7 +465,7 @@ std::shared_ptr<IExpression> Parser::ParseIncrementExpression(const std::shared_
 		token.Literal = "let";
 		return LetStatement::New(token, left, right);
 	}
-	else
+	else if (token.Type == TokenType::TOKEN_DECREMENT)
 	{
 		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
 		opToken.Location = token.Location;
@@ -455,7 +473,58 @@ std::shared_ptr<IExpression> Parser::ParseIncrementExpression(const std::shared_
 
 		token.Literal = "let";
 		return LetStatement::New(token, left, right);
-	}	
+	}
+	else if (token.Type == TokenType::TOKEN_MINUS_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_PLUS_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_PLUS, "+");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_ASTERISK_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_ASTERISK, "*");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_SLASH_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_SLASH, "/");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_MODULO_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_MODULO, "%");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else
+	{
+		std::string error = "unknown operator " + token.Literal;
+		AddError(error);
+		return nullptr;
+	}
 }
 
 std::shared_ptr<IStatement> Parser::ParseBlockStatement()

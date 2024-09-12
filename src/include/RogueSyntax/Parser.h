@@ -19,7 +19,6 @@ enum class Precedence
 	CALL,        // myFunction(X)
 	ASSIGN,      // =
 	INDEX,       // array[index]
-
 };
 
 static const std::map<TokenType, Precedence> PRECEDENCES = {
@@ -36,6 +35,21 @@ static const std::map<TokenType, Precedence> PRECEDENCES = {
 	{TokenType::TOKEN_ASTERISK, Precedence::PRODUCT},
 	{TokenType::TOKEN_LPAREN, Precedence::CALL},
 	{TokenType::TOKEN_LBRACKET, Precedence::INDEX},
+	{TokenType::TOKEN_LT_EQ, Precedence::LESSGREATER},
+	{TokenType::TOKEN_GT_EQ, Precedence::LESSGREATER},
+	{TokenType::TOKEN_AND, Precedence::LESSGREATER},
+	{TokenType::TOKEN_OR, Precedence::LESSGREATER},
+	{TokenType::TOKEN_BITWISE_AND, Precedence::LESSGREATER},
+	{TokenType::TOKEN_BITWISE_OR, Precedence::LESSGREATER},
+	{TokenType::TOKEN_BITWISE_XOR, Precedence::LESSGREATER},
+	{TokenType::TOKEN_SHIFT_LEFT, Precedence::LESSGREATER},
+	{TokenType::TOKEN_SHIFT_RIGHT, Precedence::LESSGREATER},
+	{TokenType::TOKEN_MODULO, Precedence::PRODUCT},
+	{TokenType::TOKEN_MODULO_ASSIGN, Precedence::PRODUCT},
+	{TokenType::TOKEN_PLUS_ASSIGN, Precedence::ASSIGN},
+	{TokenType::TOKEN_MINUS_ASSIGN, Precedence::ASSIGN},
+	{TokenType::TOKEN_ASTERISK_ASSIGN, Precedence::ASSIGN},
+	{TokenType::TOKEN_SLASH_ASSIGN, Precedence::ASSIGN},
 };
 
 class Parser
@@ -68,7 +82,7 @@ public:
 	std::shared_ptr<IExpression> ParseForExpression();
 	std::shared_ptr<IExpression> ParseIndexExpression(const std::shared_ptr<IExpression>& left);
 	std::shared_ptr<IExpression> ParseAssignExpression(const std::shared_ptr<IExpression>& left);
-	std::shared_ptr<IExpression> ParseIncrementExpression(const std::shared_ptr<IExpression>& left);
+	std::shared_ptr<IExpression> ParseOpAssignExpression(const std::shared_ptr<IExpression>& left);
 
 	std::shared_ptr<IStatement> ParseBlockStatement();
 	std::shared_ptr<IStatement> ParseLetStatement();

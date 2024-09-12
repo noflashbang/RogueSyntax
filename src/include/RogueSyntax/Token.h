@@ -76,11 +76,29 @@ struct TokenType
 	static const TokenType TOKEN_BANG;
 	static const TokenType TOKEN_ASTERISK;
 	static const TokenType TOKEN_SLASH;
+	static const TokenType TOKEN_MODULO;
 	static const TokenType TOKEN_LT;
 	static const TokenType TOKEN_GT;
 	static const TokenType TOKEN_EQ;
 	static const TokenType TOKEN_NOT_EQ;
+	static const TokenType TOKEN_GT_EQ;
+	static const TokenType TOKEN_LT_EQ;
 
+	static const TokenType TOKEN_AND;
+	static const TokenType TOKEN_OR;
+	static const TokenType TOKEN_BITWISE_AND;
+	static const TokenType TOKEN_BITWISE_OR;
+	static const TokenType TOKEN_BITWISE_XOR;
+	static const TokenType TOKEN_BITWISE_NOT;
+	
+	static const TokenType TOKEN_SHIFT_LEFT;
+	static const TokenType TOKEN_SHIFT_RIGHT;
+	
+	static const TokenType TOKEN_PLUS_ASSIGN;
+	static const TokenType TOKEN_MINUS_ASSIGN;
+	static const TokenType TOKEN_ASTERISK_ASSIGN;
+	static const TokenType TOKEN_SLASH_ASSIGN;
+	static const TokenType TOKEN_MODULO_ASSIGN;
 
 	// Delimiters
 	static const TokenType TOKEN_COMMA;

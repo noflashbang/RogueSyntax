@@ -99,7 +99,7 @@ TEST_CASE("Test NextToken 2")
 TEST_CASE("Test NextToken 3")
 {
 
-	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar ^ while break continue for 23d 2.3 \"some string\" [ ] :",
+	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar $ while break continue for 23d 2.3 \"some string\" [ ] : ~ <= >= += -= /= *= % %= || | && & ^",
 		{
 			{TokenType::TOKEN_LET, "let"},
 			{TokenType::TOKEN_RETURN, "return"},
@@ -127,7 +127,7 @@ TEST_CASE("Test NextToken 3")
 			{TokenType::TOKEN_INT, "234"},
 			{TokenType::TOKEN_IDENT, "x"},
 			{TokenType::TOKEN_IDENT , "somevar"},
-			{TokenType::TOKEN_ILLEGAL, "^"},
+			{TokenType::TOKEN_ILLEGAL, "$"},
 			{TokenType::TOKEN_WHILE, "while"},
 			{TokenType::TOKEN_BREAK, "break"},
 			{TokenType::TOKEN_CONTINUE, "continue"},
@@ -138,6 +138,20 @@ TEST_CASE("Test NextToken 3")
 			{TokenType::TOKEN_LBRACKET, "["},
 			{TokenType::TOKEN_RBRACKET, "]"},
 			{TokenType::TOKEN_COLON, ":"},
+			{TokenType::TOKEN_BITWISE_NOT, "~"},
+			{TokenType::TOKEN_LT_EQ, "<="},
+			{TokenType::TOKEN_GT_EQ, ">="},
+			{TokenType::TOKEN_PLUS_ASSIGN, "+="},
+			{TokenType::TOKEN_MINUS_ASSIGN, "-="},
+			{TokenType::TOKEN_SLASH_ASSIGN, "/="},
+			{TokenType::TOKEN_ASTERISK_ASSIGN, "*="},
+			{TokenType::TOKEN_MODULO, "%"},
+			{TokenType::TOKEN_MODULO_ASSIGN, "%="},
+			{TokenType::TOKEN_OR, "||"},
+			{TokenType::TOKEN_BITWISE_OR, "|"},
+			{TokenType::TOKEN_AND, "&&"},
+			{TokenType::TOKEN_BITWISE_AND, "&"},
+			{TokenType::TOKEN_BITWISE_XOR, "^"},
 			{TokenType::TOKEN_EOF, ""}
 		} };
 

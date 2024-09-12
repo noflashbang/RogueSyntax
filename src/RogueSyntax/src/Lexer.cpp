@@ -74,6 +74,12 @@ Token Lexer::GetCurrentToken()
 				ReadChar();
 				result = Token::New(TokenType::TOKEN_INCREMENT, std::string(1, ch) + _currentChar);
 			}
+			else if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_PLUS_ASSIGN, std::string(1, ch) + _currentChar);	
+			}
 			else
 			{
 				result = Token::New(TokenType::TOKEN_PLUS, _currentChar);
@@ -87,6 +93,12 @@ Token Lexer::GetCurrentToken()
 				auto ch = _currentChar;
 				ReadChar();
 				result = Token::New(TokenType::TOKEN_DECREMENT, std::string(1, ch) + _currentChar);
+			}
+			else if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_MINUS_ASSIGN, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
@@ -110,22 +122,122 @@ Token Lexer::GetCurrentToken()
 		}
 		case '/':
 		{
-			result = Token::New(TokenType::TOKEN_SLASH, _currentChar);
+			if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_SLASH_ASSIGN, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				result = Token::New(TokenType::TOKEN_SLASH, _currentChar);
+			}
 			break;
 		}
 		case '*':
 		{
-			result = Token::New(TokenType::TOKEN_ASTERISK, _currentChar);
+			if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_ASTERISK_ASSIGN, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				result = Token::New(TokenType::TOKEN_ASTERISK, _currentChar);
+			}
 			break;
 		}
 		case '<':
 		{
-			result = Token::New(TokenType::TOKEN_LT, _currentChar);
+			if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_LT_EQ, std::string(1, ch) + _currentChar);
+			}
+			else if (_peekChar == '<')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_SHIFT_LEFT, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				result = Token::New(TokenType::TOKEN_LT, _currentChar);
+			}
 			break;
 		}
 		case '>':
 		{
-			result = Token::New(TokenType::TOKEN_GT, _currentChar);
+			if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_GT_EQ, std::string(1, ch) + _currentChar);
+			}
+			else if (_peekChar == '>')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_SHIFT_RIGHT, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				result = Token::New(TokenType::TOKEN_GT, _currentChar);
+			}
+			break;
+		}
+		case '&':
+		{
+			if (_peekChar == '&')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_AND, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				result = Token::New(TokenType::TOKEN_BITWISE_AND, _currentChar);
+			}
+			break;
+		}
+		case '|':
+		{
+			if (_peekChar == '|')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_OR, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				result = Token::New(TokenType::TOKEN_BITWISE_OR, _currentChar);
+			}
+			break;
+		}
+		case '^':
+		{
+			result = Token::New(TokenType::TOKEN_BITWISE_XOR, _currentChar);
+			break;
+		}
+		case '~':
+		{
+			result = Token::New(TokenType::TOKEN_BITWISE_NOT, _currentChar);
+			break;
+		}
+		case '%':
+		{
+			if (_peekChar == '=')
+			{
+				auto ch = _currentChar;
+				ReadChar();
+				result = Token::New(TokenType::TOKEN_MODULO_ASSIGN, std::string(1, ch) + _currentChar);
+			}
+			else
+			{
+				result = Token::New(TokenType::TOKEN_MODULO, _currentChar);
+			}
 			break;
 		}
 		case '{':

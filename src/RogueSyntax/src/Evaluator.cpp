@@ -80,6 +80,10 @@ std::shared_ptr<IObject> Evaluator::EvalPrefixExpression(const Token& optor, con
 	{
 		result = EvalMinusPrefixOperatorExpression(optor, right);
 	}
+	else if (optor.Type == TokenType::TOKEN_BITWISE_NOT)
+	{
+		result = EvalBitwiseNotPrefixOperatorExpression(optor, right);
+	}
 	else
 	{
 		result = MakeError(std::format("unknown operator: {}", optor.Literal), optor);
@@ -427,6 +431,14 @@ std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& opto
 	{
 		result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 	}
+	else if (optor.Type == TokenType::TOKEN_GT_EQ)
+	{
+		result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_LT_EQ)
+	{
+		result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
 	else if (optor.Type == TokenType::TOKEN_EQ)
 	{
 		result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
@@ -434,6 +446,30 @@ std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& opto
 	else if (optor.Type == TokenType::TOKEN_NOT_EQ)
 	{
 		result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_BITWISE_AND)
+	{
+		result = IntegerObj::New(left->Value & right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_BITWISE_OR)
+	{
+		result = IntegerObj::New(left->Value | right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_BITWISE_XOR)
+	{
+		result = IntegerObj::New(left->Value ^ right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_SHIFT_LEFT)
+	{
+		result = IntegerObj::New(left->Value << right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_SHIFT_RIGHT)
+	{
+		result = IntegerObj::New(left->Value >> right->Value);
+	}
+	else if (optor.Type == TokenType::TOKEN_MODULO)
+	{
+		result = IntegerObj::New(left->Value % right->Value);
 	}
 	else
 	{
@@ -452,6 +488,14 @@ std::shared_ptr<IObject> Evaluator::EvalBooleanInfixExpression(const Token& opto
 	else if (optor.Type == TokenType::TOKEN_NOT_EQ)
 	{
 		result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_AND)
+	{
+		result = left->Value && right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_OR)
+	{
+		result = left->Value || right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 	}
 	else
 	{
@@ -488,6 +532,14 @@ std::shared_ptr<IObject> Evaluator::EvalDecimalInfixExpression(const Token& opto
 	{
 		result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 	}
+	else if (optor.Type == TokenType::TOKEN_GT_EQ)
+	{
+		result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_LT_EQ)
+	{
+		result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
 	else if (optor.Type == TokenType::TOKEN_EQ)
 	{
 		result = abs(left->Value - right->Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
@@ -495,6 +547,10 @@ std::shared_ptr<IObject> Evaluator::EvalDecimalInfixExpression(const Token& opto
 	else if (optor.Type == TokenType::TOKEN_NOT_EQ)
 	{
 		result = abs(left->Value - right->Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+	}
+	else if (optor.Type == TokenType::TOKEN_MODULO)
+	{
+		result = DecimalObj::New(fmod(left->Value, right->Value));
 	}
 	else
 	{
@@ -559,6 +615,21 @@ std::shared_ptr<IObject> Evaluator::EvalMinusPrefixOperatorExpression(const Toke
 	{
 		auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
 		result = IntegerObj::New(-value);
+	}
+	return result;
+}
+
+std::shared_ptr<IObject> Evaluator::EvalBitwiseNotPrefixOperatorExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
+{
+	std::shared_ptr<IObject> result = nullptr;
+	if (right->Type() != ObjectType::INTEGER_OBJ)
+	{
+		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->Type().Name), optor);
+	}
+	else
+	{
+		auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
+		result = IntegerObj::New(~value);
 	}
 	return result;
 }

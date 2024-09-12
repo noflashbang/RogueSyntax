@@ -22,10 +22,29 @@ const TokenType TokenType::TOKEN_DECREMENT     = { TokenType::NextTokenNumber++,
 const TokenType TokenType::TOKEN_BANG          = { TokenType::NextTokenNumber++, "!" };
 const TokenType TokenType::TOKEN_ASTERISK      = { TokenType::NextTokenNumber++, "*" };
 const TokenType TokenType::TOKEN_SLASH         = { TokenType::NextTokenNumber++, "/" };
+const TokenType TokenType::TOKEN_MODULO        = { TokenType::NextTokenNumber++, "%" };
+const TokenType TokenType::TOKEN_GT_EQ         = { TokenType::NextTokenNumber++, ">=" };
+const TokenType TokenType::TOKEN_LT_EQ         = { TokenType::NextTokenNumber++, "<=" };
 const TokenType TokenType::TOKEN_LT            = { TokenType::NextTokenNumber++, "<" };
 const TokenType TokenType::TOKEN_GT            = { TokenType::NextTokenNumber++, ">" };
 const TokenType TokenType::TOKEN_EQ            = { TokenType::NextTokenNumber++, "==" };
 const TokenType TokenType::TOKEN_NOT_EQ        = { TokenType::NextTokenNumber++, "!=" };
+
+const TokenType TokenType::TOKEN_AND           = { TokenType::NextTokenNumber++, "&&" };
+const TokenType TokenType::TOKEN_OR            = { TokenType::NextTokenNumber++, "||" };
+const TokenType TokenType::TOKEN_BITWISE_AND   = { TokenType::NextTokenNumber++, "&" };
+const TokenType TokenType::TOKEN_BITWISE_OR    = { TokenType::NextTokenNumber++, "|" };
+const TokenType TokenType::TOKEN_BITWISE_XOR   = { TokenType::NextTokenNumber++, "^" };
+const TokenType TokenType::TOKEN_BITWISE_NOT   = { TokenType::NextTokenNumber++, "~" };
+
+const TokenType TokenType::TOKEN_SHIFT_LEFT    = { TokenType::NextTokenNumber++, "<<" };
+const TokenType TokenType::TOKEN_SHIFT_RIGHT   = { TokenType::NextTokenNumber++, ">>" };
+
+const TokenType TokenType::TOKEN_PLUS_ASSIGN = { TokenType::NextTokenNumber++, "+=" };
+const TokenType TokenType::TOKEN_MINUS_ASSIGN = { TokenType::NextTokenNumber++, "-=" };
+const TokenType TokenType::TOKEN_ASTERISK_ASSIGN = { TokenType::NextTokenNumber++, "*=" };
+const TokenType TokenType::TOKEN_SLASH_ASSIGN = { TokenType::NextTokenNumber++, "/=" };
+const TokenType TokenType::TOKEN_MODULO_ASSIGN = { TokenType::NextTokenNumber++, "%=" };
 
 // Delimiters							   		   
 const TokenType TokenType::TOKEN_COMMA         = { TokenType::NextTokenNumber++, "," };

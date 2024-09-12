@@ -113,7 +113,14 @@ TEST_CASE("Simple Integer Type")
 		{ "2 * (5 + 10)", 30 },
 		{ "3 * 3 * 3 + 10", 37 },
 		{ "3 * (3 * 3) + 10", 37 },
-		{ "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50 } 
+		{ "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50 },
+		{"7 % 3",1},
+		{"2 | 3",3},
+		{"2 & 3",2},
+		{"2 ^ 3",1},
+		{"2 << 3",16},
+		{"8 >> 3",1},
+		{"~2",-3}
 	}));
 
 	CAPTURE(input);
@@ -551,10 +558,10 @@ TEST_CASE("Incrementer Tests")
 	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
-			{"let a = 1; a++;", "2"},
-			{"let a = 1; a--;", "0"},
-			{"let a = [1,2,3]; a[1]++;", "3"},
-			{"let a = {1:2,3:4}; a[1]++;", "3"},
+			{"let a = 1; a++; a;", "2"},
+			{"let a = 1; a--; a;", "0"},
+			{"let a = [1,2,3]; a[1]++; a[1];", "3"},
+			{"let a = {1:2,3:4}; a[1]++; a[1];", "3"},
 			{"let a = {1:2,3:4}; a[1]++; a;", "{1: 3, 3: 4}"},
 		}));
 

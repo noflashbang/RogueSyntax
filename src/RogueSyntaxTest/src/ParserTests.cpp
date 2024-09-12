@@ -559,9 +559,20 @@ TEST_CASE("Test Parsing Infix Expressions")
 		{"5 * 5;", "5", "*", "5"},
 		{"5 / 5;", "5", "/", "5"},
 		{"5 > 5;", "5", ">", "5"},
+		{"5 & 5;", "5", "&", "5"},
 		{"5 < 5;", "5", "<", "5"},
 		{"5 == 5;", "5", "==", "5"},
 		{"5 != 5;", "5", "!=", "5"},
+		{"true == true", "true", "==", "true"},
+		{"true != false", "true", "!=", "false"},
+		{"false == false", "false", "==", "false"},
+		{"5 & 5;", "5", "&", "5"},
+		{"5 | 5;", "5", "|", "5"},
+		{"5 ^ 5;", "5", "^", "5"},
+		{"5 << 5;", "5", "<<", "5"},
+		{"5 >> 5;", "5", ">>", "5"},
+		{"true && false;", "true", "&&", "false"},
+		{"true || false;", "true", "||", "false"},
 	};
 
 	for (auto& test : tests)
@@ -1049,3 +1060,45 @@ TEST_CASE("Test for parsing")
 	}
 }
 	
+TEST_CASE("TEST ASSIGN OPERATORS")
+{
+	struct Test
+	{
+		std::string input;
+		std::string expectedValue;
+	};
+
+	std::vector<Test> tests = {
+		{"x += 5;", "let x = (x + 5);"},
+		{"x -= 5;", "let x = (x - 5);"},
+		{"x *= 5;", "let x = (x * 5);"},
+		{"x /= 5;", "let x = (x / 5);"},
+		{"x %= 5;", "let x = (x % 5);"},
+	};
+
+	for (auto& test : tests)
+	{
+		Lexer lexer(test.input);
+		Parser parser(lexer);
+
+		auto program = parser.ParseProgram();
+		auto errors = parser.Errors();
+		if (errors.size() != 0)
+		{
+			for (auto& error : errors)
+			{
+				UNSCOPED_INFO(error);
+			}
+		}
+		REQUIRE(errors.size() == 0);
+
+		CAPTURE(test.input);
+		REQUIRE(program->Statements.size() == 1);
+		auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+		REQUIRE(stmt != nullptr);
+		auto assignStatement = dynamic_cast<LetStatement*>(stmt->Expression.get());
+		REQUIRE(assignStatement != nullptr);
+		REQUIRE(assignStatement->ToString() == test.expectedValue);
+	}
+
+}
