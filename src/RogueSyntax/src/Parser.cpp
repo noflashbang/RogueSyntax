@@ -5,29 +5,60 @@
 #include "Parser.h"
 #include "Parser.h"
 #include "Parser.h"
+#include "Parser.h"
+#include "pch.h"
 
-Parser::Parser(Lexer lexer) : _lexer(lexer)
+Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 {
 	_prefixDispatch[TokenType::TOKEN_IDENT] = std::bind(&Parser::ParseIdentifier, this);
 	_prefixDispatch[TokenType::TOKEN_INT] = std::bind(&Parser::ParseIntegerLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_NULL] = std::bind(&Parser::ParseNullLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_DECIMAL] = std::bind(&Parser::ParseDecimalLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_STRING] = std::bind(&Parser::ParseStringLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_BANG] = std::bind(&Parser::ParsePrefixExpression, this);
 	_prefixDispatch[TokenType::TOKEN_MINUS] = std::bind(&Parser::ParsePrefixExpression, this);
+	_prefixDispatch[TokenType::TOKEN_BITWISE_NOT] = std::bind(&Parser::ParsePrefixExpression, this);
 	_prefixDispatch[TokenType::TOKEN_FALSE] = std::bind(&Parser::ParseBoolean, this);
 	_prefixDispatch[TokenType::TOKEN_TRUE] = std::bind(&Parser::ParseBoolean, this);
 	_prefixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseGroupedExpression, this);
 	_prefixDispatch[TokenType::TOKEN_IF] = std::bind(&Parser::ParseIfExpression, this);
 	_prefixDispatch[TokenType::TOKEN_FUNCTION] = std::bind(&Parser::ParseFunctionLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_WHILE] = std::bind(&Parser::ParseWhileExpression, this);
+	_prefixDispatch[TokenType::TOKEN_FOR] = std::bind(&Parser::ParseForExpression, this);
+	_prefixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseArrayLiteral, this);
+	_prefixDispatch[TokenType::TOKEN_LBRACE] = std::bind(&Parser::ParseHashLiteral, this);
 
 	//register infix operators
 	_infixDispatch[TokenType::TOKEN_PLUS] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_MINUS] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_SLASH] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_MODULO] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_ASTERISK] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_NOT_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_LT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
 	_infixDispatch[TokenType::TOKEN_GT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_AND] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_OR] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_BITWISE_AND] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_BITWISE_OR] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_BITWISE_XOR] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_SHIFT_LEFT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_SHIFT_RIGHT] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_LT_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_GT_EQ] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
+	
+	_infixDispatch[TokenType::TOKEN_PLUS_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_MINUS_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_ASTERISK_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_SLASH_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_MODULO_ASSIGN] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+
 	_infixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseCallExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseIndexExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_ASSIGN] = std::bind(&Parser::ParseAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_INCREMENT] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
+	_infixDispatch[TokenType::TOKEN_DECREMENT] = std::bind(&Parser::ParseOpAssignExpression, this, std::placeholders::_1);
 
 	//load the first two tokens
 	NextToken();
@@ -40,16 +71,16 @@ void Parser::NextToken()
 	_nextToken = _lexer.NextToken();
 }
 
-Program Parser::ParseProgram()
+std::shared_ptr<Program> Parser::ParseProgram()
 {
-	Program program;
+	auto program = Program::New();
 
 	while (_currentToken.Type != TokenType::TOKEN_EOF)
 	{
 		auto pStatement = ParseStatement();
 		if (pStatement != nullptr)
 		{
-			program.Statements.push_back(std::move(pStatement));
+			program->Statements.push_back(std::move(pStatement));
 		}
 		NextToken();
 	}
@@ -58,18 +89,40 @@ Program Parser::ParseProgram()
 
 std::shared_ptr<IStatement> Parser::ParseStatement()
 {
+	std::shared_ptr<IStatement> statement = nullptr;
 	if (_currentToken.Type == TokenType::TOKEN_LET)
 	{
-		return ParseLetStatement();
+		statement = ParseLetStatement();
 	}
+	else if (_nextToken.Type == TokenType::TOKEN_ASSIGN)
+	{
+		statement = ParseAssignStatement();
+	}
+	//else if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type == TokenType::TOKEN_INCREMENT)
+	//{
+	//	statement = ParseIncrementStatement();
+	//}
+	//else if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type == TokenType::TOKEN_DECREMENT)
+	//{
+	//	statement = ParseDecrementStatement();
+	//}
 	else if(_currentToken.Type == TokenType::TOKEN_RETURN)
 	{
-		return ParseReturnStatement();
+		statement = ParseReturnStatement();
+	}
+	else if (_currentToken.Type == TokenType::TOKEN_BREAK)
+	{
+		statement = ParseBreakStatement();
+	}
+	else if (_currentToken.Type == TokenType::TOKEN_CONTINUE)
+	{
+		statement = ParseContinueStatement();
 	}
 	else
 	{
-		return ParseExpressionStatement();
+		statement = ParseExpressionStatement();
 	}
+	return statement;
 }
 
 std::shared_ptr<IExpression> Parser::ParseExpression(const Precedence precedence)
@@ -104,6 +157,11 @@ std::shared_ptr<IExpression> Parser::ParseIdentifier()
 	return Identifier::New(_currentToken, _currentToken.Literal);
 }
 
+std::shared_ptr<IExpression> Parser::ParseNullLiteral()
+{
+	return NullLiteral::New(_currentToken);
+}
+
 std::shared_ptr<IExpression> Parser::ParseIntegerLiteral()
 {
 	try
@@ -114,8 +172,37 @@ std::shared_ptr<IExpression> Parser::ParseIntegerLiteral()
 	{
 		std::string error = "could not parse " + _currentToken.Literal + " as integer";
 		AddError(error);
+		AddError(e.what());
 		return nullptr;
 	}
+}
+
+std::shared_ptr<IExpression> Parser::ParseDecimalLiteral()
+{
+	try
+	{
+		//remove the trailing d
+		if (_currentToken.Literal.ends_with('d'))
+		{
+			_currentToken.Literal.pop_back();
+		}
+		return DecimalLiteral::New(_currentToken, std::stof(_currentToken.Literal));
+	}
+	catch (const std::invalid_argument& e)
+	{
+		std::string error = "could not parse " + _currentToken.Literal + " as decimal";
+		AddError(error);
+		AddError(e.what());
+		return nullptr;
+	}
+}
+
+std::shared_ptr<IExpression> Parser::ParseStringLiteral()
+{
+	//remove the quotes
+	std::string result(_currentToken.Literal.begin() + 1, _currentToken.Literal.end() - 1);
+
+	return StringLiteral::New(_currentToken, result);
 }
 
 std::shared_ptr<IExpression> Parser::ParsePrefixExpression()
@@ -127,10 +214,10 @@ std::shared_ptr<IExpression> Parser::ParsePrefixExpression()
 
 	auto right = ParseExpression(Precedence::PREFIX);
 
-	return PrefixExpression::New(token, op, std::move(right));
+	return PrefixExpression::New(token, op, right);
 }
 
-std::shared_ptr<IExpression> Parser::ParseInfixExpression(std::shared_ptr<IExpression> left)
+std::shared_ptr<IExpression> Parser::ParseInfixExpression(const std::shared_ptr<IExpression>& left)
 {	
 	auto token = _currentToken;
 	auto op = _currentToken.Literal;
@@ -139,7 +226,7 @@ std::shared_ptr<IExpression> Parser::ParseInfixExpression(std::shared_ptr<IExpre
 	NextToken();
 	auto right = ParseExpression(precedence);
 
-	return InfixExpression::New(token, std::move(left), op, std::move(right));
+	return InfixExpression::New(token, left, op, right);
 }
 
 std::shared_ptr<IExpression> Parser::ParseBoolean()
@@ -204,6 +291,242 @@ std::shared_ptr<IExpression> Parser::ParseIfExpression()
 	return IfExpression::New(token, condition, consequence, alternative);
 }
 
+std::shared_ptr<IExpression> Parser::ParseWhileExpression()
+{
+	auto token = _currentToken;
+
+	if (!ExpectPeek(TokenType::TOKEN_LPAREN))
+	{
+		return nullptr;
+	}
+
+	NextToken();
+
+	auto condition = ParseExpression(Precedence::LOWEST);
+
+	if (!ExpectPeek(TokenType::TOKEN_RPAREN))
+	{
+		return nullptr;
+	}
+
+	if (!ExpectPeek(TokenType::TOKEN_LBRACE))
+	{
+		return nullptr;
+	}
+
+	//parse the consequence
+	auto action = ParseBlockStatement();
+
+	return WhileExpression::New(token, condition, action);
+}
+
+std::shared_ptr<IExpression> Parser::ParseForExpression()
+{
+	auto token = _currentToken;
+
+	if (!ExpectPeek(TokenType::TOKEN_LPAREN))
+	{
+		return nullptr;
+	}
+
+	NextToken();
+
+	auto init = Parser::ParseStatement();
+
+	NextToken();
+
+	auto condition = ParseExpression(Precedence::LOWEST);
+	
+	NextToken();
+	NextToken();
+
+	auto post = Parser::ParseStatement();
+
+	//if (post->NType() == NodeType::ExpressionStatement)
+	//{
+	//	auto* initStmt = static_cast<LetStatement*>(init.get());
+	//	auto* postStmt = static_cast<ExpressionStatement*>(post.get());
+	//	Token token = post->BaseToken;
+	//	token.Literal = "let";
+	//	auto modifiedPost = LetStatement::New(token, initStmt->Name, postStmt->Expression);
+	//	post = modifiedPost;
+	//
+	//	NextToken();
+	//}
+
+
+	if (!ExpectPeek(TokenType::TOKEN_LBRACE))
+	{
+		return nullptr;
+	}
+
+	//parse the action
+	auto action = ParseBlockStatement();
+
+	return ForExpression::New(token, init, condition, post, action);
+}
+
+std::shared_ptr<IExpression> Parser::ParseArrayLiteral()
+{
+	auto token = _currentToken;
+
+	std::vector<std::shared_ptr<IExpression>> arguments;
+
+	while (!PeekTokenIs(TokenType::TOKEN_RBRACKET))
+	{
+		NextToken();
+		if (!CurrentTokenIs(TokenType::TOKEN_COMMA))
+		{
+			auto arg = ParseExpression(Precedence::LOWEST);
+			arguments.emplace_back(arg);
+		}
+	}
+
+	if (!ExpectPeek(TokenType::TOKEN_RBRACKET))
+	{
+		return nullptr;
+	}
+
+	return ArrayLiteral::New(token, arguments);
+}
+
+std::shared_ptr<IExpression> Parser::ParseHashLiteral()
+{
+	// hashes look like {expression: expression, expression: expression}
+	//assume the current is {
+	auto token = _currentToken;
+
+	std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>> pairs;
+
+	while (!PeekTokenIs(TokenType::TOKEN_RBRACE))
+	{
+		NextToken();
+		if (!CurrentTokenIs(TokenType::TOKEN_COMMA))
+		{
+			auto key = ParseExpression(Precedence::LOWEST);
+
+			if (!ExpectPeek(TokenType::TOKEN_COLON))
+			{
+				return nullptr;
+			}
+
+			NextToken();
+
+			auto value = ParseExpression(Precedence::LOWEST);
+
+			pairs[key] = value;
+		}
+	}
+	NextToken();
+
+	return HashLiteral::New(token, pairs);
+}
+
+std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<IExpression>& left)
+{
+	NextToken();
+	
+	auto index = ParseExpression(Precedence::LOWEST);
+
+	if (!ExpectPeek(TokenType::TOKEN_RBRACKET))
+	{
+		return nullptr;
+	}
+
+	return IndexExpression::New(_currentToken, left, index);
+}
+
+std::shared_ptr<IExpression> Parser::ParseAssignExpression(const std::shared_ptr<IExpression>& left)
+{
+	auto token = _currentToken;
+	NextToken();
+
+	auto right = ParseExpression(Precedence::LOWEST);
+
+	if (!ExpectPeek(TokenType::TOKEN_SEMICOLON))
+	{
+		return nullptr;
+	}
+
+	return LetStatement::New(token, left, right);
+}
+
+std::shared_ptr<IExpression> Parser::ParseOpAssignExpression(const std::shared_ptr<IExpression>& left)
+{
+	auto token = _currentToken;
+	NextToken();
+	if (token.Type == TokenType::TOKEN_INCREMENT)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_PLUS, "+");
+		opToken.Location = token.Location;
+
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_DECREMENT)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
+		opToken.Location = token.Location;
+		auto right =  InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_MINUS_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_PLUS_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_PLUS, "+");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_ASTERISK_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_ASTERISK, "*");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_SLASH_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_SLASH, "/");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else if (token.Type == TokenType::TOKEN_MODULO_ASSIGN)
+	{
+		Token opToken = Token::New(TokenType::TOKEN_MODULO, "%");
+		opToken.Location = token.Location;
+		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+
+		token.Literal = "let";
+		return LetStatement::New(token, left, right);
+	}
+	else
+	{
+		std::string error = "unknown operator " + token.Literal;
+		AddError(error);
+		return nullptr;
+	}
+}
+
 std::shared_ptr<IStatement> Parser::ParseBlockStatement()
 {
 	auto token = _currentToken;
@@ -258,10 +581,10 @@ std::shared_ptr<IExpression> Parser::ParseFunctionLiteral()
 
 	auto body = ParseBlockStatement();
 
-	return FunctionLiteral::New(token, parameters, std::move(body));
+	return FunctionLiteral::New(token, parameters, body);
 }
 
-std::shared_ptr<IExpression> Parser::ParseCallExpression(std::shared_ptr<IExpression> function)
+std::shared_ptr<IExpression> Parser::ParseCallExpression(const std::shared_ptr<IExpression>& function)
 {
 	auto token = _currentToken;
 
@@ -282,19 +605,28 @@ std::shared_ptr<IExpression> Parser::ParseCallExpression(std::shared_ptr<IExpres
 		return nullptr;
 	}
 
-	return CallExpression::New(token, std::move(function), arguments);
+	return CallExpression::New(token, function, arguments);
 }
 
 std::shared_ptr<IStatement> Parser::ParseLetStatement()
 {
 	auto token = _currentToken;
+	
+	NextToken();
 
-	if (!ExpectPeek(TokenType::TOKEN_IDENT))
+	std::shared_ptr<IExpression> holder = nullptr;
+	if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type != TokenType::TOKEN_LBRACKET)
 	{
-		return nullptr;
+		holder = Identifier::New(_currentToken, _currentToken.Literal);
 	}
-
-	auto identifier = Identifier::New(_currentToken, _currentToken.Literal);
+	else
+	{
+		holder = ParseExpression(Precedence::LOWEST);
+		if (holder != NULL && holder->NType() == NodeType::LetStatement)
+		{
+			return dynamic_pointer_cast<LetStatement>(holder);
+		}
+	}
 
 	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
 	{
@@ -305,12 +637,65 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 	
 	auto value = ParseExpression(Precedence::LOWEST);
 
-	if(PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	if (!PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	{
+		if (!PeekTokenIs(TokenType::TOKEN_RPAREN))
+		{
+			return nullptr;
+		}
+		else
+		{
+			NextToken();
+		}
+	}
+	else
 	{
 		NextToken();
 	}
 
-	return LetStatement::New(token, std::move(identifier), std::move(value));
+	return LetStatement::New(token, holder, value);
+}
+
+std::shared_ptr<IStatement> Parser::ParseAssignStatement()
+{
+	auto token = _currentToken;
+
+	std::shared_ptr<IExpression> holder = nullptr;
+	if (_currentToken.Type == TokenType::TOKEN_IDENT)
+	{
+		holder = Identifier::New(_currentToken, _currentToken.Literal);
+	}
+	else
+	{
+		holder = ParseExpression(Precedence::LOWEST);
+	}
+
+	if (!ExpectPeek(TokenType::TOKEN_ASSIGN))
+	{
+		return nullptr;
+	}
+
+	NextToken();
+
+	auto value = ParseExpression(Precedence::LOWEST);
+
+	if (!PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	{
+		if (!(PeekTokenIs(TokenType::TOKEN_RPAREN) || PeekTokenIs(TokenType::TOKEN_EOF)))
+		{
+			return nullptr;
+		}
+		else
+		{
+			NextToken();
+		}
+	}
+	else
+	{
+		NextToken();
+	}
+
+	return LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), holder, value);
 }
 
 std::shared_ptr<IStatement> Parser::ParseReturnStatement()
@@ -326,7 +711,31 @@ std::shared_ptr<IStatement> Parser::ParseReturnStatement()
 		NextToken();
 	}
 
-	return ReturnStatement::New(token, std::move(returnValue));
+	return ReturnStatement::New(token, returnValue);
+}
+
+std::shared_ptr<IStatement> Parser::ParseBreakStatement()
+{
+	auto token = _currentToken;
+
+	while (_currentToken.Type != TokenType::TOKEN_SEMICOLON)
+	{
+		NextToken();
+	}
+
+	return BreakStatement::New(token);
+}
+
+std::shared_ptr<IStatement> Parser::ParseContinueStatement()
+{
+	auto token = _currentToken;
+
+	while (_currentToken.Type != TokenType::TOKEN_SEMICOLON)
+	{
+		NextToken();
+	}
+
+	return ContinueStatement::New(token);
 }
 
 std::shared_ptr<IStatement> Parser::ParseExpressionStatement()
@@ -342,30 +751,28 @@ std::shared_ptr<IStatement> Parser::ParseExpressionStatement()
 		NextToken();
 	}
 
-	return ExpressionStatement::New(token, std::move(expression));
+	return ExpressionStatement::New(token, expression);
 }
 
 
-bool Parser::ExpectPeek(const TokenType expectedType)
+bool Parser::ExpectPeek(const TokenType& expectedType)
 {
 	if (_nextToken.Type == expectedType)
 	{
 		NextToken();
 		return true;
 	}
-	else
-	{
-		PeekError(expectedType);
-		return false;
-	}
+	
+	PeekError(expectedType);
+	return false;
 }
 
-bool Parser::PeekTokenIs(const TokenType expectedType) const
+bool Parser::PeekTokenIs(const TokenType& expectedType) const
 {
 	return _nextToken.Type == expectedType;
 }
 
-bool Parser::CurrentTokenIs(const TokenType expectedType) const
+bool Parser::CurrentTokenIs(const TokenType& expectedType) const
 {
 	return _currentToken.Type == expectedType;
 }
@@ -380,18 +787,18 @@ void Parser::AddError(const std::string& error)
 	_errors.push_back(error);
 }
 
-void Parser::PeekError(const TokenType expectedType)
+void Parser::PeekError(const TokenType& expectedType)
 {
 	std::string error = "expected next token to be " + expectedType.Name + ", got " + _nextToken.Type.Name + " instead";
 	AddError(error);
 }
 
-void Parser::RegisterInfix(TokenType type, InfixParseFn fn)
+void Parser::RegisterInfix(const TokenType& type, const InfixParseFn& fn)
 {
 	_infixDispatch[type] = fn;
 }
 
-void Parser::RegisterPrefix(TokenType type, PrefixParseFn fn)
+void Parser::RegisterPrefix(const TokenType& type, const PrefixParseFn& fn)
 {
 	_prefixDispatch[type] = fn;
 }

@@ -13,6 +13,8 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/IObject.h
     ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
+    ${PARENT_DIR}/include/RogueSyntax/Builtin.h
+
 )
 
 set( libHeaders 
@@ -27,7 +29,12 @@ set( libSource
  "src/IObject.cpp"
  "src/Evaluator.cpp"
  "src/Environment.cpp"
+ "src/Builtin.cpp"
 )
+
+if(CMAKE_TIDY_ENABLED)
+    set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,modernize-*,bugprone-*,cppcoreguidelines-*,performance-* --extra-arg=/EHsc)
+endif()
 
 add_library (RogueSyntax STATIC ${libSource} ${libHeaders} ${externHeaders}) 
 target_include_directories( RogueSyntax PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/RogueSyntax )

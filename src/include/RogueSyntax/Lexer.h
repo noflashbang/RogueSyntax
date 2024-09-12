@@ -16,6 +16,8 @@ private:
 	void ReadChar();
 	std::string ReadIdentifier();
 	std::string ReadNumber();
+	std::string ReadString();
+
 	void SkipWhitespace();
 
 	bool IsLetter(const char c) const;

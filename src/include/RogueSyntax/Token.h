@@ -53,6 +53,9 @@ struct TokenType
 		return Name;
 	}
 
+	// Static integer to track the next available token number
+	static unsigned int NextTokenNumber;
+
 	//================================================================================
 	// Special tokens
 	static const TokenType TOKEN_ILLEGAL;
@@ -61,28 +64,55 @@ struct TokenType
 	// Identifiers + literals
 	static const TokenType TOKEN_IDENT;
 	static const TokenType TOKEN_INT;
+	static const TokenType TOKEN_STRING;
+	static const TokenType TOKEN_DECIMAL;
 
 	// Operators
 	static const TokenType TOKEN_ASSIGN;
 	static const TokenType TOKEN_PLUS;
+	static const TokenType TOKEN_INCREMENT;
 	static const TokenType TOKEN_MINUS;
+	static const TokenType TOKEN_DECREMENT;
 	static const TokenType TOKEN_BANG;
 	static const TokenType TOKEN_ASTERISK;
 	static const TokenType TOKEN_SLASH;
+	static const TokenType TOKEN_MODULO;
 	static const TokenType TOKEN_LT;
 	static const TokenType TOKEN_GT;
 	static const TokenType TOKEN_EQ;
 	static const TokenType TOKEN_NOT_EQ;
+	static const TokenType TOKEN_GT_EQ;
+	static const TokenType TOKEN_LT_EQ;
+
+	static const TokenType TOKEN_AND;
+	static const TokenType TOKEN_OR;
+	static const TokenType TOKEN_BITWISE_AND;
+	static const TokenType TOKEN_BITWISE_OR;
+	static const TokenType TOKEN_BITWISE_XOR;
+	static const TokenType TOKEN_BITWISE_NOT;
+	
+	static const TokenType TOKEN_SHIFT_LEFT;
+	static const TokenType TOKEN_SHIFT_RIGHT;
+	
+	static const TokenType TOKEN_PLUS_ASSIGN;
+	static const TokenType TOKEN_MINUS_ASSIGN;
+	static const TokenType TOKEN_ASTERISK_ASSIGN;
+	static const TokenType TOKEN_SLASH_ASSIGN;
+	static const TokenType TOKEN_MODULO_ASSIGN;
 
 	// Delimiters
 	static const TokenType TOKEN_COMMA;
 	static const TokenType TOKEN_SEMICOLON;
+	static const TokenType TOKEN_COLON;
 	static const TokenType TOKEN_LPAREN;
 	static const TokenType TOKEN_RPAREN;
 	static const TokenType TOKEN_LBRACE;
 	static const TokenType TOKEN_RBRACE;
+	static const TokenType TOKEN_LBRACKET;
+	static const TokenType TOKEN_RBRACKET;
 
 	// Keywords
+	static const TokenType TOKEN_NULL;
 	static const TokenType TOKEN_FUNCTION;
 	static const TokenType TOKEN_LET;
 	static const TokenType TOKEN_TRUE;
@@ -90,8 +120,10 @@ struct TokenType
 	static const TokenType TOKEN_IF;
 	static const TokenType TOKEN_ELSE;
 	static const TokenType TOKEN_RETURN;
-
-	static const int TOKEN_COUNT = 26;
+	static const TokenType TOKEN_WHILE;
+	static const TokenType TOKEN_BREAK;
+	static const TokenType TOKEN_CONTINUE;
+	static const TokenType TOKEN_FOR;
 
 	static TokenType LookupIdent(const std::string& ident)
 	{

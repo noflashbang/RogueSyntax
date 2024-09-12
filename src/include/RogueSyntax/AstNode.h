@@ -9,6 +9,7 @@ enum class NodeType
 	Expression,
 	Statement,
 	Identifier,
+	NullLiteral,
 	LetStatement,
 	ReturnStatement,
 	ExpressionStatement,
@@ -19,16 +20,28 @@ enum class NodeType
 	BlockStatement,
 	IfExpression,
 	FunctionLiteral,
-	CallExpression
+	CallExpression,
+	WhileExpression,
+	BreakStatement,
+	ContinueStatement,
+	ForExpression,
+	StringLiteral,
+	DecimalLiteral,
+	ArrayLiteral,
+	IndexExpression,
+	HashLiteral
 };
 
 class INode
 {
 public:
-	virtual std::string TokenLiteral() const = 0;
 	virtual std::string ToString() const = 0;
-	virtual TokenType Type() const = 0;
 	virtual NodeType NType() const = 0;
+
+	INode(const Token& token) : BaseToken(token) {}
+	TokenType Type() const { return BaseToken.Type; };
+	std::string TokenLiteral() const { return BaseToken.Literal; };
+	Token BaseToken;
 
 	virtual ~INode() = default;
 };
@@ -36,144 +49,144 @@ public:
 class IExpression : public INode
 {
 public:
+	IExpression(const Token& token) : INode(token) {}
 	virtual ~IExpression() = default;
 };
 
-class IStatement : public INode
+class IStatement : public IExpression
 {
 public:
+	IStatement(const Token& token) : IExpression(token) {}
 	virtual ~IStatement() = default;
 };
 
-
 struct Program : IStatement
 {
+	Program() : IStatement(Token::New(TokenType::TOKEN_ILLEGAL, "")) {};
 	std::vector<std::shared_ptr<IStatement>> Statements;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
+
+	static std::shared_ptr<Program> New();
 };
 
 struct Identifier : IExpression
 {
-	Identifier(const Token token, const std::string& value);
+	Identifier(const Token& token, const std::string& value);
 	virtual ~Identifier() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const;
 	NodeType NType() const;
 
-	static std::shared_ptr<Identifier> New(const Token token, const std::string& value);
+	static std::shared_ptr<Identifier> New(const Token& token, const std::string& value);
 
-	Token Token;
+
 	std::string Value;
 };
 
 struct LetStatement : IStatement
 {
-	LetStatement(const Token token, std::shared_ptr<Identifier> name, std::shared_ptr<IExpression> value);
+	LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value);
 	virtual ~LetStatement() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 	
-	static std::shared_ptr<LetStatement> New(const Token token, std::shared_ptr<Identifier> name, std::shared_ptr<IExpression> value);
-
-	Token Token;
-	std::shared_ptr<Identifier> Name;
+	static std::shared_ptr<LetStatement> New(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value);
+	std::shared_ptr<IExpression> Name;
 	std::shared_ptr<IExpression> Value;
 };
 
 struct ReturnStatement : IStatement
 {
-	ReturnStatement(const Token token, std::shared_ptr<IExpression> returnValue);
+	ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue);
 	virtual ~ReturnStatement() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<ReturnStatement> New(const Token token, std::shared_ptr<IExpression> returnValue);
+	static std::shared_ptr<ReturnStatement> New(const Token& token, const std::shared_ptr<IExpression>& returnValue);
 
-	Token Token;
 	std::shared_ptr<IExpression> ReturnValue;
 };
 
 struct ExpressionStatement : IStatement
 {
-	ExpressionStatement(const Token token, std::shared_ptr<IExpression> expression);
+	ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression);
 	virtual ~ExpressionStatement() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<ExpressionStatement> New(const Token token, std::shared_ptr<IExpression> expression);
+	static std::shared_ptr<ExpressionStatement> New(const Token& token, const std::shared_ptr<IExpression>& expression);
 
-	Token Token;
 	std::shared_ptr<IExpression> Expression;
+};
+
+struct NullLiteral : IExpression
+{
+	NullLiteral(const Token& token);
+	virtual ~NullLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<NullLiteral> New(const Token& token);
 };
 
 struct IntegerLiteral : IExpression
 {
-	IntegerLiteral(const Token token, const int value);
+	IntegerLiteral(const Token& token, const int value);
 	virtual ~IntegerLiteral() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<IntegerLiteral> New(const Token token, const int value);
+	static std::shared_ptr<IntegerLiteral> New(const Token& token, const int value);
 
-	Token Token;
 	int Value;
 };
 
 struct BooleanLiteral : IExpression
 {
-	BooleanLiteral(const Token token, const bool value);
+	BooleanLiteral(const Token& token, const bool value);
 	virtual ~BooleanLiteral() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<BooleanLiteral> New(const Token token, const bool value);
+	static std::shared_ptr<BooleanLiteral> New(const Token& token, const bool value);
 
-	Token Token;
 	bool Value;
+};
+
+struct HashLiteral : IExpression
+{
+	HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs);
+	virtual ~HashLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<HashLiteral> New(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs);
+
+	std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>> Elements;
 };
 
 struct PrefixExpression : IExpression
 {
-	PrefixExpression(const Token token, const std::string& op, std::shared_ptr<IExpression> right);
+	PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right);
 	virtual ~PrefixExpression() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<PrefixExpression> New(const Token token, const std::string& op, std::shared_ptr<IExpression> right);
+	static std::shared_ptr<PrefixExpression> New(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right);
 
-	Token Token;
 	std::string Operator;
 	std::shared_ptr<IExpression> Right;
 };
 
 struct InfixExpression : IExpression
 {
-	InfixExpression(const Token token, std::shared_ptr<IExpression> left, const std::string& op, std::shared_ptr<IExpression> right);
+	InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right);
 	virtual ~InfixExpression() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<InfixExpression> New(const Token token, std::shared_ptr<IExpression> left, const std::string& op, std::shared_ptr<IExpression> right);
+	static std::shared_ptr<InfixExpression> New(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right);
 
-	Token Token;
 	std::shared_ptr<IExpression> Left;
 	std::string Operator;
 	std::shared_ptr<IExpression> Right;
@@ -181,31 +194,25 @@ struct InfixExpression : IExpression
 
 struct BlockStatement : IStatement
 {
-	BlockStatement(const Token token, std::vector<std::shared_ptr<IStatement>>& statements);
+	BlockStatement(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements);
 	virtual ~BlockStatement() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<BlockStatement> New(const Token token, std::vector<std::shared_ptr<IStatement>>& statements);
+	static std::shared_ptr<BlockStatement> New(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements);
 
-	Token Token;
 	std::vector<std::shared_ptr<IStatement>> Statements;
 };
 
 struct IfExpression : IExpression
 {
-	IfExpression(const Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> consequence, std::shared_ptr<IStatement> alternative);
+	IfExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
 	virtual ~IfExpression() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<IfExpression> New(const Token token, std::shared_ptr<IExpression> condition, std::shared_ptr<IStatement> consequence, std::shared_ptr<IStatement> alternative);
+	static std::shared_ptr<IfExpression> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
 
-	Token Token;
 	std::shared_ptr<IExpression> Condition;
 	std::shared_ptr<IStatement> Consequence;
 	std::shared_ptr<IStatement> Alternative;
@@ -213,32 +220,124 @@ struct IfExpression : IExpression
 
 struct FunctionLiteral : IExpression
 {
-	FunctionLiteral(const Token token, std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement> body);
+	FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
 	virtual ~FunctionLiteral() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<FunctionLiteral> New(const Token token, std::vector<std::shared_ptr<IExpression>>& parameters, std::shared_ptr<IStatement> body);
+	static std::shared_ptr<FunctionLiteral> New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
 
-	Token Token;
 	std::vector<std::shared_ptr<IExpression>> Parameters;
 	std::shared_ptr<IStatement> Body;
 };
 
 struct CallExpression : IExpression
 {
-	CallExpression(const Token token, std::shared_ptr<IExpression> function, std::vector<std::shared_ptr<IExpression>>& arguments);
+	CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments);
 	virtual ~CallExpression() = default;
-	std::string TokenLiteral() const override;
 	std::string ToString() const override;
-	TokenType Type() const override;
 	NodeType NType() const override;
 
-	static std::shared_ptr<CallExpression> New(const Token token, std::shared_ptr<IExpression> function, std::vector<std::shared_ptr<IExpression>>& arguments);
+	static std::shared_ptr<CallExpression> New(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments);
 
-	Token Token;
 	std::shared_ptr<IExpression> Function;
 	std::vector<std::shared_ptr<IExpression>> Arguments;
+};
+
+struct WhileExpression : IExpression
+{
+	WhileExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
+	virtual ~WhileExpression() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<WhileExpression> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
+
+	std::shared_ptr<IExpression> Condition;
+	std::shared_ptr<IStatement> Action;
+};
+
+struct BreakStatement : IStatement
+{
+	BreakStatement(const Token& token);
+	virtual ~BreakStatement() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<BreakStatement> New(const Token& token);
+};
+
+struct ContinueStatement : IStatement
+{
+	ContinueStatement(const Token& token);
+	virtual ~ContinueStatement() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<ContinueStatement> New(const Token& token);
+
+};
+
+struct ForExpression : IExpression
+{
+	ForExpression(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
+	virtual ~ForExpression() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<ForExpression> New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
+
+	std::shared_ptr<IStatement> Init;
+	std::shared_ptr<IExpression> Condition;
+	std::shared_ptr<IStatement> Post;
+	std::shared_ptr<IStatement> Action;
+};
+
+struct StringLiteral : IExpression
+{
+	StringLiteral(const Token& token, const std::string& value);
+	virtual ~StringLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<StringLiteral> New(const Token& token, const std::string& value);
+
+	std::string Value;
+};
+
+struct DecimalLiteral : IExpression
+{
+	DecimalLiteral(const Token& token, const float value);
+	virtual ~DecimalLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<DecimalLiteral> New(const Token& token, const float value);
+
+	float Value;
+};
+
+struct ArrayLiteral : IExpression
+{
+	ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements);
+	virtual ~ArrayLiteral() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<ArrayLiteral> New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements);
+
+	std::vector<std::shared_ptr<IExpression>> Elements;
+};
+
+struct IndexExpression : IExpression
+{
+	IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index);
+	virtual ~IndexExpression() = default;
+	std::string ToString() const override;
+	NodeType NType() const override;
+
+	static std::shared_ptr<IndexExpression> New(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index);
+
+	std::shared_ptr<IExpression> Left;
+	std::shared_ptr<IExpression> Index;
 };
