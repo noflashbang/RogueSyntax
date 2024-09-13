@@ -1,18 +1,22 @@
 #pragma once
 
 #include "StandardLib.h"
-#include "IObject.h"
-#include "Token.h"
-#include "AstNode.h"
-#include "Environment.h"
-#include "BuiltIn.h"
+#include <RogueSyntaxCore.h>
+
+enum class EvaluatorType
+{
+	Stack,
+	Recursive
+};
 
 class Evaluator
 {
 public:
 	Evaluator();
-	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) const;
-	virtual std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) const = 0;
+	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn);
+	virtual std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) = 0;
+
+	static std::shared_ptr<Evaluator> New(EvaluatorType type);
 
 protected:
 	std::shared_ptr<IObject> EvalPrefixExpression(const Token& op, const std::shared_ptr<IObject>& right) const;
@@ -49,18 +53,3 @@ private:
 	std::map<ObjectType, std::map<ObjectType, ObjectType>> _coercionTable;
 };
 
-class StackEvaluator : public Evaluator
-{
-public:
-	std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) const override;
-};
-
-class RecursiveEvaluator : public Evaluator
-{
-public:
-	std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) const override;
-
-private:
-	std::vector<std::shared_ptr<IObject>> EvalExpressions(const std::vector<std::shared_ptr<IExpression>>& expressions, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) const;
-	std::shared_ptr<IObject> ApplyFunction(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args, const std::shared_ptr<BuiltIn>& builtIn) const;
-};

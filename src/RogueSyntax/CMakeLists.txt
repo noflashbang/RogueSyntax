@@ -19,6 +19,8 @@ set( externHeaders
 
 set( libHeaders 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Util.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/StackEvaluator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RecursiveEvaluator.h
  )
 
 set( libSource
@@ -30,6 +32,8 @@ set( libSource
  "src/Evaluator.cpp"
  "src/Environment.cpp"
  "src/Builtin.cpp"
+ "src/StackEvaluator.cpp"
+ "src/RecursiveEvaluator.cpp"
 )
 
 if(CMAKE_TIDY_ENABLED)

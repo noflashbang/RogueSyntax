@@ -96,7 +96,7 @@ bool TestEvalBoolean(const std::shared_ptr<Evaluator>& eval, const std::string& 
 	
 TEST_CASE("Simple Integer Type")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>( { std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>( { Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{ "5", 5 },
@@ -129,7 +129,7 @@ TEST_CASE("Simple Integer Type")
 
 TEST_CASE("Simple Boolean Type")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, bool>(
 	{
 		{"true", true},
@@ -159,7 +159,7 @@ TEST_CASE("Simple Boolean Type")
 
 TEST_CASE("Bang Operator")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, bool>(
 	{
 		{"!true", false},
@@ -176,7 +176,7 @@ TEST_CASE("Bang Operator")
 
 TEST_CASE("Test If Else Expressions")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"if (true) { 10 }", 10},
@@ -195,7 +195,7 @@ TEST_CASE("Test If Else Expressions")
 
 TEST_CASE("Test Return Expression")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"return 10;", 10},
@@ -218,7 +218,7 @@ TEST_CASE("Test Return Expression")
 }
 TEST_CASE("Test Error Obj")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto tests = std::vector<std::pair<std::string, std::string>>
 	{
 		{"-true", "unknown operator: -BOOLEAN"},
@@ -249,7 +249,7 @@ TEST_CASE("Test Error Obj")
 
 TEST_CASE("Test Let Statements")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let a = 5; a;", 5},
@@ -264,7 +264,7 @@ TEST_CASE("Test Let Statements")
 
 TEST_CASE("Test Function Object")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto input = "fn(x) { x + 2; };";
 
 	
@@ -278,7 +278,7 @@ TEST_CASE("Test Function Object")
 
 TEST_CASE("Test Function Eval")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let identity = fn(x) { return x; }; identity(5);", 5},
@@ -297,7 +297,7 @@ TEST_CASE("Test Function Eval")
 
 TEST_CASE("Test While Loop")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let i = 0; while (i < 10) { let i = i + 1; }; i;", 10},
@@ -312,7 +312,7 @@ TEST_CASE("Test While Loop")
 
 TEST_CASE("Test assignment")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let a = 5; a = 10; a;", 10},
@@ -327,7 +327,7 @@ TEST_CASE("Test assignment")
 
 TEST_CASE("FOR tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { sum = sum + i; }; sum;", 45},
@@ -344,7 +344,7 @@ TEST_CASE("FOR tests")
 
 TEST_CASE("Decimal and String tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let a = 5.5; a;", "5.500000"},
@@ -377,7 +377,7 @@ TEST_CASE("Decimal and String tests")
 
 TEST_CASE("Array Literal Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"[]", "[]"},
@@ -392,7 +392,7 @@ TEST_CASE("Array Literal Tests")
 
 TEST_CASE("Hash Literal Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"{}", "{}"},
@@ -407,7 +407,7 @@ TEST_CASE("Hash Literal Tests")
 
 TEST_CASE("Index Array Expression Test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"[1, 2, 3][0]", "1"},
@@ -429,7 +429,7 @@ TEST_CASE("Index Array Expression Test")
 
 TEST_CASE("Index Hash Expression Test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"{1: 1, 2: 2}[1]", "1"},
@@ -449,7 +449,7 @@ TEST_CASE("Index Hash Expression Test")
 
 TEST_CASE("Index Assignment Test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let x = {1: 1, 2: 2}; x[1] = 2; x[1]", "2"},
@@ -469,7 +469,7 @@ TEST_CASE("Index Assignment Test")
 
 TEST_CASE("Coerce Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"5 + 5.5;", "10.500000"},
@@ -493,7 +493,7 @@ TEST_CASE("Coerce Tests")
 
 TEST_CASE("Built In method test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"len(\"\");", "0"},
@@ -523,7 +523,7 @@ TEST_CASE("Built In method test")
 
 TEST_CASE("Null Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let a = null; a;", "null"},
@@ -555,7 +555,7 @@ TEST_CASE("Null Tests")
 
 TEST_CASE("Incrementer Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ std::make_shared<StackEvaluator>(), std::make_shared<RecursiveEvaluator>() }));
+	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let a = 1; a++; a;", "2"},
@@ -573,7 +573,7 @@ TEST_CASE("Incrementer Tests")
 
 TEST_CASE("BENCHMARK STACK EVALUATOR")
 {
-	auto eng = std::make_shared<StackEvaluator>();
+	auto eng = Evaluator::New(EvaluatorType::Stack);
 	auto input = "let x = 0; for (let i = 0; i < 100; i = i + 1) { x = x + i; }; x;";
 	auto expected = 4950;
 	
@@ -593,7 +593,7 @@ TEST_CASE("BENCHMARK STACK EVALUATOR")
 
 TEST_CASE("BENCHMARK RECURSIVE EVALUATOR")
 {
-	auto eng = std::make_shared<RecursiveEvaluator>();
+	auto eng = Evaluator::New(EvaluatorType::Recursive);
 	auto input = "let x = 0; for (let i = 0; i < 100; i = i + 1) { x = x + i; }; x;";
 	auto expected = 4950;
 

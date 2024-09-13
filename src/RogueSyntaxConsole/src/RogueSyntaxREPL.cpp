@@ -30,8 +30,7 @@ void Repl::Start()
 			continue;
 		}
 
-		std::shared_ptr<Evaluator> eval = std::make_shared<StackEvaluator>();
-		//std::shared_ptr<Evaluator> eval = std::make_shared<RecursiveEvaluator>();
+		std::shared_ptr<Evaluator> eval = Evaluator::New(EvaluatorType::Stack);
 		auto result = eval->Eval(program, env, builtins);
 
 		if (result == nullptr)
