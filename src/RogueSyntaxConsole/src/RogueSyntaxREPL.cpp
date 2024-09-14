@@ -4,9 +4,6 @@
 void Repl::Start()
 {
 	std::string input;
-	auto env = Environment::New();
-	auto builtins = BuiltIn::New();
-
 	while (true)
 	{
 		std::cout << _prompt;
@@ -31,7 +28,7 @@ void Repl::Start()
 		}
 
 		std::shared_ptr<Evaluator> eval = Evaluator::New(EvaluatorType::Stack);
-		auto result = eval->Eval(program, env, builtins);
+		auto result = eval->Eval(program);
 
 		if (result == nullptr)
 		{

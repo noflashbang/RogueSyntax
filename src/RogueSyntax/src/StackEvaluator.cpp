@@ -3,34 +3,23 @@
 #include "StackEvaluator.h"
 
 
-std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn)
+std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node, const uint32_t env)
 {
-	std::stack<std::tuple<const INode*, int32_t, std::shared_ptr<Environment>>> stack;
-	std::stack<std::shared_ptr<IObject>> results;
+	Push_Eval(node.get(), 0, env);
 
-	stack.push({ node.get(), 0, nullptr });
+	uint32_t useEnv = env;
 
-	std::shared_ptr<Environment> useEnv = env;
-
-	while (!stack.empty())
+	while (!_stack.empty())
 	{
-		auto [currentNode, signal, subEnv] = stack.top();
-		stack.pop();
+		auto [currentNode, signal, subEnv] = _stack.top();
+		_stack.pop();
 
 		//check for errors
-		if (!results.empty() && results.top()->Type() == ObjectType::ERROR_OBJ)
+		if (ResultIsError())
 		{
-			return results.top();
+			return Pop_Result();
 		}
-
-		if (subEnv != nullptr)
-		{
-			useEnv = subEnv;
-		}
-		else
-		{
-			useEnv = env;
-		}
+		useEnv = subEnv;
 
 		auto type = currentNode->NType();
 		switch (type)
@@ -38,156 +27,157 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 		case NodeType::Program:
 		{
 			const auto* program = dynamic_cast<const Program*>(currentNode);
-			Handler_Program(program, signal, useEnv.get());
+			Handler_Program(program, signal, useEnv);
 			break;
 		}
 		case NodeType::ExpressionStatement:
 		{
 			const auto* expression = dynamic_cast<const ExpressionStatement*>(currentNode);
-			Handler_ExpressionStatement(expression, signal, useEnv.get());
+			Handler_ExpressionStatement(expression, signal, useEnv);
 			break;
 		}
 		case NodeType::NullLiteral:
 		{
 			const auto* null = dynamic_cast<const NullLiteral*>(currentNode);
-			Handler_NullLiteral(null, signal, useEnv.get());
+			Handler_NullLiteral(null, signal, useEnv);
 			break;
 		}
 		case NodeType::IntegerLiteral:
 		{
 			const auto* integer = dynamic_cast<const IntegerLiteral*>(currentNode);
-			Handler_IntegerLiteral(integer, signal, useEnv.get());
+			Handler_IntegerLiteral(integer, signal, useEnv);
 			break;
 		}
 		case NodeType::DecimalLiteral:
 		{
 			const auto* decimal = dynamic_cast<const DecimalLiteral*>(currentNode);
-			Handler_DecimalLiteral(decimal, signal, useEnv.get());
+			Handler_DecimalLiteral(decimal, signal, useEnv);
 			break;
 		}
 		case NodeType::StringLiteral:
 		{
 			const auto* string = dynamic_cast<const StringLiteral*>(currentNode);
-			Handler_StringLiteral(string, signal, useEnv.get());
+			Handler_StringLiteral(string, signal, useEnv);
 			break;
 		}
 		case NodeType::BooleanLiteral:
 		{
 			const auto* boolean = dynamic_cast<const BooleanLiteral*>(currentNode);
-			Handler_BooleanLiteral(boolean, signal, useEnv.get());
+			Handler_BooleanLiteral(boolean, signal, useEnv);
 			break;
 		}
 		case NodeType::ArrayLiteral:
 		{
 			const auto* array = dynamic_cast<const ArrayLiteral*>(currentNode);
-			Handler_ArrayLiteral(array, signal, useEnv.get());
+			Handler_ArrayLiteral(array, signal, useEnv);
 			break;
 		}
 		case NodeType::HashLiteral:
 		{
 			const auto* hash = dynamic_cast<const HashLiteral*>(currentNode);
-			Handler_HashLiteral(hash, signal, useEnv.get());
+			Handler_HashLiteral(hash, signal, useEnv);
 			break;
 		}
 		case NodeType::IndexExpression:
 		{
 			const auto* index = dynamic_cast<const IndexExpression*>(currentNode);
-			Handler_IndexExpression(index, signal, useEnv.get());
+			Handler_IndexExpression(index, signal, useEnv);
 			break;
 		}
 		case NodeType::PrefixExpression:
 		{
 			const auto* prefix = dynamic_cast<const PrefixExpression*>(currentNode);
-			Handler_PrefixExpression(prefix, signal, useEnv.get());
+			Handler_PrefixExpression(prefix, signal, useEnv);
 			break;
 		}
 		case NodeType::BlockStatement:
 		{
 			const auto* block = dynamic_cast<const BlockStatement*>(currentNode);
-			Handler_BlockStatement(block, signal, useEnv.get());
+			Handler_BlockStatement(block, signal, useEnv);
 			break;
 		}
 		case NodeType::IfExpression:
 		{
 			const auto* ifex = dynamic_cast<const IfExpression*>(currentNode);
-			Handler_IfExpression(ifex, signal, useEnv.get());
+			Handler_IfExpression(ifex, signal, useEnv);
 			break;
 		}
 		case NodeType::InfixExpression:
 		{
 			const auto* infix = dynamic_cast<const InfixExpression*>(currentNode);
-			Handler_InfixExpression(infix, signal, useEnv.get());
+			Handler_InfixExpression(infix, signal, useEnv);
 			break;
 		}
 		case NodeType::ReturnStatement:
 		{
 			const auto* ret = dynamic_cast<const ReturnStatement*>(currentNode);
-			Handler_ReturnStatement(ret, signal, useEnv.get());
+			Handler_ReturnStatement(ret, signal, useEnv);
 			break;
 		}
 		case NodeType::LetStatement:
 		{
 			const auto* let = dynamic_cast<const LetStatement*>(currentNode);
-			Handler_LetStatement(let, signal, useEnv.get());
+			Handler_LetStatement(let, signal, useEnv);
 			break;
 		}
 		case NodeType::Identifier:
 		{
 			const auto* ident = dynamic_cast<const Identifier*>(currentNode);
-			Handler_Identifier(ident, signal, useEnv.get());
+			Handler_Identifier(ident, signal, useEnv);
 			break;
 		}
 		case NodeType::FunctionLiteral:
 		{
 			const auto* func = dynamic_cast<const FunctionLiteral*>(currentNode);
-			Handler_FunctionLiteral(func, signal, useEnv.get());
+			Handler_FunctionLiteral(func, signal, useEnv);
 			break;
 		}
 		case NodeType::CallExpression:
 		{
 			const auto* call = dynamic_cast<const CallExpression*>(currentNode);
-			Handler_CallExpression(call, signal, useEnv.get());
+			Handler_CallExpression(call, signal, useEnv);
 			break;
 		}
 		case NodeType::WhileExpression:
 		{
 			const auto* whileEx = dynamic_cast<const WhileExpression*>(currentNode);
-			Handler_WhileExpression(whileEx, signal, useEnv.get());
+			Handler_WhileExpression(whileEx, signal, useEnv);
 			break;
 		}
 		case NodeType::ForExpression:
 		{
 			const auto* forEx = dynamic_cast<const ForExpression*>(currentNode);
-			Handler_ForStatement(forEx, signal, useEnv.get());
+			Handler_ForStatement(forEx, signal, useEnv);
 			break;
 		}
 		case NodeType::BreakStatement:
 		{
-			Handler_BreakStatement(dynamic_cast<const BreakStatement*>(currentNode), signal, useEnv.get());
+			Handler_BreakStatement(dynamic_cast<const BreakStatement*>(currentNode), signal, useEnv);
 			break;
 		}
 		case NodeType::ContinueStatement:
 		{
-			Handler_ContinueStatement(dynamic_cast<const ContinueStatement*>(currentNode), signal, useEnv.get());
+			Handler_ContinueStatement(dynamic_cast<const ContinueStatement*>(currentNode), signal, useEnv);
 			break;
 		}
 		default:
 		{
-			results.push(NullObj::NULL_OBJ_REF);
+			Push_Result(MakeError("unknown node type", currentNode->BaseToken));
+			break;
 		}
 		}
 	}
 
-	if (results.empty())
+	if (_results.empty())
 	{
 		return nullptr;
 	}
 
-	return results.top();
+	return Pop_Result();
 }
 
 
-void StackEvaluator::Push_Eval(const INode* node, int32_t signal, const Environment* env)
+void StackEvaluator::Push_Eval(const INode* node, int32_t signal, const uint32_t env)
 {
 	_stack.push({ node, signal, env });
 }
@@ -252,14 +242,19 @@ bool StackEvaluator::ResultIsIdent() const
 	return _results.top()->Type() == ObjectType::IDENT_OBJ;
 }
 
-void StackEvaluator::Handler_Program(const Program* program, int32_t signal, const Environment* env)
+size_t StackEvaluator::ResultCount() const
+{
+	return _results.size();
+}
+
+void StackEvaluator::Handler_Program(const Program* program, int32_t signal, const uint32_t env)
 {
 	for (const auto& iter : program->Statements | std::views::reverse)
 	{
 		Push_Eval(iter.get(), 0, env);
 	}
 }
-void StackEvaluator::Handler_BlockStatement(const BlockStatement* block, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_BlockStatement(const BlockStatement* block, int32_t signal, const uint32_t env)
 {
 	if (ResultIsError() || ResultIsReturn())
 	{
@@ -274,11 +269,11 @@ void StackEvaluator::Handler_BlockStatement(const BlockStatement* block, int32_t
 		Push_Eval(stmt.get(), 0, env);
 	}
 }
-void StackEvaluator::Handler_ExpressionStatement(const ExpressionStatement* expression, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_ExpressionStatement(const ExpressionStatement* expression, int32_t signal, const uint32_t env)
 {
 	Push_Eval(expression->Expression.get(), 0, env);
 }
-void StackEvaluator::Handler_ReturnStatement(const ReturnStatement* ret, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_ReturnStatement(const ReturnStatement* ret, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -291,7 +286,7 @@ void StackEvaluator::Handler_ReturnStatement(const ReturnStatement* ret, int32_t
 		Push_Result(ReturnObj::New(result));
 	}
 }
-void StackEvaluator::Handler_LetStatement(const LetStatement* let, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_LetStatement(const LetStatement* let, int32_t signal, const uint32_t env)
 {
 	if (let->Name->NType() == NodeType::Identifier)
 	{
@@ -320,6 +315,7 @@ void StackEvaluator::Handler_LetStatement(const LetStatement* let, int32_t signa
 
 			auto* ident = dynamic_no_copy_cast<IdentifierObj>(identResult);
 			auto result = ident->Set(nullptr, value);
+			EvalEnvironment->Set(env, ident->Name, value);
 			//results.push(result);
 		}
 	}
@@ -364,43 +360,45 @@ void StackEvaluator::Handler_LetStatement(const LetStatement* let, int32_t signa
 		Push_Result(MakeError("let target must be identifier or index expression", let->BaseToken));
 	}
 }
-void StackEvaluator::Handler_Identifier(const Identifier* ident, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_Identifier(const Identifier* ident, int32_t signal, const uint32_t env)
 {
-	if (builtIn->IsBuiltIn(ident->Value))
+	if (EvalBuiltIn->IsBuiltIn(ident->Value))
 	{
 		Push_Result(BuiltInObj::New(ident->Value));
 	}
 	else
 	{
-		auto value = env->Get(ident->Value);
+		auto value = EvalEnvironment->Get(env, ident->Value);
 		if (value != nullptr)
 		{
-			Push_Result(IdentifierObj::New(ident->Value, value, env));
+			Push_Result(IdentifierObj::New(ident->Value, value));
+			//EvalEnvironment->Set(env, ident->Value, value);
 		}
 		else
 		{
-			Push_Result(IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF, env));
+			Push_Result(IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF));
+			EvalEnvironment->Set(env, ident->Value, NullObj::NULL_OBJ_REF);
 		}
 		//result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
 	}
 }
-void StackEvaluator::Handler_IntegerLiteral(const IntegerLiteral* integer, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_IntegerLiteral(const IntegerLiteral* integer, int32_t signal, const uint32_t env)
 {
 	Push_Result(IntegerObj::New(integer->Value));
 }
-void StackEvaluator::Handler_BooleanLiteral(const BooleanLiteral* boolean, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_BooleanLiteral(const BooleanLiteral* boolean, int32_t signal, const uint32_t env)
 {
 	Push_Result(boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF);
 }
-void StackEvaluator::Handler_StringLiteral(const StringLiteral* string, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_StringLiteral(const StringLiteral* string, int32_t signal, const uint32_t env)
 {
 	Push_Result(StringObj::New(string->Value));
 }
-void StackEvaluator::Handler_DecimalLiteral(const DecimalLiteral* decimal, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_DecimalLiteral(const DecimalLiteral* decimal, int32_t signal, const uint32_t env)
 {
 	Push_Result(DecimalObj::New(decimal->Value));
 }
-void StackEvaluator::Handler_PrefixExpression(const PrefixExpression* prefix, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_PrefixExpression(const PrefixExpression* prefix, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -413,7 +411,7 @@ void StackEvaluator::Handler_PrefixExpression(const PrefixExpression* prefix, in
 		Push_Result(EvalPrefixExpression(prefix->BaseToken, lastResult));
 	}
 }
-void StackEvaluator::Handler_InfixExpression(const InfixExpression* infix, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_InfixExpression(const InfixExpression* infix, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -449,7 +447,7 @@ void StackEvaluator::Handler_InfixExpression(const InfixExpression* infix, int32
 		Push_Result(result);
 	}
 }
-void StackEvaluator::Handler_IfExpression(const IfExpression* ifExpr, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_IfExpression(const IfExpression* ifExpr, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -482,13 +480,13 @@ void StackEvaluator::Handler_IfExpression(const IfExpression* ifExpr, int32_t si
 		}
 	}
 }
-void StackEvaluator::Handler_FunctionLiteral(const FunctionLiteral* function, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_FunctionLiteral(const FunctionLiteral* function, int32_t signal, const uint32_t env)
 {
 
-	Push_Result(FunctionObj::New(function->Parameters, function->Body, env));
+	Push_Result(FunctionObj::New(function->Parameters, function->Body));
 
 }
-void StackEvaluator::Handler_CallExpression(const CallExpression* call, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_CallExpression(const CallExpression* call, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -507,6 +505,7 @@ void StackEvaluator::Handler_CallExpression(const CallExpression* call, int32_t 
 			return;
 		}
 		auto function = lastResult;
+		Push_Result(function);
 
 		Push_Eval(call, 2, env);
 		// Evaluate arguments
@@ -518,11 +517,11 @@ void StackEvaluator::Handler_CallExpression(const CallExpression* call, int32_t 
 	else
 	{
 		std::vector<std::shared_ptr<IObject>> evalArgs;
-		//if (results.size() < call->Arguments.size())
-		//{
-		//	results.push(MakeError("not enough arguments", call->BaseToken));
-		//	break;
-		//}
+		if (ResultCount() < call->Arguments.size())
+		{
+			Push_Result(MakeError("not enough arguments", call->BaseToken));
+			return;
+		}
 
 		for (size_t i = 0; i < call->Arguments.size(); i++)
 		{
@@ -539,7 +538,7 @@ void StackEvaluator::Handler_CallExpression(const CallExpression* call, int32_t 
 		if (function->Type() == ObjectType::BUILTIN_OBJ)
 		{
 			auto func = std::dynamic_pointer_cast<BuiltInObj>(function);
-			auto builtInToCall = builtIn->GetBuiltInFunction(func->Name);
+			auto builtInToCall = EvalBuiltIn->GetBuiltInFunction(func->Name);
 			if (builtInToCall == nullptr)
 			{
 				Push_Result(MakeError(std::format("unknown function: {}", func->Name), call->BaseToken));
@@ -554,13 +553,13 @@ void StackEvaluator::Handler_CallExpression(const CallExpression* call, int32_t 
 		else
 		{
 			auto func = std::dynamic_pointer_cast<FunctionObj>(function);
-			auto extEnv = ExtendFunctionEnv(func, evalArgs);
-			Push_Eval(func->Body.get(), 0, extEnv.get());
+			auto extEnv = ExtendFunctionEnv(env, func, evalArgs);
+			Push_Eval(func->Body.get(), 0, extEnv);
 		}
 	}
 
 }
-void StackEvaluator::Handler_ArrayLiteral(const ArrayLiteral* array, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_ArrayLiteral(const ArrayLiteral* array, int32_t signal, const uint32_t env)
 {
 	std::vector<std::shared_ptr<IObject>> elements;
 
@@ -576,7 +575,7 @@ void StackEvaluator::Handler_ArrayLiteral(const ArrayLiteral* array, int32_t sig
 	else
 	{
 		std::vector<std::shared_ptr<IObject>> evalArgs;
-		if (results.size() < array->Elements.size())
+		if (ResultCount() < array->Elements.size())
 		{
 			Push_Result(MakeError("failed to evaluate all array elements", array->BaseToken));
 			return;
@@ -591,10 +590,10 @@ void StackEvaluator::Handler_ArrayLiteral(const ArrayLiteral* array, int32_t sig
 			auto arg = Pop_ResultAndUnwrap();
 			evalArgs.push_back(arg);
 		}
-		results.push(ArrayObj::New(evalArgs));
+		Push_Result(ArrayObj::New(evalArgs));
 	}
 }
-void StackEvaluator::Handler_IndexExpression(const IndexExpression* index, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_IndexExpression(const IndexExpression* index, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -615,7 +614,7 @@ void StackEvaluator::Handler_IndexExpression(const IndexExpression* index, int32
 		Push_Result(result);
 	}
 }
-void StackEvaluator::Handler_HashLiteral(const HashLiteral* hash, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_HashLiteral(const HashLiteral* hash, int32_t signal, const uint32_t env)
 {
 	std::vector<std::shared_ptr<IObject>> elements;
 
@@ -631,7 +630,7 @@ void StackEvaluator::Handler_HashLiteral(const HashLiteral* hash, int32_t signal
 	else
 	{
 		std::unordered_map<HashKey, HashEntry> evalArgs;
-		if (results.size() < hash->Elements.size())
+		if (ResultCount() < hash->Elements.size())
 		{
 			Push_Result(MakeError("failed to evaluate all hash elements", hash->BaseToken));
 			return;
@@ -658,11 +657,11 @@ void StackEvaluator::Handler_HashLiteral(const HashLiteral* hash, int32_t signal
 		Push_Result(HashObj::New(evalArgs));
 	}
 }
-void StackEvaluator::Handler_NullLiteral(const NullLiteral* null, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_NullLiteral(const NullLiteral* null, int32_t signal, const uint32_t env)
 {
 	Push_Result(NullObj::NULL_OBJ_REF);
 }
-void StackEvaluator::Handler_WhileExpression(const WhileExpression* whileExp, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_WhileExpression(const WhileExpression* whileExp, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -675,6 +674,11 @@ void StackEvaluator::Handler_WhileExpression(const WhileExpression* whileExp, in
 			if (!(ret->Value == ContinueObj::CONTINUE_OBJ_REF || ret->Value == BreakObj::BREAK_OBJ_REF))
 			{
 				Push_Result(top);
+				return;
+			}
+			if (ret->Value == BreakObj::BREAK_OBJ_REF)
+			{
+				return;
 			}
 		}
 
@@ -705,7 +709,7 @@ void StackEvaluator::Handler_WhileExpression(const WhileExpression* whileExp, in
 		}
 	}
 }
-void StackEvaluator::Handler_ForStatement(const ForExpression* forExp, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_ForStatement(const ForExpression* forExp, int32_t signal, const uint32_t env)
 {
 	if (signal == 0)
 	{
@@ -747,6 +751,11 @@ void StackEvaluator::Handler_ForStatement(const ForExpression* forExp, int32_t s
 			if (!(ret->Value == ContinueObj::CONTINUE_OBJ_REF || ret->Value == BreakObj::BREAK_OBJ_REF))
 			{
 				Push_Result(top);
+				return;
+			}
+			if (ret->Value == BreakObj::BREAK_OBJ_REF)
+			{
+				return;
 			}
 		}
 
@@ -758,11 +767,11 @@ void StackEvaluator::Handler_ForStatement(const ForExpression* forExp, int32_t s
 		Push_Eval(forExp->Post.get(), 0, env);
 	}
 }
-void StackEvaluator::Handler_ContinueStatement(const ContinueStatement* cont, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_ContinueStatement(const ContinueStatement* cont, int32_t signal, const uint32_t env)
 {
 	Push_Result(ReturnObj::New(ContinueObj::CONTINUE_OBJ_REF));
 }
-void StackEvaluator::Handler_BreakStatement(const BreakStatement* brk, int32_t signal, const Environment* env)
+void StackEvaluator::Handler_BreakStatement(const BreakStatement* brk, int32_t signal, const uint32_t env)
 {
 	Push_Result(ReturnObj::New(BreakObj::BREAK_OBJ_REF));
 }

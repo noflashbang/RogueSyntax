@@ -26,14 +26,18 @@ Evaluator::Evaluator()
 	_coercionMap[ObjectType::INTEGER_OBJ] = std::bind(&Evaluator::EvalAsInteger, this, std::placeholders::_1, std::placeholders::_2);
 	_coercionMap[ObjectType::DECIMAL_OBJ] = std::bind(&Evaluator::EvalAsDecimal, this, std::placeholders::_1, std::placeholders::_2);
 	_coercionMap[ObjectType::BOOLEAN_OBJ] = std::bind(&Evaluator::EvalAsBoolean, this, std::placeholders::_1, std::placeholders::_2);
+
+	EvalBuiltIn = std::make_shared<BuiltIn>();
+	EvalEnvironment = std::make_shared<Environment>();
 }
 
-std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn)
+std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program)
 {
+	uint32_t env = EvalEnvironment->New();
 	std::shared_ptr<IObject> result = nullptr;
 	for (const auto& stmt : program->Statements)
 	{
-		result = Eval(stmt, env, builtIn);
+		result = Eval(stmt, env);
 		if (result == nullptr)
 		{
 			continue;
@@ -648,9 +652,9 @@ std::shared_ptr<IObject> Evaluator::MakeError(const std::string& message, const 
 	return ErrorObj::New(message, token);
 }
 
-std::shared_ptr<Environment> Evaluator::ExtendFunctionEnv(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args)
+uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args)
 {
-	auto env = Environment::NewEnclosed(func->Env);
+	auto env = EvalEnvironment->NewEnclosed(rootEnv);
 	for (size_t i = 0; i < func->Parameters.size(); i++)
 	{
 		auto* param = func->Parameters[i].get();
@@ -664,7 +668,7 @@ std::shared_ptr<Environment> Evaluator::ExtendFunctionEnv(const std::shared_ptr<
 		argUnwrapped = UnwrapIfIdentObj(argUnwrapped);
 
 		auto* ident = dynamic_cast<Identifier*>(param);
-		env->Set(ident->Value, argUnwrapped);
+		EvalEnvironment->Set(env, ident->Value, argUnwrapped);
 	}
 	return env;
 }
@@ -686,5 +690,8 @@ std::shared_ptr<IObject> Evaluator::UnwrapIfIdentObj(const std::shared_ptr<IObje
 	}
 	return input;
 }
+
+
+
 
 

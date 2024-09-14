@@ -13,8 +13,8 @@ class Evaluator
 {
 public:
 	Evaluator();
-	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn);
-	virtual std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const std::shared_ptr<Environment>& env, const std::shared_ptr<BuiltIn>& builtIn) = 0;
+	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program);
+	virtual std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const uint32_t env) = 0;
 
 	static std::shared_ptr<Evaluator> New(EvaluatorType type);
 
@@ -42,11 +42,15 @@ protected:
 	std::shared_ptr<IObject> EvalAsDecimal(const Token& context, const IObject* const obj) const;
 	std::shared_ptr<IObject> EvalAsInteger(const Token& context, const IObject* const obj) const;
 
+	std::shared_ptr<Environment> EvalEnvironment;
+	std::shared_ptr<BuiltIn> EvalBuiltIn;
+
 	static std::shared_ptr<IObject> MakeError(const std::string& message, const Token& token);
 	static std::shared_ptr<IObject> UnwrapIfReturnObj(const std::shared_ptr<IObject>& input);
 	static std::shared_ptr<IObject> UnwrapIfIdentObj(const std::shared_ptr<IObject>& input);
 
-	static std::shared_ptr<Environment> ExtendFunctionEnv(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args);
+	uint32_t ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args);
+
 
 private:
 	std::map<ObjectType, std::function<std::shared_ptr<IObject>(const Token& context, const IObject* const right)>> _coercionMap;

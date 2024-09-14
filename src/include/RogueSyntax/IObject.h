@@ -452,7 +452,7 @@ public:
 class IdentifierObj : public IAssignableObject
 {
 public:
-	IdentifierObj(const std::string& name, const std::shared_ptr<IObject>& value, const std::shared_ptr<Environment> scope) : Name(name), Value(value), _scope(scope) {}
+	IdentifierObj(const std::string& name, const std::shared_ptr<IObject>& value) : Name(name), Value(value) {}
 	virtual ~IdentifierObj() = default;
 
 	const ObjectType& Type() const override
@@ -467,7 +467,7 @@ public:
 
 	std::shared_ptr<IObject> Clone() const override
 	{
-		return New(Name, Value->Clone(), _scope);
+		return New(Name, Value->Clone());
 	}
 
 	std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) override;
@@ -475,10 +475,10 @@ public:
 	std::string Name;
 	std::shared_ptr<IObject> Value;
 
-	static std::shared_ptr<IdentifierObj> New(const std::string& name, const std::shared_ptr<IObject>& value, const std::shared_ptr<Environment> scope);
+	static std::shared_ptr<IdentifierObj> New(const std::string& name, const std::shared_ptr<IObject>& value);
 
 private:
-	const std::shared_ptr<Environment> _scope;
+
 };
 
 class ReturnObj : public IObject
@@ -537,7 +537,7 @@ public:
 class FunctionObj : public IObject
 {
 public:
-	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env) : Parameters(parameters), Body(body), Env(env) {}
+	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : Parameters(parameters), Body(body) {}
 	virtual ~FunctionObj() = default;
 
 	const ObjectType& Type() const override
@@ -570,14 +570,13 @@ public:
 
 	std::shared_ptr<IObject> Clone() const override
 	{
-		return New(Parameters, Body, Env);
+		return New(Parameters, Body);
 	}
 
 	std::vector<std::shared_ptr<IExpression>> Parameters;
 	std::shared_ptr<IStatement> Body;
-	std::shared_ptr<Environment> Env;
 
-	static std::shared_ptr<FunctionObj> New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env);
+	static std::shared_ptr<FunctionObj> New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
 };
 
 class BuiltInObj : public IObject

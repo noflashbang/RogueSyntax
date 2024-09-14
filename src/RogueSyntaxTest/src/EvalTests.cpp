@@ -14,8 +14,6 @@ namespace Catch {
 
 std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input)
 {
-	auto env = Environment::New();
-	auto builtins = BuiltIn::New();
 	Lexer lexer(input);
 	Parser parser(lexer);
 	
@@ -30,7 +28,7 @@ std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const 
 	}
 	REQUIRE(errors.size() == 0);
 
-	auto result = eval->Eval(program, env, builtins);
+	auto result = eval->Eval(program);
 	return result;
 }
 
