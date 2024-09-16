@@ -36,7 +36,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 
 void StackEvaluator::Push_Eval(INode* node, const int32_t signal, const uint32_t env)
 {
-	_stack.push({ node, signal, env });
+	_stack.emplace( node, signal, env );
 }
 void StackEvaluator::Pop_Eval()
 {
@@ -44,7 +44,7 @@ void StackEvaluator::Pop_Eval()
 }
 void StackEvaluator::Push_Result(std::shared_ptr<IObject> result)
 {
-	_results.push(result);
+	_results.emplace(result);
 }
 std::shared_ptr<IObject> StackEvaluator::Pop_Result()
 {
@@ -106,7 +106,7 @@ size_t StackEvaluator::ResultCount() const
 
 void StackEvaluator::NodeEval(Program* program)
 {
-	for (const auto& iter : program->Statements | std::views::reverse)
+	for (const auto& iter : std::views::reverse(program->Statements))
 	{
 		Push_Eval(iter.get(), 0, _currentEnv);
 	}
@@ -371,7 +371,7 @@ void StackEvaluator::NodeEval(CallExpression* call)
 			Push_Eval(iter.get(), 0, _currentEnv);
 		}
 	}
-	else
+	else if (_currentSignal == 2)
 	{
 		std::vector<std::shared_ptr<IObject>> evalArgs;
 		if (ResultCount() < call->Arguments.size())
@@ -411,8 +411,14 @@ void StackEvaluator::NodeEval(CallExpression* call)
 		{
 			auto func = std::dynamic_pointer_cast<FunctionObj>(function);
 			auto extEnv = ExtendFunctionEnv(_currentEnv, func, evalArgs);
+			Push_Eval(call, 3, extEnv);
 			Push_Eval(func->Body.get(), 0, extEnv);
 		}
+	}
+	else
+	{
+		//just releasing the environment
+		EvalEnvironment->Release(_currentEnv);
 	}
 }
 void StackEvaluator::NodeEval(ArrayLiteral* array)

@@ -552,6 +552,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::ApplyFunction(const std::shared_ptr
 	auto envHolder = _env; //save the current environment
 	auto extEnv = ExtendFunctionEnv(_env, func, args);
 	auto evaluated = Eval(func->Body, extEnv);
+	EvalEnvironment->Release(extEnv);
 	_env = envHolder; //restore the environment
 	return evaluated;
 }

@@ -66,6 +66,8 @@ std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program
 			break;
 		}
 	}
+
+	EvalEnvironment->Release(env);
 	return result;
 }
 
