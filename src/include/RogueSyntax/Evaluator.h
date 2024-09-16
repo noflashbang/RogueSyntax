@@ -16,7 +16,33 @@ public:
 	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program);
 	virtual std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const uint32_t env) = 0;
 
+	virtual void NodeEval(Program* program) = 0;
+	virtual void NodeEval(BlockStatement* block) = 0;
+	virtual void NodeEval(ExpressionStatement* expression) = 0;
+	virtual void NodeEval(ReturnStatement* ret) = 0;
+	virtual void NodeEval(LetStatement* let) = 0;
+	virtual void NodeEval(Identifier* ident) = 0;
+	virtual void NodeEval(IntegerLiteral* integer) = 0;
+	virtual void NodeEval(BooleanLiteral* boolean) = 0;
+	virtual void NodeEval(StringLiteral* string) = 0;
+	virtual void NodeEval(DecimalLiteral* decimal) = 0;
+	virtual void NodeEval(PrefixExpression* prefix) = 0;
+	virtual void NodeEval(InfixExpression* infix) = 0;
+	virtual void NodeEval(IfExpression* ifExpr) = 0;
+	virtual void NodeEval(FunctionLiteral* function) = 0;
+	virtual void NodeEval(CallExpression* call) = 0;
+	virtual void NodeEval(ArrayLiteral* array) = 0;
+	virtual void NodeEval(IndexExpression* index) = 0;
+	virtual void NodeEval(HashLiteral* hash) = 0;
+	virtual void NodeEval(NullLiteral* null) = 0;
+	virtual void NodeEval(WhileExpression* whileExp) = 0;
+	virtual void NodeEval(ForExpression* forExp) = 0;
+	virtual void NodeEval(ContinueStatement* cont) = 0;
+	virtual void NodeEval(BreakStatement* brk)=0;
+
 	static std::shared_ptr<Evaluator> New(EvaluatorType type);
+
+	virtual std::string Type() = 0;
 
 protected:
 	std::shared_ptr<IObject> EvalPrefixExpression(const Token& op, const std::shared_ptr<IObject>& right) const;

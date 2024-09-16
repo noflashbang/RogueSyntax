@@ -659,7 +659,7 @@ uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_
 	{
 		auto* param = func->Parameters[i].get();
 
-		if (param->NType() != NodeType::Identifier)
+		if (typeid(*param) != typeid(Identifier))
 		{
 			continue;
 		}

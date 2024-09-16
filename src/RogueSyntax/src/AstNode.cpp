@@ -1,9 +1,5 @@
 #include "pch.h"
-
-NodeType Program::NType() const
-{
-	return NodeType::Program;
-}
+#include "Evaluator.h"
 
 std::string Program::ToString() const
 {
@@ -19,6 +15,11 @@ std::string Program::ToString() const
 std::shared_ptr<Program>  Program::New()
 {
 	return std::make_shared<Program>();
+}
+
+void Program::Eval(Evaluator* evaluator)
+{
+	evaluator->NodeEval(this);
 }
 
 LetStatement::LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value) : IStatement(token), Name(name), Value(value)
@@ -44,9 +45,9 @@ std::string LetStatement::ToString() const
 	return result;
 }
 
-NodeType LetStatement::NType() const
+void LetStatement::Eval(Evaluator* evaluator)
 {
-	return NodeType::LetStatement;
+	evaluator->NodeEval(this);
 }
 
 Identifier::Identifier(const ::Token& token, const std::string& value) : IExpression(token), Value(value)
@@ -63,9 +64,9 @@ std::string Identifier::ToString() const
 	return Value;
 }
 
-NodeType Identifier::NType() const
+void Identifier::Eval(Evaluator* evaluator)
 {
-	return NodeType::Identifier;
+	evaluator->NodeEval(this);
 }
 
 ReturnStatement::ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue) : IStatement(token), ReturnValue(returnValue)
@@ -89,9 +90,9 @@ std::string ReturnStatement::ToString() const
 	return result;
 }
 
-NodeType ReturnStatement::NType() const
+void ReturnStatement::Eval(Evaluator* evaluator)
 {
-	return NodeType::ReturnStatement;
+	evaluator->NodeEval(this);
 }
 
 ExpressionStatement::ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression) : IStatement(token), Expression(expression)
@@ -112,9 +113,9 @@ std::string ExpressionStatement::ToString() const
 	return "";
 }
 
-NodeType ExpressionStatement::NType() const
+void ExpressionStatement::Eval(Evaluator* evaluator)
 {
-	return NodeType::ExpressionStatement;
+	evaluator->NodeEval(this);
 }
 
 NullLiteral::NullLiteral(const ::Token& token) : IExpression(token)
@@ -131,9 +132,9 @@ std::string NullLiteral::ToString() const
 	return "null";
 }
 
-NodeType NullLiteral::NType() const
+void NullLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::NullLiteral;
+	evaluator->NodeEval(this);
 }
 
 IntegerLiteral::IntegerLiteral(const ::Token& token, int value) : IExpression(token), Value(value)
@@ -150,9 +151,9 @@ std::string IntegerLiteral::ToString() const
 	return std::to_string(Value);
 }
 
-NodeType IntegerLiteral::NType() const
+void IntegerLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::IntegerLiteral;
+	evaluator->NodeEval(this);
 }
 
 BooleanLiteral::BooleanLiteral(const ::Token& token, bool value) : IExpression(token), Value(value)
@@ -170,9 +171,9 @@ std::string BooleanLiteral::ToString() const
 	return Value ? "true" : "false";
 }
 
-NodeType BooleanLiteral::NType() const
+void BooleanLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::BooleanLiteral;
+	evaluator->NodeEval(this);
 }
 
 HashLiteral::HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs) : IExpression(token), Elements(pairs)
@@ -206,9 +207,9 @@ std::string HashLiteral::ToString() const
 	return result;
 }
 
-NodeType HashLiteral::NType() const
+void HashLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::HashLiteral;
+	evaluator->NodeEval(this);
 }
 
 PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Right(right)
@@ -230,9 +231,9 @@ std::string PrefixExpression::ToString() const
 	return result;
 }
 
-NodeType PrefixExpression::NType() const
+void PrefixExpression::Eval(Evaluator* evaluator)
 {
-	return NodeType::PrefixExpression;
+	evaluator->NodeEval(this);
 }
 
 InfixExpression::InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Left(left), Right(right)
@@ -255,10 +256,11 @@ std::string InfixExpression::ToString() const
 	return result;
 }
 
-NodeType InfixExpression::NType() const
+void InfixExpression::Eval(Evaluator* evaluator)
 {
-	return NodeType::InfixExpression;
+	evaluator->NodeEval(this);
 }
+
 
 BlockStatement::BlockStatement(const ::Token& token, const std::vector<std::shared_ptr<IStatement>>& statements) : IStatement(token), Statements(statements)
 {
@@ -282,9 +284,9 @@ std::string BlockStatement::ToString() const
 	return result;
 }
 
-NodeType BlockStatement::NType() const
+void BlockStatement::Eval(Evaluator* evaluator)
 {
-	return NodeType::BlockStatement;
+	evaluator->NodeEval(this);
 }
 
 IfExpression::IfExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative) : IExpression(token), Condition(condition), Consequence(consequence), Alternative(alternative)
@@ -311,9 +313,9 @@ std::string IfExpression::ToString() const
 	return result;
 }
 
-NodeType IfExpression::NType() const
+void IfExpression::Eval(Evaluator* evaluator)
 {
-	return NodeType::IfExpression;
+	evaluator->NodeEval(this);
 }
 
 FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : IExpression(token), Parameters(parameters), Body(body)
@@ -346,9 +348,9 @@ std::string FunctionLiteral::ToString() const
 	return result;
 }
 
-NodeType FunctionLiteral::NType() const
+void FunctionLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::FunctionLiteral;
+	evaluator->NodeEval(this);
 }
 
 CallExpression::CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments) : IExpression(token), Function(function), Arguments(arguments)
@@ -379,9 +381,9 @@ std::string CallExpression::ToString() const
 	return result;
 }
 
-NodeType CallExpression::NType() const
+void CallExpression::Eval(Evaluator* evaluator)
 {
-	return NodeType::CallExpression;
+	evaluator->NodeEval(this);
 }
 
 WhileExpression::WhileExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action) : IExpression(token), Condition(condition), Action(action)
@@ -403,9 +405,9 @@ std::string WhileExpression::ToString() const
 	return result;
 }
 
-NodeType WhileExpression::NType() const
+void WhileExpression::Eval(Evaluator* evaluator)
 {
-	return NodeType::WhileExpression;
+	evaluator->NodeEval(this);
 }
 
 
@@ -423,9 +425,9 @@ std::string BreakStatement::ToString() const
 	return "break";
 }
 
-NodeType BreakStatement::NType() const
+void BreakStatement::Eval(Evaluator* evaluator)
 {
-	return NodeType::BreakStatement;
+	evaluator->NodeEval(this);
 }
 
 ContinueStatement::ContinueStatement(const ::Token& token) : IStatement(token)
@@ -442,9 +444,9 @@ std::string ContinueStatement::ToString() const
 	return "continue";
 }
 
-NodeType ContinueStatement::NType() const
+void ContinueStatement::Eval(Evaluator* evaluator)
 {
-	return NodeType::ContinueStatement;
+	evaluator->NodeEval(this);
 }
 
 ForExpression::ForExpression(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action) : IExpression(token), Init(init), Condition(condition), Post(post), Action(action)
@@ -474,9 +476,9 @@ std::string ForExpression::ToString() const
 	return result;
 }
 
-NodeType ForExpression::NType() const
+void ForExpression::Eval(Evaluator* evaluator)
 {
-	return NodeType::ForExpression;
+	evaluator->NodeEval(this);
 }
 
 StringLiteral::StringLiteral(const Token& token, const std::string& value) : IExpression(token), Value(value)
@@ -493,9 +495,9 @@ std::string StringLiteral::ToString() const
 	return Value;
 }
 
-NodeType StringLiteral::NType() const
+void StringLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::StringLiteral;
+	evaluator->NodeEval(this);
 }
 
 DecimalLiteral::DecimalLiteral(const Token& token, float value) : IExpression(token), Value(value)
@@ -512,9 +514,9 @@ std::string DecimalLiteral::ToString() const
 	return std::to_string(Value);
 }
 
-NodeType DecimalLiteral::NType() const
+void DecimalLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::DecimalLiteral;
+	evaluator->NodeEval(this);
 }
 
 ArrayLiteral::ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements) : IExpression(token), Elements(elements)
@@ -544,9 +546,9 @@ std::string ArrayLiteral::ToString() const
 	return result;
 }
 
-NodeType ArrayLiteral::NType() const
+void ArrayLiteral::Eval(Evaluator* evaluator)
 {
-	return NodeType::ArrayLiteral;
+	evaluator->NodeEval(this);
 }
 
 IndexExpression::IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index) : IExpression(token), Left(left), Index(index)
@@ -569,10 +571,8 @@ std::string IndexExpression::ToString() const
 	return result;
 }
 
-NodeType IndexExpression::NType() const
+void IndexExpression::Eval(Evaluator* evaluator)
 {
-	return NodeType::IndexExpression;
+	evaluator->NodeEval(this);
 }
-
-
 

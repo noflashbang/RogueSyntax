@@ -289,6 +289,7 @@ TEST_CASE("Test Function Eval")
 		{"fn(x) { x; }(5)", 5}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	REQUIRE(TestEvalInteger(eng, input, expected));
 }
@@ -304,6 +305,7 @@ TEST_CASE("Test While Loop")
 		{"let i = 0; while (i < 10) { let i = i + 1; if (i == 5) { continue; let i = 12; } }; i;", 10}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	REQUIRE(TestEvalInteger(eng, input, expected));
 }
@@ -319,6 +321,7 @@ TEST_CASE("Test assignment")
 		{"a = 6; a;", 6}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	REQUIRE(TestEvalInteger(eng, input, expected));
 }
@@ -336,6 +339,7 @@ TEST_CASE("FOR tests")
 		{"let xisltten = fn(x){return x<10;}; let sum = 0; for (let i = 0; xisltten(i); i = i + 1) { if (i == 5) { continue; } sum = sum + i; }; sum;", 40}
 	}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	REQUIRE(TestEvalInteger(eng, input, expected));
 }
@@ -368,6 +372,7 @@ TEST_CASE("Decimal and String tests")
 			{"a = \"Hello\"; a;", "Hello"}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -383,6 +388,7 @@ TEST_CASE("Array Literal Tests")
 			{"[1 + 2, 3 * 4, 5 + 6]", "[3, 12, 11]"}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -398,6 +404,7 @@ TEST_CASE("Hash Literal Tests")
 			{"{1 + 1: 2 * 2, 3 + 3: 4 * 4}", "{2: 4, 6: 16}"}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -420,6 +427,7 @@ TEST_CASE("Index Array Expression Test")
 			{"[1, 2, 3][-1]", "null"}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -440,6 +448,7 @@ TEST_CASE("Index Hash Expression Test")
 			{"{1: 1, 2: 2}[-1]", "null"}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -460,6 +469,7 @@ TEST_CASE("Index Assignment Test")
 			{"let h = {1: 1, 2: 2}; let h[3] = 5; h[3]", "5"},
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -484,6 +494,7 @@ TEST_CASE("Coerce Tests")
 			{"5 != true;", "false"}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -514,6 +525,7 @@ TEST_CASE("Built In method test")
 			{"let acc = 0; let list = [1,2,3,4,5,6,7,8,9]; for(iter = 0; iter < len(list); iter++) { acc = acc + list[iter]; } acc;", "45"},
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -546,6 +558,7 @@ TEST_CASE("Null Tests")
 			{"null != fn(x) { x; };", "true"}
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
@@ -563,6 +576,7 @@ TEST_CASE("Incrementer Tests")
 			{"let a = {1:2,3:4}; a[1]++; a;", "{1: 3, 3: 4}"},
 		}));
 
+	CAPTURE(eng->Type());
 	CAPTURE(input);
 	auto result = EvalTest(eng, input);
 	REQUIRE(result->Inspect() == expected);
