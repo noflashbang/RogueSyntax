@@ -4,8 +4,8 @@
 void Repl::Start()
 {
 	std::string input;
-	auto env = Environment::New();
-	auto builtins = BuiltIn::New();
+	std::shared_ptr<Evaluator> eval = Evaluator::New(EvaluatorType::Stack);
+	auto env = eval->MakeEnv();
 
 	while (true)
 	{
@@ -30,9 +30,7 @@ void Repl::Start()
 			continue;
 		}
 
-		std::shared_ptr<Evaluator> eval = std::make_shared<StackEvaluator>();
-		//std::shared_ptr<Evaluator> eval = std::make_shared<RecursiveEvaluator>();
-		auto result = eval->Eval(program, env, builtins);
+		auto result = eval->Eval(program, env);
 
 		if (result == nullptr)
 		{
@@ -59,5 +57,7 @@ void Repl::Start()
 			std::cout << result->Inspect() << std::endl;
 		}
 	}
+
+	eval->FreeEnv(env);
 }
 

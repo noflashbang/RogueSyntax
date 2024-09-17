@@ -622,7 +622,7 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 	else
 	{
 		holder = ParseExpression(Precedence::LOWEST);
-		if (holder != NULL && holder->NType() == NodeType::LetStatement)
+		if (holder != NULL && typeid(*(holder.get())) == typeid(LetStatement))
 		{
 			return dynamic_pointer_cast<LetStatement>(holder);
 		}

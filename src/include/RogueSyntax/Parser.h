@@ -87,13 +87,10 @@ public:
 	std::shared_ptr<IStatement> ParseBlockStatement();
 	std::shared_ptr<IStatement> ParseLetStatement();
 	std::shared_ptr<IStatement> ParseAssignStatement();
-	//std::shared_ptr<IStatement> ParseIncrementStatement();
-	//std::shared_ptr<IStatement> ParseDecrementStatement();
 	std::shared_ptr<IStatement> ParseReturnStatement();
 	std::shared_ptr<IStatement> ParseBreakStatement();
 	std::shared_ptr<IStatement> ParseContinueStatement();
 	std::shared_ptr<IStatement> ParseExpressionStatement();
-
 
 	bool ExpectPeek(const TokenType& expectedType);
 	bool CurrentTokenIs(const TokenType& type) const;

@@ -107,14 +107,13 @@ std::shared_ptr<IObject> HashObj::Set(const std::shared_ptr<IObject>& key, const
 	return value;
 }
 
-std::shared_ptr<IdentifierObj> IdentifierObj::New(const std::string& name, const std::shared_ptr<IObject>& value, const std::shared_ptr<Environment> scope)
+std::shared_ptr<IdentifierObj> IdentifierObj::New(const std::string& name, const std::shared_ptr<IObject>& value)
 {
-	return std::make_shared<IdentifierObj>(name, value, scope);
+	return std::make_shared<IdentifierObj>(name, value);
 }
 
 std::shared_ptr<IObject> IdentifierObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
 {
-	_scope->Set(Name, value);
 	Value = value;
 	return Value;
 }
@@ -129,9 +128,9 @@ std::shared_ptr<ReturnObj> ReturnObj::New(const std::shared_ptr<IObject>& value)
 	return std::make_shared<ReturnObj>(value);
 }
 
-std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body, const std::shared_ptr<Environment>& env)
+std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body)
 {
-	return std::make_shared<FunctionObj>(parameters, body, env);
+	return std::make_shared<FunctionObj>(parameters, body);
 }
 
 std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
