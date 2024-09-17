@@ -25,12 +25,15 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
+    ${PARENT_DIR}/include/RogueSyntax/OpCode.h
+    ${PARENT_DIR}/include/RogueSyntax/Compiler.h
 )
 
 set( testSource 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/LexerTests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ParserTests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EvalTests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CompilerTests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
 
 )

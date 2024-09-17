@@ -1,5 +1,8 @@
 #pragma once
 
+#include <tuple>
+#include <iostream>
+#include <string>
 #include <variant>
 #include <string>
 #include <vector>

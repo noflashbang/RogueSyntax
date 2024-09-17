@@ -14,7 +14,8 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
-
+    ${PARENT_DIR}/include/RogueSyntax/OpCode.h
+    ${PARENT_DIR}/include/RogueSyntax/Compiler.h
 )
 
 set( libHeaders 
@@ -34,6 +35,8 @@ set( libSource
  "src/Builtin.cpp"
  "src/StackEvaluator.cpp"
  "src/RecursiveEvaluator.cpp"
+ "src/OpCode.cpp"
+ "src/Compiler.cpp"
 )
 
 if(CMAKE_TIDY_ENABLED)

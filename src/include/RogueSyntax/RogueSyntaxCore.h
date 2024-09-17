@@ -30,6 +30,8 @@
 #include "Environment.h"
 #include "Builtin.h"
 #include "Evaluator.h"
+#include "OpCode.h"
+#include "Compiler.h"
 
 
 
