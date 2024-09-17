@@ -17,7 +17,15 @@ ScopedEnvironment::~ScopedEnvironment()
 
 void ScopedEnvironment::Set(const std::string& name, const std::shared_ptr<IObject>& value)
 {
-	Store[name] = value;
+	auto it = Store.find(name);
+	if (it == Store.end() && Parent != nullptr)
+	{
+		Parent->Set(name, value);
+	}
+	else
+	{
+		Store[name] = value;
+	}
 }
 
 std::shared_ptr<IObject> ScopedEnvironment::Get(const std::string& name) const

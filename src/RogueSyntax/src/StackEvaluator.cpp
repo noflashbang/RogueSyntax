@@ -48,6 +48,10 @@ void StackEvaluator::Push_Result(std::shared_ptr<IObject> result)
 }
 std::shared_ptr<IObject> StackEvaluator::Pop_Result()
 {
+	if (_results.empty())
+	{
+		return VoidObj::VOID_OBJ_REF;
+	}
 	auto result = _results.top();
 	_results.pop();
 	return result;
