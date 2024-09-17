@@ -14,7 +14,11 @@ class Evaluator
 public:
 	Evaluator();
 	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program);
+	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program, const uint32_t env);
 	virtual std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const uint32_t env) = 0;
+
+	uint32_t MakeEnv();
+	void FreeEnv(const uint32_t env);
 
 	virtual void NodeEval(Program* program) = 0;
 	virtual void NodeEval(BlockStatement* block) = 0;

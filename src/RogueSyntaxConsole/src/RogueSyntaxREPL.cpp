@@ -4,6 +4,9 @@
 void Repl::Start()
 {
 	std::string input;
+	std::shared_ptr<Evaluator> eval = Evaluator::New(EvaluatorType::Stack);
+	auto env = eval->MakeEnv();
+
 	while (true)
 	{
 		std::cout << _prompt;
@@ -27,8 +30,7 @@ void Repl::Start()
 			continue;
 		}
 
-		std::shared_ptr<Evaluator> eval = Evaluator::New(EvaluatorType::Stack);
-		auto result = eval->Eval(program);
+		auto result = eval->Eval(program, env);
 
 		if (result == nullptr)
 		{
@@ -55,5 +57,7 @@ void Repl::Start()
 			std::cout << result->Inspect() << std::endl;
 		}
 	}
+
+	eval->FreeEnv(env);
 }
 

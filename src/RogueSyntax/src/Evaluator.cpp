@@ -34,6 +34,13 @@ Evaluator::Evaluator()
 std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program)
 {
 	uint32_t env = EvalEnvironment->New();
+	auto result = Eval(program, env);
+	EvalEnvironment->Release(env);
+	return result;
+}
+
+std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program, const uint32_t env)
+{
 	std::shared_ptr<IObject> result = nullptr;
 	for (const auto& stmt : program->Statements)
 	{
@@ -46,7 +53,7 @@ std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program
 		if (result->Type() == ObjectType::RETURN_OBJ)
 		{
 			result = UnwrapIfReturnObj(result);
-			
+
 			if (result->Type() == ObjectType::IDENT_OBJ)
 			{
 				result = UnwrapIfIdentObj(result);
@@ -66,9 +73,18 @@ std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program
 			break;
 		}
 	}
-
-	EvalEnvironment->Release(env);
 	return result;
+}
+
+uint32_t Evaluator::MakeEnv()
+{
+	return EvalEnvironment->New();
+
+}
+
+void Evaluator::FreeEnv(const uint32_t env)
+{
+	EvalEnvironment->Release(env);
 }
 
 std::shared_ptr<Evaluator> Evaluator::New(EvaluatorType type)
