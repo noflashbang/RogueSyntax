@@ -91,7 +91,7 @@ Instructions ConcatInstructions(const std::vector<Instructions>& instructions)
 bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ByteCode& actual)
 {
 	auto flattened = ConcatInstructions(expectedInstructions);
-	return TestConstants(expectedConstants, actual.Constants) && TestInstructions(flattened, actual.Instructions);
+	return TestInstructions(flattened, actual.Instructions) && TestConstants(expectedConstants, actual.Constants);
 }
 
 bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
@@ -130,27 +130,44 @@ bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std
 TEST_CASE("Instruction String")
 {
 	std::vector<Instructions> instructions = {
-		{ StdOpCode::Make(OpCodeConstants::OP_CONSTANT, {1})  },
-		{ StdOpCode::Make(OpCodeConstants::OP_CONSTANT, {2})  },
-		{ StdOpCode::Make(OpCodeConstants::OP_CONSTANT, {65535}) }
+		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {1})  },
+		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {2})  },
+		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {65535}) }
 	};
 
-	std::string expected = { "0000:  OP_CONSTANT            1\n0003:  OP_CONSTANT            2\n0006 :  OP_CONSTANT        65535" };
+	std::string expected = { "0000:  OP_CONSTANT            1\n0003:  OP_CONSTANT            2\n0006:  OP_CONSTANT        65535\n" };
 
 	auto flattened = ConcatInstructions(instructions);
-	auto actual = StdOpCode::PrintInstructions(flattened);
+	auto actual = OpCode::PrintInstructions(flattened);
+	REQUIRE(actual == expected);
+}
+
+TEST_CASE("Instruction String 2")
+{
+	std::vector<Instructions> instructions = {
+		{ OpCode::Make(OpCode::Constants::OP_ADD, {})  },
+		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {2})  },
+		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}) }
+	};
+
+	std::string expected = { "0000:  OP_ADD          \n0001:  OP_CONSTANT            2\n0004:  OP_CONSTANT            3\n" };
+
+	auto flattened = ConcatInstructions(instructions);
+	auto actual = OpCode::PrintInstructions(flattened);
 	REQUIRE(actual == expected);
 }
 
 TEST_CASE("Simple Instructions")
 {
-	auto [opcode, operands, expected] = GENERATE(table<OpCodeConstants, std::vector<int>, std::vector<uint8_t>>(
+	auto [opcode, operands, expected] = GENERATE(table<OpCode::Constants, std::vector<int>, std::vector<uint8_t>>(
 		{
-			{ OpCodeConstants::OP_CONSTANT, { 65534 }, { static_cast<uint8_t>(OpCodeConstants::OP_CONSTANT) ,0xFF, 0xFE } },
+			{ OpCode::Constants::OP_CONSTANT, { 65534 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFE } },
+			{ OpCode::Constants::OP_CONSTANT, { 65535 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFF } },
+			{ OpCode::Constants::OP_ADD,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_ADD) } }
 		}));
 
 	CAPTURE(expected);
-	auto instructions = StdOpCode::Make(opcode, operands);
+	auto instructions = OpCode::Make(opcode, operands);
 	REQUIRE(instructions == expected);
 }
 
@@ -158,9 +175,10 @@ TEST_CASE("Complier")
 {
 	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{"1+2", { 1, 2 }, {StdOpCode::Make(OpCodeConstants::OP_CONSTANT, {1}), StdOpCode::Make(OpCodeConstants::OP_CONSTANT, {2})}}
+			{"1+2", { 1, 2 }, {OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}), OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}), OpCode::Make(OpCode::Constants::OP_ADD, {})}}
 		}));
 
 	CAPTURE(input);
 	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
 }
+

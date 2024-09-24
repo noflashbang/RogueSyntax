@@ -27,6 +27,8 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
     ${PARENT_DIR}/include/RogueSyntax/OpCode.h
     ${PARENT_DIR}/include/RogueSyntax/Compiler.h
+    ${PARENT_DIR}/include/RogueSyntax/VirtualMachine.h
+
 )
 
 set( testSource 
@@ -34,6 +36,7 @@ set( testSource
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ParserTests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EvalTests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CompilerTests.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/VirtualMachineTests.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
 
 )

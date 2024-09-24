@@ -22,6 +22,11 @@ void Program::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void Program::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 LetStatement::LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value) : IStatement(token), Name(name), Value(value)
 {
 }
@@ -50,6 +55,12 @@ void LetStatement::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void LetStatement::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
+
 Identifier::Identifier(const ::Token& token, const std::string& value) : IExpression(token), Value(value)
 {
 }
@@ -68,6 +79,12 @@ void Identifier::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
+
+void Identifier::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 
 ReturnStatement::ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue) : IStatement(token), ReturnValue(returnValue)
 {
@@ -94,6 +111,10 @@ void ReturnStatement::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
+void ReturnStatement::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
 
 ExpressionStatement::ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression) : IStatement(token), Expression(expression)
 {
@@ -117,6 +138,10 @@ void ExpressionStatement::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
+void ExpressionStatement::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
 
 NullLiteral::NullLiteral(const ::Token& token) : IExpression(token)
 {
@@ -137,6 +162,11 @@ void NullLiteral::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void NullLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 IntegerLiteral::IntegerLiteral(const ::Token& token, int value) : IExpression(token), Value(value)
 {
 }
@@ -154,6 +184,10 @@ std::string IntegerLiteral::ToString() const
 void IntegerLiteral::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
+}
+void IntegerLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
 }
 
 BooleanLiteral::BooleanLiteral(const ::Token& token, bool value) : IExpression(token), Value(value)
@@ -174,6 +208,10 @@ std::string BooleanLiteral::ToString() const
 void BooleanLiteral::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
+}
+void BooleanLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
 }
 
 HashLiteral::HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs) : IExpression(token), Elements(pairs)
@@ -212,6 +250,11 @@ void HashLiteral::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void HashLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Right(right)
 {
 }
@@ -234,6 +277,10 @@ std::string PrefixExpression::ToString() const
 void PrefixExpression::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
+}
+void PrefixExpression::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
 }
 
 InfixExpression::InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Left(left), Right(right)
@@ -261,6 +308,10 @@ void InfixExpression::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void InfixExpression::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
 
 BlockStatement::BlockStatement(const ::Token& token, const std::vector<std::shared_ptr<IStatement>>& statements) : IStatement(token), Statements(statements)
 {
@@ -287,6 +338,11 @@ std::string BlockStatement::ToString() const
 void BlockStatement::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
+}
+
+void BlockStatement::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
 }
 
 IfExpression::IfExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative) : IExpression(token), Condition(condition), Consequence(consequence), Alternative(alternative)
@@ -316,6 +372,11 @@ std::string IfExpression::ToString() const
 void IfExpression::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
+}
+
+void IfExpression::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
 }
 
 FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : IExpression(token), Parameters(parameters), Body(body)
@@ -353,6 +414,11 @@ void FunctionLiteral::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void FunctionLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 CallExpression::CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments) : IExpression(token), Function(function), Arguments(arguments)
 {
 }
@@ -386,6 +452,11 @@ void CallExpression::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void CallExpression::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 WhileExpression::WhileExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action) : IExpression(token), Condition(condition), Action(action)
 {
 }
@@ -410,6 +481,10 @@ void WhileExpression::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void WhileExpression::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
 
 BreakStatement::BreakStatement(const ::Token& token) : IStatement(token)
 {
@@ -430,6 +505,11 @@ void BreakStatement::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void BreakStatement::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 ContinueStatement::ContinueStatement(const ::Token& token) : IStatement(token)
 {
 }
@@ -447,6 +527,10 @@ std::string ContinueStatement::ToString() const
 void ContinueStatement::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
+}
+void ContinueStatement::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
 }
 
 ForExpression::ForExpression(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action) : IExpression(token), Init(init), Condition(condition), Post(post), Action(action)
@@ -480,6 +564,10 @@ void ForExpression::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
+void ForExpression::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
 
 StringLiteral::StringLiteral(const Token& token, const std::string& value) : IExpression(token), Value(value)
 {
@@ -500,6 +588,12 @@ void StringLiteral::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void StringLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
+
 DecimalLiteral::DecimalLiteral(const Token& token, float value) : IExpression(token), Value(value)
 {
 }
@@ -518,6 +612,12 @@ void DecimalLiteral::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
+
+void DecimalLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 
 ArrayLiteral::ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements) : IExpression(token), Elements(elements)
 {
@@ -550,6 +650,11 @@ void ArrayLiteral::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
+void ArrayLiteral::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}
+
 
 IndexExpression::IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index) : IExpression(token), Left(left), Index(index)
 {
@@ -576,3 +681,7 @@ void IndexExpression::Eval(Evaluator* evaluator)
 	evaluator->NodeEval(this);
 }
 
+void IndexExpression::Compile(Compiler* compiler)
+{
+	compiler->NodeCompile(this);
+}

@@ -32,6 +32,7 @@
 #include "Evaluator.h"
 #include "OpCode.h"
 #include "Compiler.h"
+#include "VirtualMachine.h"
 
 
 
