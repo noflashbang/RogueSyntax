@@ -26,6 +26,14 @@ protected:
 	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right);
 	void ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right);
 	void ExecuteStringArithmeticInfix(OpCode::Constants opcode, StringObj left, StringObj right);
+	
+	void ExecuteComparisonInfix(OpCode::Constants opcode);
+	void ExecuteIntegerComparisonInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right);
+	void ExecuteDecimalComparisonInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right);
+	void ExecuteStringComparisonInfix(OpCode::Constants opcode, StringObj left, StringObj right);
+	void ExecuteBooleanComparisonInfix(OpCode::Constants opcode, BooleanObj left, BooleanObj right);
+	void ExecuteNullComparisonInfix(OpCode::Constants opcode, NullObj left, NullObj right);
+
 
 	std::string MakeOpCodeError(const std::string& message, OpCode::Constants opcode);
 

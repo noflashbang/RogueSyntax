@@ -200,6 +200,14 @@ void Compiler::NodeCompile(InfixExpression* infix)
 	{
 		Emit(OpCode::Constants::OP_LESS_THAN_EQUAL, {});
 	}
+	else if (infix->Operator == "&&")
+	{
+		Emit(OpCode::Constants::OP_BOOL_AND, {});
+	}
+	else if (infix->Operator == "||")
+	{
+		Emit(OpCode::Constants::OP_BOOL_OR, {});
+	}
 	else
 	{
 		_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownOperator, std::format("Unknown operator {}", infix->Operator)));

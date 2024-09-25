@@ -22,7 +22,9 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_GREATER_THAN, Definition{ "OP_GREATER_THAN", {} } },
 	{ OpCode::Constants::OP_GREATER_THAN_EQUAL, Definition{ "OP_GREATER_THAN_EQUAL", {} } },
 	{ OpCode::Constants::OP_LESS_THAN, Definition{ "OP_LESS_THAN", {} } },
-	{ OpCode::Constants::OP_LESS_THAN_EQUAL, Definition{ "OP_LESS_THAN_EQUAL", {} } }
+	{ OpCode::Constants::OP_LESS_THAN_EQUAL, Definition{ "OP_LESS_THAN_EQUAL", {} } },
+	{ OpCode::Constants::OP_BOOL_AND, Definition{ "OP_BOOL_AND", {} } },
+	{ OpCode::Constants::OP_BOOL_OR, Definition{ "OP_BOOL_OR", {} } },
 };
 
 std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opcode)

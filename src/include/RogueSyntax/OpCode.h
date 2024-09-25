@@ -41,6 +41,8 @@ struct OpCode
 		OP_GREATER_THAN_EQUAL,
 		OP_LESS_THAN,
 		OP_LESS_THAN_EQUAL,
+		OP_BOOL_AND,
+		OP_BOOL_OR
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;

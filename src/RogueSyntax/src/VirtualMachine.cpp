@@ -45,6 +45,18 @@ void RogueVM::Run()
 			ExecuteArithmeticInfix(opcode);
 			break;
 		}
+		case OpCode::Constants::OP_EQUAL:
+		case OpCode::Constants::OP_NOT_EQUAL:
+		case OpCode::Constants::OP_GREATER_THAN:
+		case OpCode::Constants::OP_GREATER_THAN_EQUAL:
+		case OpCode::Constants::OP_LESS_THAN:
+		case OpCode::Constants::OP_LESS_THAN_EQUAL:
+		case OpCode::Constants::OP_BOOL_AND:
+		case OpCode::Constants::OP_BOOL_OR:
+		{
+			ExecuteComparisonInfix(opcode);
+			break;
+		}
 		case OpCode::Constants::OP_POP:
 		{
 			Pop();
@@ -244,6 +256,203 @@ void RogueVM::ExecuteStringArithmeticInfix(OpCode::Constants opcode, StringObj l
 	}
 }
 
+void RogueVM::ExecuteComparisonInfix(OpCode::Constants opcode)
+{
+	auto right = Pop();
+	auto left = Pop();
+	if (left->Type() != right->Type())
+	{
+		throw std::runtime_error("Type mismatch");
+	}
+	if (left->Type() == ObjectType::INTEGER_OBJ)
+	{
+		ExecuteIntegerComparisonInfix(opcode, *std::dynamic_pointer_cast<IntegerObj>(left), *std::dynamic_pointer_cast<IntegerObj>(right));
+	}
+	else if (left->Type() == ObjectType::DECIMAL_OBJ)
+	{
+		ExecuteDecimalComparisonInfix(opcode, *std::dynamic_pointer_cast<DecimalObj>(left), *std::dynamic_pointer_cast<DecimalObj>(right));
+	}
+	else if (left->Type() == ObjectType::STRING_OBJ)
+	{
+		ExecuteStringComparisonInfix(opcode, *std::dynamic_pointer_cast<StringObj>(left), *std::dynamic_pointer_cast<StringObj>(right));
+	}
+	else if (left->Type() == ObjectType::BOOLEAN_OBJ)
+	{
+		ExecuteBooleanComparisonInfix(opcode, *std::dynamic_pointer_cast<BooleanObj>(left), *std::dynamic_pointer_cast<BooleanObj>(right));
+	}
+	else if (left->Type() == ObjectType::NULL_OBJ)
+	{
+		ExecuteNullComparisonInfix(opcode, *std::dynamic_pointer_cast<NullObj>(left), *std::dynamic_pointer_cast<NullObj>(right));
+	}
+	else
+	{
+		throw std::runtime_error(std::format("ExecuteComparisonInfix: Unsupported type {}", left->Type().Name));
+	}
+}
+
+void RogueVM::ExecuteIntegerComparisonInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_EQUAL:
+	{
+		auto result = left.Value == right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_NOT_EQUAL:
+	{
+		auto result = left.Value != right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_GREATER_THAN:
+	{
+		auto result = left.Value > right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
+	{
+		auto result = left.Value >= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_LESS_THAN:
+	{
+		auto result = left.Value < right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_LESS_THAN_EQUAL:
+	{
+		auto result = left.Value <= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteIntegerComparisonInfix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecuteDecimalComparisonInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_EQUAL:
+	{
+		auto result = std::abs(left.Value - right.Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_NOT_EQUAL:
+	{
+		auto result = std::abs(left.Value - right.Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_GREATER_THAN:
+	{
+		auto result = left.Value > right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
+	{
+		auto result = left.Value >= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_LESS_THAN:
+	{
+		auto result = left.Value < right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_LESS_THAN_EQUAL:
+	{
+		auto result = left.Value <= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteDecimalComparisonInfix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecuteStringComparisonInfix(OpCode::Constants opcode, StringObj left, StringObj right)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_EQUAL:
+	{
+		auto result = left.Value == right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_NOT_EQUAL:
+	{
+		auto result = left.Value != right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteStringComparisonInfix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecuteNullComparisonInfix(OpCode::Constants opcode, NullObj left, NullObj right)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_EQUAL:
+	{
+		Push(BooleanObj::TRUE_OBJ_REF);
+		break;
+	}
+	case OpCode::Constants::OP_NOT_EQUAL:
+	{
+		Push(BooleanObj::FALSE_OBJ_REF);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteNullComparisonInfix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecuteBooleanComparisonInfix(OpCode::Constants opcode, BooleanObj left, BooleanObj right)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_EQUAL:
+	{
+		auto result = left.Value == right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_NOT_EQUAL:
+	{
+		auto result = left.Value != right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_BOOL_AND:
+	{
+		auto result = left.Value && right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_BOOL_OR:
+	{
+		auto result = left.Value || right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteBooleanComparisonInfix: Unsupported opcode", opcode));
+	}
+}
+
 std::string RogueVM::MakeOpCodeError(const std::string& message, OpCode::Constants opcode)
 {
 	auto def = OpCode::Lookup(opcode);
@@ -257,3 +466,4 @@ std::string RogueVM::MakeOpCodeError(const std::string& message, OpCode::Constan
 		return std::format("{} : {}",message, definition.Name);
 	}
 }
+
