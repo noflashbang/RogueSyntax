@@ -17,7 +17,17 @@ struct OpCode
 	enum class Constants : Opcode
 	{
 		OP_CONSTANT,
+		OP_POP,
 		OP_ADD,
+		OP_SUB,
+		OP_MUL,
+		OP_DIV,
+		OP_MOD,
+		OP_BOR,
+		OP_BAND,
+		OP_BXOR,
+		OP_BLSHIFT,
+		OP_BRSHIFT,
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;

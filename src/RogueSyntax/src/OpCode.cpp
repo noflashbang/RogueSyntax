@@ -3,7 +3,17 @@
 
 const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_CONSTANT, Definition{ "OP_CONSTANT", { 2 } } },
+	{ OpCode::Constants::OP_POP,      Definition{ "OP_POP", {} } },
 	{ OpCode::Constants::OP_ADD,      Definition{ "OP_ADD", {} } },
+	{ OpCode::Constants::OP_SUB,      Definition{ "OP_SUB", {} } },
+	{ OpCode::Constants::OP_MUL,      Definition{ "OP_MUL", {} } },
+	{ OpCode::Constants::OP_DIV,      Definition{ "OP_DIV", {} } },
+	{ OpCode::Constants::OP_MOD,      Definition{ "OP_MOD", {} } },
+	{ OpCode::Constants::OP_BOR,      Definition{ "OP_BOR", {} } },
+	{ OpCode::Constants::OP_BAND,     Definition{ "OP_BAND", {} } },
+	{ OpCode::Constants::OP_BXOR,     Definition{ "OP_BXOR", {} } },
+	{ OpCode::Constants::OP_BLSHIFT,  Definition{ "OP_BLSHIFT", {} } },
+	{ OpCode::Constants::OP_BRSHIFT,  Definition{ "OP_BRSHIFT", {} } }
 };
 
 std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opcode)
@@ -50,11 +60,6 @@ std::tuple<OpCode::Constants, std::vector<int>, size_t> OpCode::ReadOperand(cons
 		throw std::runtime_error("No instructions");
 	}
 
-	if (instructions.size() < offset + 2)
-	{
-		throw std::runtime_error("No operand");
-	}
-
 	auto read = offset;
 	auto opcode = static_cast<OpCode::Constants>(instructions[offset]);
 	auto def = Lookup(opcode);
@@ -65,9 +70,15 @@ std::tuple<OpCode::Constants, std::vector<int>, size_t> OpCode::ReadOperand(cons
 	read += sizeof(Opcode);
 
 	auto definition = std::get<Definition>(def);
+
 	std::vector<int> operands;
 	for (size_t i = 0; i < definition.OperandWidths.size(); i++)
 	{
+		if (instructions.size() < read + definition.OperandWidths[i])
+		{
+			throw std::runtime_error("No operand where one expected");
+		}
+
 		auto width = definition.OperandWidths[i];
 		switch (width)
 		{
@@ -87,11 +98,6 @@ OpCode::Constants OpCode::GetOpcode(const Instructions& instructions, size_t off
 	if (instructions.size() < 2)
 	{
 		throw std::runtime_error("No instructions");
-	}
-
-	if (instructions.size() < offset + 2)
-	{
-		throw std::runtime_error("No operand");
 	}
 
 	auto read = offset;

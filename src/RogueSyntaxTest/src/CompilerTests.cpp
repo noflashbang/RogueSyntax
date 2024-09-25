@@ -157,13 +157,14 @@ TEST_CASE("Instruction String 2")
 	REQUIRE(actual == expected);
 }
 
-TEST_CASE("Simple Instructions")
+TEST_CASE("OpCode::Make tests")
 {
 	auto [opcode, operands, expected] = GENERATE(table<OpCode::Constants, std::vector<int>, std::vector<uint8_t>>(
 		{
 			{ OpCode::Constants::OP_CONSTANT, { 65534 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFE } },
 			{ OpCode::Constants::OP_CONSTANT, { 65535 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFF } },
-			{ OpCode::Constants::OP_ADD,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_ADD) } }
+			{ OpCode::Constants::OP_ADD,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_ADD) } },
+			{ OpCode::Constants::OP_POP,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_POP) } }
 		}));
 
 	CAPTURE(expected);
@@ -171,11 +172,22 @@ TEST_CASE("Simple Instructions")
 	REQUIRE(instructions == expected);
 }
 
-TEST_CASE("Complier")
+TEST_CASE("Simple arthmetic Complier test")
 {
 	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{"1+2", { 1, 2 }, {OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}), OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}), OpCode::Make(OpCode::Constants::OP_ADD, {})}}
+			{"1+2", { 1, 2 }, {OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}), OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}), OpCode::Make(OpCode::Constants::OP_ADD, {}), OpCode::Make(OpCode::Constants::OP_POP, {}) }}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Expression Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1; 2", { 1, 2 }, {OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}), OpCode::Make(OpCode::Constants::OP_POP, {}), OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}), OpCode::Make(OpCode::Constants::OP_POP, {}) }}
 		}));
 
 	CAPTURE(input);

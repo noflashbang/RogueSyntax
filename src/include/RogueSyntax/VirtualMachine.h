@@ -12,9 +12,22 @@ public:
 	~RogueVM();
 
 	void Run();
-	std::shared_ptr<IObject> GetTop() const { return _sp > 0 ? _stack[_sp-1] : NullObj::NULL_OBJ_REF; }
-	void Push(std::shared_ptr<IObject> obj) { if (_sp >= _stack.size()) { throw std::exception("Stack Overflow"); }  _stack[_sp++] = obj; }
-	std::shared_ptr<IObject> Pop() { if (_sp == 0) { throw std::exception("Stack Underflow"); } return _stack[--_sp]; }
+
+	//stack operations
+	std::shared_ptr<IObject> Top() const;
+	void Push(std::shared_ptr<IObject> obj);
+	std::shared_ptr<IObject> Pop();
+	std::shared_ptr<IObject> LastPoppped() const;
+
+	static std::shared_ptr<RogueVM> New(const ByteCode& byteCode) { return std::make_shared<RogueVM>(byteCode); }
+
+protected:
+	void ExecuteArithmeticInfix(OpCode::Constants opcode);
+	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right);
+	void ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right);
+	void ExecuteStringArithmeticInfix(OpCode::Constants opcode, StringObj left, StringObj right);
+
+	std::string MakeOpCodeError(const std::string& message, OpCode::Constants opcode);
 
 private:
 	ByteCode _byteCode;

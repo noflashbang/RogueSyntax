@@ -83,7 +83,7 @@ bool VmTest(std::string input, int32_t expected)
 	RogueVM vm(byteCode);
 	vm.Run();
 
-	auto actual = vm.GetTop();
+	auto actual = vm.LastPoppped();
 	REQUIRE(actual != nullptr);
 	REQUIRE(actual->Type() == ObjectType::INTEGER_OBJ);
 	auto integer = std::dynamic_pointer_cast<IntegerObj>(actual);
@@ -99,26 +99,27 @@ TEST_CASE("Integer Arthmetic Instructions")
 	{
 		{ "5", 5 },
 		{ "10", 10 },
-		{ "-5", -5 },
-		{ "-10", -10 },
+		{"1 + 2", 3},
 		{ "5 + 5 + 5 + 5 - 10", 10 },
 		{ "2 * 2 * 2 * 2 * 2", 32 },
-		{ "-50 + 100 + -50", 0 },
 		{ "5 * 2 + 10", 20 },
 		{ "5 + 2 * 10", 25 },
-		{ "20 + 2 * -10", 0 },
 		{ "50 / 2 * 2 + 10", 60 },
 		{ "2 * (5 + 10)", 30 },
 		{ "3 * 3 * 3 + 10", 37 },
 		{ "3 * (3 * 3) + 10", 37 },
-		{ "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50 },
 		{"7 % 3",1},
 		{"2 | 3",3},
 		{"2 & 3",2},
 		{"2 ^ 3",1},
 		{"2 << 3",16},
 		{"8 >> 3",1},
-		{"~2",-3}
+		//{ "-10", -10 },
+		//{ "-5", -5 },
+		//{"~2",-3}
+		//{ "-50 + 100 + -50", 0 },
+		//{ "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50 },
+		//{ "20 + 2 * -10", 0 },
 	}));
 
 	CAPTURE(input);

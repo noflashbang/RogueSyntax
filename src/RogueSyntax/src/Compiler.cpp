@@ -77,6 +77,7 @@ void Compiler::NodeCompile(ExpressionStatement* expression)
 	{
 		return;
 	}
+	Emit(OpCode::Constants::OP_POP, {});
 }
 
 void Compiler::NodeCompile(ReturnStatement* ret)
@@ -100,14 +101,23 @@ void Compiler::NodeCompile(IntegerLiteral* integer)
 
 void Compiler::NodeCompile(BooleanLiteral* boolean)
 {
+	auto obj = BooleanObj::New(boolean->Value);
+	auto index = AddConstant(obj);
+	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
 void Compiler::NodeCompile(StringLiteral* string)
 {
+	auto obj = StringObj::New(string->Value);
+	auto index = AddConstant(obj);
+	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
 void Compiler::NodeCompile(DecimalLiteral* decimal)
 {
+	auto obj = DecimalObj::New(decimal->Value);
+	auto index = AddConstant(obj);
+	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
 void Compiler::NodeCompile(PrefixExpression* prefix)
@@ -134,39 +144,39 @@ void Compiler::NodeCompile(InfixExpression* infix)
 	}
 	else if (infix->Operator == "-")
 	{
-
+		Emit(OpCode::Constants::OP_SUB, {});
 	}
 	else if (infix->Operator == "*")
 	{
-
+		Emit(OpCode::Constants::OP_MUL, {});
 	}
 	else if (infix->Operator == "/")
 	{
-
+		Emit(OpCode::Constants::OP_DIV, {});
 	}
-	else if (infix->Operator == "==")
+	else if (infix->Operator == "%")
 	{
-
+		Emit(OpCode::Constants::OP_MOD, {});
 	}
-	else if (infix->Operator == "!=")
+	else if (infix->Operator == "|")
 	{
-
+		Emit(OpCode::Constants::OP_BOR, {});
 	}
-	else if (infix->Operator == "<")
+	else if (infix->Operator == "&")
 	{
-
+		Emit(OpCode::Constants::OP_BAND, {});
 	}
-	else if (infix->Operator == ">")
+	else if (infix->Operator == "^")
 	{
-
+		Emit(OpCode::Constants::OP_BXOR, {});
 	}
-	else if (infix->Operator == "<=")
+	else if (infix->Operator == "<<")
 	{
-
+		Emit(OpCode::Constants::OP_BLSHIFT, {});
 	}
-	else if (infix->Operator == ">=")
+	else if (infix->Operator == ">>")
 	{
-
+		Emit(OpCode::Constants::OP_BRSHIFT, {});
 	}
 	else
 	{
