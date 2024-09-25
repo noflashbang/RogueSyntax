@@ -101,9 +101,7 @@ void Compiler::NodeCompile(IntegerLiteral* integer)
 
 void Compiler::NodeCompile(BooleanLiteral* boolean)
 {
-	auto obj = BooleanObj::New(boolean->Value);
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	boolean->Value ? Emit(OpCode::Constants::OP_TRUE, {}) : Emit(OpCode::Constants::OP_FALSE, {});
 }
 
 void Compiler::NodeCompile(StringLiteral* string)
@@ -178,6 +176,30 @@ void Compiler::NodeCompile(InfixExpression* infix)
 	{
 		Emit(OpCode::Constants::OP_BRSHIFT, {});
 	}
+	else if (infix->Operator == "==")
+	{
+		Emit(OpCode::Constants::OP_EQUAL, {});
+	}
+	else if (infix->Operator == "!=")
+	{
+		Emit(OpCode::Constants::OP_NOT_EQUAL, {});
+	}
+	else if (infix->Operator == ">")
+	{
+		Emit(OpCode::Constants::OP_GREATER_THAN, {});
+	}
+	else if (infix->Operator == ">=")
+	{
+		Emit(OpCode::Constants::OP_GREATER_THAN_EQUAL, {});
+	}
+	else if (infix->Operator == "<")
+	{
+		Emit(OpCode::Constants::OP_LESS_THAN, {});
+	}
+	else if (infix->Operator == "<=")
+	{
+		Emit(OpCode::Constants::OP_LESS_THAN_EQUAL, {});
+	}
 	else
 	{
 		_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownOperator, std::format("Unknown operator {}", infix->Operator)));
@@ -210,6 +232,7 @@ void Compiler::NodeCompile(HashLiteral* hash)
 
 void Compiler::NodeCompile(NullLiteral* null)
 {
+	Emit(OpCode::Constants::OP_NULL, {});
 }
 
 void Compiler::NodeCompile(WhileExpression* whileExp)

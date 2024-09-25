@@ -164,7 +164,24 @@ TEST_CASE("OpCode::Make tests")
 			{ OpCode::Constants::OP_CONSTANT, { 65534 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFE } },
 			{ OpCode::Constants::OP_CONSTANT, { 65535 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFF } },
 			{ OpCode::Constants::OP_ADD,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_ADD) } },
-			{ OpCode::Constants::OP_POP,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_POP) } }
+			{ OpCode::Constants::OP_POP,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_POP) } },
+			{ OpCode::Constants::OP_TRUE,     { },       { static_cast<uint8_t>(OpCode::Constants::OP_TRUE) } },
+			{ OpCode::Constants::OP_FALSE,    { },       { static_cast<uint8_t>(OpCode::Constants::OP_FALSE) } },
+			{ OpCode::Constants::OP_EQUAL,    { },       { static_cast<uint8_t>(OpCode::Constants::OP_EQUAL) } },
+			{ OpCode::Constants::OP_NOT_EQUAL,{ },       { static_cast<uint8_t>(OpCode::Constants::OP_NOT_EQUAL) } },
+			{ OpCode::Constants::OP_GREATER_THAN, { },   { static_cast<uint8_t>(OpCode::Constants::OP_GREATER_THAN) } },
+			{ OpCode::Constants::OP_LESS_THAN, { },      { static_cast<uint8_t>(OpCode::Constants::OP_LESS_THAN) } },
+			{ OpCode::Constants::OP_GREATER_THAN_EQUAL, { }, { static_cast<uint8_t>(OpCode::Constants::OP_GREATER_THAN_EQUAL) } },
+			{ OpCode::Constants::OP_LESS_THAN_EQUAL, { }, { static_cast<uint8_t>(OpCode::Constants::OP_LESS_THAN_EQUAL) } },
+			{ OpCode::Constants::OP_SUB, { }, { static_cast<uint8_t>(OpCode::Constants::OP_SUB) } },
+			{ OpCode::Constants::OP_MUL, { }, { static_cast<uint8_t>(OpCode::Constants::OP_MUL) } },
+			{ OpCode::Constants::OP_DIV, { }, { static_cast<uint8_t>(OpCode::Constants::OP_DIV) } },
+			{ OpCode::Constants::OP_MOD, { }, { static_cast<uint8_t>(OpCode::Constants::OP_MOD) } },
+			{ OpCode::Constants::OP_BOR, { }, { static_cast<uint8_t>(OpCode::Constants::OP_BOR) } },
+			{ OpCode::Constants::OP_BAND, { }, { static_cast<uint8_t>(OpCode::Constants::OP_BAND) } },
+			{ OpCode::Constants::OP_BXOR, { }, { static_cast<uint8_t>(OpCode::Constants::OP_BXOR) } },
+			{ OpCode::Constants::OP_BLSHIFT, { }, { static_cast<uint8_t>(OpCode::Constants::OP_BLSHIFT) } },
+			{ OpCode::Constants::OP_BRSHIFT, { }, { static_cast<uint8_t>(OpCode::Constants::OP_BRSHIFT) } }
 		}));
 
 	CAPTURE(expected);
@@ -172,25 +189,308 @@ TEST_CASE("OpCode::Make tests")
 	REQUIRE(instructions == expected);
 }
 
-TEST_CASE("Simple arthmetic Complier test")
-{
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
-		{
-			{"1+2", { 1, 2 }, {OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}), OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}), OpCode::Make(OpCode::Constants::OP_ADD, {}), OpCode::Make(OpCode::Constants::OP_POP, {}) }}
-		}));
-
-	CAPTURE(input);
-	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
-}
-
 TEST_CASE("Expression Complier test")
 {
 	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{"1; 2", { 1, 2 }, {OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}), OpCode::Make(OpCode::Constants::OP_POP, {}), OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}), OpCode::Make(OpCode::Constants::OP_POP, {}) }}
+			{"1; 2", { 1, 2 }, 
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_POP, {}) 
+				}
+			}
 		}));
 
 	CAPTURE(input);
 	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
 }
 
+TEST_CASE("Greaterthan Comparison Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 > 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("LessThan Comparison Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 < 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Equal Comparison Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 == 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("NotEqual Comparison Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 != 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_NOT_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("GreaterThanOrEqual Comparison Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 >= 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_GREATER_THAN_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("LessThanOrEqual Comparison Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 <= 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_LESS_THAN_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Addition Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 + 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Subtraction Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 - 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_SUB, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Multiplication Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 * 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_MUL, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Division Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 / 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_DIV, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Modulus Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 % 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_MOD, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Bitwise OR Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 | 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_BOR, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Bitwise AND Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 & 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_BAND, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Bitwise XOR Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 ^ 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_BXOR, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Bitwise Left Shift Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 << 2", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_BLSHIFT, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Bitwise Right Shift Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"8 >> 2", { 8, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_BRSHIFT, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}

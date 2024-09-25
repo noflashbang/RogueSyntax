@@ -50,6 +50,16 @@ void RogueVM::Run()
 			Pop();
 			break;
 		}
+		case OpCode::Constants::OP_TRUE:
+		{
+			Push(BooleanObj::TRUE_OBJ_REF);
+			break;
+		}
+		case OpCode::Constants::OP_FALSE:
+		{
+			Push(BooleanObj::FALSE_OBJ_REF);
+			break;
+		}
 		default:
 			throw std::runtime_error("Unknown opcode");
 		}

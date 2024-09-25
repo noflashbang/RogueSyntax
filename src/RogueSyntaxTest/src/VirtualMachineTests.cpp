@@ -51,7 +51,7 @@ bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>&
 	return true;
 }
 
-bool VmTest(std::string input, int32_t expected)
+bool VmTest(std::string input, ConstantValue expected)
 {
 	Compiler compiler;
 	Lexer lexer(input);
@@ -85,17 +85,12 @@ bool VmTest(std::string input, int32_t expected)
 
 	auto actual = vm.LastPoppped();
 	REQUIRE(actual != nullptr);
-	REQUIRE(actual->Type() == ObjectType::INTEGER_OBJ);
-	auto integer = std::dynamic_pointer_cast<IntegerObj>(actual);
-	REQUIRE(integer != nullptr);
-	REQUIRE(integer->Value == expected);
-
-	return true;
+	return TestConstant(expected, actual);
 }
 
 TEST_CASE("Integer Arthmetic Instructions")
 {
-	auto [input, expected] = GENERATE(table<std::string, int32_t>(
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
 	{
 		{ "5", 5 },
 		{ "10", 10 },
@@ -121,6 +116,20 @@ TEST_CASE("Integer Arthmetic Instructions")
 		//{ "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50 },
 		//{ "20 + 2 * -10", 0 },
 	}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Boolean Arthmetic Instructions")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{ "true", true },
+			{ "false", false },
+			//{ "0 < 5", true },
+			//{ "5 < 0", false },
+		}));
 
 	CAPTURE(input);
 	REQUIRE(VmTest(input, expected));

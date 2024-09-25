@@ -3,6 +3,9 @@
 
 const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_CONSTANT, Definition{ "OP_CONSTANT", { 2 } } },
+	{ OpCode::Constants::OP_FALSE,    Definition{ "OP_FALSE", {} } },
+	{ OpCode::Constants::OP_TRUE,     Definition{ "OP_TRUE", {} } },
+	{ OpCode::Constants::OP_NULL,     Definition{ "OP_NULL", {} } },
 	{ OpCode::Constants::OP_POP,      Definition{ "OP_POP", {} } },
 	{ OpCode::Constants::OP_ADD,      Definition{ "OP_ADD", {} } },
 	{ OpCode::Constants::OP_SUB,      Definition{ "OP_SUB", {} } },
@@ -13,7 +16,13 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_BAND,     Definition{ "OP_BAND", {} } },
 	{ OpCode::Constants::OP_BXOR,     Definition{ "OP_BXOR", {} } },
 	{ OpCode::Constants::OP_BLSHIFT,  Definition{ "OP_BLSHIFT", {} } },
-	{ OpCode::Constants::OP_BRSHIFT,  Definition{ "OP_BRSHIFT", {} } }
+	{ OpCode::Constants::OP_BRSHIFT,  Definition{ "OP_BRSHIFT", {} } },
+	{ OpCode::Constants::OP_EQUAL,    Definition{ "OP_EQUAL", {} } },
+	{ OpCode::Constants::OP_NOT_EQUAL,Definition{ "OP_NOT_EQUAL", {} } },
+	{ OpCode::Constants::OP_GREATER_THAN, Definition{ "OP_GREATER_THAN", {} } },
+	{ OpCode::Constants::OP_GREATER_THAN_EQUAL, Definition{ "OP_GREATER_THAN_EQUAL", {} } },
+	{ OpCode::Constants::OP_LESS_THAN, Definition{ "OP_LESS_THAN", {} } },
+	{ OpCode::Constants::OP_LESS_THAN_EQUAL, Definition{ "OP_LESS_THAN_EQUAL", {} } }
 };
 
 std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opcode)

@@ -16,8 +16,14 @@ struct OpCode
 
 	enum class Constants : Opcode
 	{
+		//types
 		OP_CONSTANT,
+		OP_TRUE,
+		OP_FALSE,
+		OP_NULL,
+		//stack
 		OP_POP,
+		//arithmetic
 		OP_ADD,
 		OP_SUB,
 		OP_MUL,
@@ -28,6 +34,13 @@ struct OpCode
 		OP_BXOR,
 		OP_BLSHIFT,
 		OP_BRSHIFT,
+		//comparison
+		OP_EQUAL,
+		OP_NOT_EQUAL,
+		OP_GREATER_THAN,
+		OP_GREATER_THAN_EQUAL,
+		OP_LESS_THAN,
+		OP_LESS_THAN_EQUAL,
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;
