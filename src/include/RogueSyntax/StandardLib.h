@@ -12,7 +12,9 @@
 #include <map>
 #include <unordered_map>
 #include <functional>
+#include <span>
 #include <ranges>
+#include <string_view>
 #include <fstream>
 #include <sstream>
 #include <format>

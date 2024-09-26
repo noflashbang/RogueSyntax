@@ -4,7 +4,7 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
-typedef std::variant<int, std::string, float, bool> ConstantValue;
+typedef std::variant<int, std::string, float, bool, NullObj> ConstantValue;
 
 template<typename T, typename R>
 bool TestConstantValues(ConstantValue expected, std::shared_ptr<IObject> actual)
@@ -43,6 +43,13 @@ bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>&
 	else if (std::holds_alternative<bool>(expected))
 	{
 		return TestConstantValues<bool, BooleanObj>(expected, actual);
+	}
+	else if (std::holds_alternative<NullObj>(expected))
+	{
+		if (typeid(*(actual.get())) != typeid(NullObj))
+		{
+			throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", "null", actual->Inspect()));
+		}
 	}
 	else
 	{
@@ -178,6 +185,24 @@ TEST_CASE("Boolean Arthmetic Instructions")
 			{ "false || false", false },
 			{ "!true", false },
 			{ "!false", true },
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Conditional Instructions")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{ "if(true) {5} ", 5 },
+			{ "if(true) {5} else {10} ", 5 },
+			{ "if(false) {5} else {10} ", 10 },
+			{ "if(1) {5} else {10} ", 5 },
+			{ "if(1 < 2) {5} else {10} ", 5 },
+			{ "if(1 > 2) {5} else {10} ", 10 },
+			{ "if(1 > 2) {5} ", NullObj()},
+			{ "if(1 < 2) {5} ", 5 },
 		}));
 
 	CAPTURE(input);

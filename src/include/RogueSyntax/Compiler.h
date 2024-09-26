@@ -41,6 +41,12 @@ public:
 	int Emit(OpCode::Constants opcode, std::vector<int> operands);
 	int AddInstruction(Instructions instructions);
 
+	void RemoveLastPop();
+	bool LastInstructionIs(OpCode::Constants opcode);
+	void RemoveLastInstruction();
+	void ChangeOperand(int position, int operand);
+	void ReplaceInstruction(int position, Instructions instructions);
+
 	std::vector<std::string> GetErrors() const { return _errors; };
 	inline bool HasErrors() const { return !_errors.empty(); };
 
@@ -72,6 +78,11 @@ public:
 private:
 	Instructions _instructions;
 	std::vector<std::shared_ptr<IObject>> _constants;
+	
+	void SetLastInstruction(const Instructions& instruction);
+
+	Instructions _lastInstruction;
+	Instructions _previousLastInstruction;
 
 	std::vector<std::string> _errors;
 	std::stack<CompilerErrorInfo> _errorStack;

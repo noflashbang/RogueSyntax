@@ -65,14 +65,16 @@ bool TestInstructions(const Instructions& expected, const Instructions& actual)
 {
 	if (expected.size() != actual.size())
 	{
-		throw std::runtime_error(std::format("Expected and actual number of instructions are not the same size. Expected={} Actual={}", expected.size(), actual.size()));
+		const auto print = OpCode::PrintInstuctionsCompared(expected, actual);
+		throw std::runtime_error(std::format("Expected and actual number of instructions are not the same size. Expected={} Actual={}\n{}", expected.size(), actual.size(), print));
 	}
 
 	for (size_t i = 0; i < expected.size(); i++)
 	{
 		if (expected[i] != actual[i])
 		{
-			throw std::runtime_error(std::format("Expected and actual instructions are not the same @offset{}. Expected={} Actual={}", i, expected[i], actual[i]));
+			const auto print = OpCode::PrintInstuctionsCompared(expected, actual);
+			throw std::runtime_error(std::format("Expected and actual instructions are not the same @offset{}. Expected={} Actual={}\n{}", i, expected[i], actual[i], print));
 		}
 	}
 	return true;
@@ -135,7 +137,7 @@ TEST_CASE("Instruction String")
 		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {65535}) }
 	};
 
-	std::string expected = { "0000:  OP_CONSTANT            1\n0003:  OP_CONSTANT            2\n0006:  OP_CONSTANT        65535\n" };
+	std::string expected = { "0000:  OP_CONSTANT            1\n0003:  OP_CONSTANT            2\n0006:  OP_CONSTANT        65535" };
 
 	auto flattened = ConcatInstructions(instructions);
 	auto actual = OpCode::PrintInstructions(flattened);
@@ -150,7 +152,7 @@ TEST_CASE("Instruction String 2")
 		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}) }
 	};
 
-	std::string expected = { "0000:  OP_ADD          \n0001:  OP_CONSTANT            2\n0004:  OP_CONSTANT            3\n" };
+	std::string expected = { "0000:  OP_ADD          \n0001:  OP_CONSTANT            2\n0004:  OP_CONSTANT            3" };
 
 	auto flattened = ConcatInstructions(instructions);
 	auto actual = OpCode::PrintInstructions(flattened);
@@ -332,6 +334,31 @@ TEST_CASE("Addition Complier test")
 	CAPTURE(input);
 	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
 }
+
+TEST_CASE("Addition 2 Complier test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"1 + 2 + 3 + 4 + 5", { 1, 2, 3, 4, 5 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {4}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
 
 TEST_CASE("Subtraction Complier test")
 {
@@ -582,3 +609,46 @@ TEST_CASE("BNOT test")
 	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
 }
 
+TEST_CASE("Conditional Test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "if (true) { 10 }; 3333;", { 10, 3333 },
+				{
+					OpCode::Make(OpCode::Constants::OP_TRUE, {}),             //0000
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 10 }),//0001
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),        //0004
+					OpCode::Make(OpCode::Constants::OP_JUMP, {11}),           //0007
+					OpCode::Make(OpCode::Constants::OP_NULL, {}),             //0010
+					OpCode::Make(OpCode::Constants::OP_POP, {}),              //0011
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),        //0012
+					OpCode::Make(OpCode::Constants::OP_POP, {}) 		      //0015
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Conditional with Else Test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "if (true) { 10 } else { 20 }; 3333;", { 10, 20, 3333 },
+				{
+					OpCode::Make(OpCode::Constants::OP_TRUE, {}),             //0000
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 10}), //0001
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),        //0004
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 13 }),         //0007
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),        //0010
+					OpCode::Make(OpCode::Constants::OP_POP, {}),		      //0013
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),        //0014
+					OpCode::Make(OpCode::Constants::OP_POP, {}) 		      //0017
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}

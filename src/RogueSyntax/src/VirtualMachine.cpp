@@ -79,6 +79,39 @@ void RogueVM::Run()
 			Push(BooleanObj::FALSE_OBJ_REF);
 			break;
 		}
+		case OpCode::Constants::OP_JUMP:
+		{
+			auto pos = instructions[ip] << 8 | instructions[ip + 1];
+			ip = pos;
+			break;
+		}
+		case OpCode::Constants::OP_JUMP_IF_FALSE:
+		{
+			auto pos = instructions[ip] << 8 | instructions[ip + 1];
+			ip += 2;
+			auto condition = Pop();
+			if (condition->Type() == ObjectType::BOOLEAN_OBJ)
+			{
+				if (condition == BooleanObj::FALSE_OBJ_REF)
+				{
+					ip = pos;
+				}
+			}
+			else
+			{
+				auto coerced = _coercer.EvalAsBoolean(condition.get());
+				if (coerced == BooleanObj::FALSE_OBJ_REF)
+				{
+					ip = pos;
+				}
+			}
+			break;
+		}
+		case OpCode::Constants::OP_NULL:
+		{
+			Push(NullObj::NULL_OBJ_REF);
+			break;
+		}
 		default:
 			throw std::runtime_error("Unknown opcode");
 		}

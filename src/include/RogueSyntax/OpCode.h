@@ -47,7 +47,9 @@ struct OpCode
 		OP_NEGATE,
 		OP_NOT,
 		OP_BNOT,
-
+		//jump
+		OP_JUMP,
+		OP_JUMP_IF_FALSE,
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;
@@ -56,6 +58,8 @@ struct OpCode
 	static std::tuple<Constants, std::vector<int>, size_t> ReadOperand(const Instructions& instructions, size_t offset);
 	static Constants GetOpcode(const Instructions& instructions, size_t offset);
 	static std::string PrintInstructions(const Instructions& instructions);
+
+	static std::string PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions);
 };
 
 

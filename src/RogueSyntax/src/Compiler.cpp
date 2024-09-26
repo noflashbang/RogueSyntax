@@ -43,7 +43,42 @@ int Compiler::AddInstruction(Instructions instructions)
 {
 	auto position = _instructions.size();
 	_instructions.insert(_instructions.end(), instructions.begin(), instructions.end());
+
+	SetLastInstruction(instructions);
 	return position;
+}
+
+void Compiler::RemoveLastPop()
+{
+	if (LastInstructionIs(OpCode::Constants::OP_POP))
+	{
+		RemoveLastInstruction();
+	}
+}
+
+bool Compiler::LastInstructionIs(OpCode::Constants opcode)
+{
+	return _lastInstruction[0] == static_cast<uint8_t>(opcode);
+}
+
+void Compiler::RemoveLastInstruction()
+{
+	_instructions.resize(_instructions.size() - _lastInstruction.size());
+	SetLastInstruction(_previousLastInstruction);
+}
+
+void Compiler::ChangeOperand(int position, int operand)
+{
+	auto instruction = OpCode::Make(static_cast<OpCode::Constants>(_instructions[position]), { operand });
+	ReplaceInstruction(position, instruction);
+}
+
+void Compiler::ReplaceInstruction(int position, Instructions instructions)
+{
+	for (const auto& instr : instructions)
+	{
+		_instructions[position++] = instr;
+	}
 }
 
 void Compiler::NodeCompile(Program* program)
@@ -238,6 +273,42 @@ void Compiler::NodeCompile(InfixExpression* infix)
 
 void Compiler::NodeCompile(IfExpression* ifExpr)
 {
+	ifExpr->Condition->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	//
+	ifExpr->Consequence->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	RemoveLastPop();
+	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { 9999 });
+
+	auto afterConsequencePos = _instructions.size();
+	ChangeOperand(jumpNotTruthyPos, afterConsequencePos);
+	
+	if (ifExpr->Alternative != nullptr)
+	{
+		ifExpr->Alternative->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+		RemoveLastPop();
+	}
+	else
+	{
+		Emit(OpCode::Constants::OP_NULL, {});
+	}
+
+	auto afterAlternativePos = _instructions.size();
+	ChangeOperand(jumpPos, afterAlternativePos);
 }
 
 void Compiler::NodeCompile(FunctionLiteral* function)
@@ -286,3 +357,8 @@ std::shared_ptr<Compiler> Compiler::New()
 	return std::make_shared<Compiler>();
 }
 
+void Compiler::SetLastInstruction(const Instructions& instruction)
+{
+	_previousLastInstruction = _lastInstruction;
+	_lastInstruction = instruction;
+}

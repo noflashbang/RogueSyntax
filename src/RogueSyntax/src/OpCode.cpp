@@ -28,6 +28,8 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_NEGATE, Definition{ "OP_NEGATE", {} } },
 	{ OpCode::Constants::OP_NOT, Definition{ "OP_NOT", {} } },
 	{ OpCode::Constants::OP_BNOT, Definition{ "OP_BNOT", {} } },
+	{ OpCode::Constants::OP_JUMP, Definition{ "OP_JUMP", { 2 } } },
+	{ OpCode::Constants::OP_JUMP_IF_FALSE, Definition{ "OP_JUMP_IF_FALSE", { 2 } } },
 };
 
 std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opcode)
@@ -134,6 +136,51 @@ std::string OpCode::PrintInstructions(const Instructions& instructions)
 		}
 		result += "\n";
 		offset = readOffset;
+	}
+	result.pop_back();
+	return result;
+}
+
+std::string OpCode::PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions)
+{
+	using namespace std::literals;
+	std::string result;
+	
+	auto left = OpCode::PrintInstructions(instructions);
+	auto right = OpCode::PrintInstructions(otherInstructions);
+	constexpr auto delimiter{ "\n"sv  };
+	auto leftLines = std::views::split(left, delimiter);
+	auto rightLines = std::views::split(right, delimiter);
+
+	auto leftIt = leftLines.begin();
+	auto rightIt = rightLines.begin();
+
+	while (leftIt != leftLines.end() || rightIt != rightLines.end())
+	{
+		if (leftIt != leftLines.end())
+		{
+			std::string leftLine((*leftIt).begin(), (*leftIt).end());
+			result += std::format("{: <35}", leftLine);
+			++leftIt;
+		}
+		else
+		{
+			result += std::format("{:->35}", "");
+		}
+
+		result += " | ";
+
+		if (rightIt != rightLines.end())
+		{
+			std::string rightLine((*rightIt).begin(), (*rightIt).end());
+			result += std::format("{: <35}", rightLine);
+			++rightIt;
+		}
+		else
+		{
+			result += std::format("{:->35}", "");
+		}
+		result += "\n";
 	}
 	return result;
 }
