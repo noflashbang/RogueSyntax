@@ -34,10 +34,15 @@ protected:
 	void ExecuteBooleanComparisonInfix(OpCode::Constants opcode, BooleanObj left, BooleanObj right);
 	void ExecuteNullComparisonInfix(OpCode::Constants opcode, NullObj left, NullObj right);
 
+	void ExecutePrefix(OpCode::Constants opcode);
+	void ExecuteIntegerPrefix(OpCode::Constants opcode, IntegerObj obj);
+	void ExecuteDecimalPrefix(OpCode::Constants opcode, DecimalObj obj);
+	void ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj);
 
 	std::string MakeOpCodeError(const std::string& message, OpCode::Constants opcode);
 
 private:
+	TypeCoercer _coercer;
 	ByteCode _byteCode;
 	std::array<std::shared_ptr<IObject>, STACK_SIZE> _stack;
 	uint16_t _sp = 0;

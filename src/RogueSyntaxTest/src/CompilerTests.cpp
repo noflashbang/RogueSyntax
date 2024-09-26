@@ -20,7 +20,7 @@ bool TestConstantValues(ConstantValue expected, std::shared_ptr<IObject> actual)
 		}
 		else
 		{
-			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(T).name(), typeid(R).name()));
+			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(R).name(), typeid(*(actual.get())).name()));
 		}
 	}
 	return true;
@@ -494,3 +494,91 @@ TEST_CASE("Bitwise Right Shift Complier test")
 	CAPTURE(input);
 	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
 }
+
+TEST_CASE("Negate test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "-1", { 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_NEGATE, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Not test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "!true", { },
+				{
+					OpCode::Make(OpCode::Constants::OP_TRUE, {}),
+					OpCode::Make(OpCode::Constants::OP_NOT, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Boolean AND test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "true && false", { },
+				{
+					OpCode::Make(OpCode::Constants::OP_TRUE, {}),
+					OpCode::Make(OpCode::Constants::OP_FALSE, {}),
+					OpCode::Make(OpCode::Constants::OP_BOOL_AND, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Boolean OR test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "true || false", { },
+				{
+					OpCode::Make(OpCode::Constants::OP_TRUE, {}),
+					OpCode::Make(OpCode::Constants::OP_FALSE, {}),
+					OpCode::Make(OpCode::Constants::OP_BOOL_OR, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("BNOT test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "~5", { 5 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_BNOT, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+

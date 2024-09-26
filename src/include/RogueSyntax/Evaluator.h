@@ -63,11 +63,6 @@ protected:
 	std::shared_ptr<IObject> EvalDecimalInfixExpression(const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const;
 	std::shared_ptr<IObject> EvalStringInfixExpression(const Token& optor, const StringObj* const left, const StringObj* const right) const;
 
-	//convertion functions - the left hand type is the type of the object that the coercion is being applied to
-	bool CanCoerceTypes(const IObject* const left, const IObject* const right) const;
-	std::tuple<std::shared_ptr<IObject>, std::shared_ptr<IObject>> CoerceTypes(const Token& context, const IObject* const left, const IObject* const right) const;
-	std::shared_ptr<IObject>  CoerceThis(const Token& context, const IObject* const source, const IObject* const target) const;
-
 	std::shared_ptr<IObject> EvalAsBoolean(const Token& context, const IObject* const obj) const;
 	std::shared_ptr<IObject> EvalAsDecimal(const Token& context, const IObject* const obj) const;
 	std::shared_ptr<IObject> EvalAsInteger(const Token& context, const IObject* const obj) const;
@@ -75,7 +70,7 @@ protected:
 	std::shared_ptr<Environment> EvalEnvironment;
 	std::shared_ptr<BuiltIn> EvalBuiltIn;
 
-	static std::shared_ptr<IObject> MakeError(const std::string& message, const Token& token);
+
 	static std::shared_ptr<IObject> UnwrapIfReturnObj(const std::shared_ptr<IObject>& input);
 	static std::shared_ptr<IObject> UnwrapIfIdentObj(const std::shared_ptr<IObject>& input);
 
@@ -83,7 +78,6 @@ protected:
 
 
 private:
-	std::map<ObjectType, std::function<std::shared_ptr<IObject>(const Token& context, const IObject* const right)>> _coercionMap;
-	std::map<ObjectType, std::map<ObjectType, ObjectType>> _coercionTable;
+	TypeCoercer _coercer;
 };
 

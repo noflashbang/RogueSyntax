@@ -25,6 +25,9 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_LESS_THAN_EQUAL, Definition{ "OP_LESS_THAN_EQUAL", {} } },
 	{ OpCode::Constants::OP_BOOL_AND, Definition{ "OP_BOOL_AND", {} } },
 	{ OpCode::Constants::OP_BOOL_OR, Definition{ "OP_BOOL_OR", {} } },
+	{ OpCode::Constants::OP_NEGATE, Definition{ "OP_NEGATE", {} } },
+	{ OpCode::Constants::OP_NOT, Definition{ "OP_NOT", {} } },
+	{ OpCode::Constants::OP_BNOT, Definition{ "OP_BNOT", {} } },
 };
 
 std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opcode)

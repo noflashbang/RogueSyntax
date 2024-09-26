@@ -57,6 +57,13 @@ void RogueVM::Run()
 			ExecuteComparisonInfix(opcode);
 			break;
 		}
+		case OpCode::Constants::OP_NEGATE:
+		case OpCode::Constants::OP_NOT:
+		case OpCode::Constants::OP_BNOT:
+		{
+			ExecutePrefix(opcode);
+			break;
+		}
 		case OpCode::Constants::OP_POP:
 		{
 			Pop();
@@ -117,7 +124,18 @@ void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 	auto left = Pop();
 	if (left->Type() != right->Type())
 	{
-		throw std::runtime_error("Type mismatch");
+		if (_coercer.CanCoerceTypes(left.get(), right.get()))
+		{
+			auto [left_c, right_c] = _coercer.CoerceTypes(left.get(), right.get());
+			Push(left_c);
+			Push(right_c);
+			ExecuteArithmeticInfix(opcode);
+			return;
+		}
+		else
+		{
+			throw std::runtime_error(std::format("ExecuteArithmeticInfix: Unsupported types {} {}", left->Type().Name, right->Type().Name));
+		}
 	}
 	if (left->Type() == ObjectType::INTEGER_OBJ)
 	{
@@ -233,6 +251,12 @@ void RogueVM::ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, DecimalObj
 	case OpCode::Constants::OP_DIV:
 	{
 		auto result = DecimalObj::New(left.Value / right.Value);
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_MOD:
+	{
+		auto result = DecimalObj::New(std::fmod(left.Value, right.Value));
 		Push(result);
 		break;
 	}
@@ -450,6 +474,90 @@ void RogueVM::ExecuteBooleanComparisonInfix(OpCode::Constants opcode, BooleanObj
 	}
 	default:
 		throw std::runtime_error(MakeOpCodeError("ExecuteBooleanComparisonInfix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecutePrefix(OpCode::Constants opcode)
+{
+	auto right = Pop();
+	if (right->Type() == ObjectType::INTEGER_OBJ)
+	{
+		ExecuteIntegerPrefix(opcode, *std::dynamic_pointer_cast<IntegerObj>(right));
+	}
+	else if (right->Type() == ObjectType::DECIMAL_OBJ)
+	{
+		ExecuteDecimalPrefix(opcode, *std::dynamic_pointer_cast<DecimalObj>(right));
+	}
+	else if (right->Type() == ObjectType::BOOLEAN_OBJ)
+	{
+		ExecuteBooleanPrefix(opcode, *std::dynamic_pointer_cast<BooleanObj>(right));
+	}
+	else
+	{
+		throw std::runtime_error(std::format("ExecutePrefix: Unsupported type {}", right->Type().Name));
+	}
+}
+
+void RogueVM::ExecuteIntegerPrefix(OpCode::Constants opcode, IntegerObj obj)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_NEGATE:
+	{
+		auto result = IntegerObj::New(-obj.Value);
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_NOT:
+	{
+		auto result = obj.Value == 0 ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_BNOT:
+	{
+		auto result = IntegerObj::New(~obj.Value);
+		Push(result);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteIntegerPrefix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecuteDecimalPrefix(OpCode::Constants opcode, DecimalObj obj)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_NEGATE:
+	{
+		auto result = DecimalObj::New(-obj.Value);
+		Push(result);
+		break;
+	}
+	case OpCode::Constants::OP_NOT:
+	{
+		auto result = std::abs(obj.Value) < FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteDecimalPrefix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_NOT:
+	{
+		auto result = obj.Value ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
+		Push(result);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteBooleanPrefix: Unsupported opcode", opcode));
 	}
 }
 

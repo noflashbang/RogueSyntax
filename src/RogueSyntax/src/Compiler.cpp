@@ -120,6 +120,28 @@ void Compiler::NodeCompile(DecimalLiteral* decimal)
 
 void Compiler::NodeCompile(PrefixExpression* prefix)
 {
+	prefix->Right->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	if (prefix->Operator == "-")
+	{
+		Emit(OpCode::Constants::OP_NEGATE, {});
+	}
+	else if (prefix->Operator == "!")
+	{
+		Emit(OpCode::Constants::OP_NOT, {});
+	}
+	else if (prefix->Operator == "~")
+	{
+		Emit(OpCode::Constants::OP_BNOT, {});
+	}
+	else
+	{
+		_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownOperator, std::format("Unknown operator {}", prefix->Operator)));
+	}
 }
 
 void Compiler::NodeCompile(InfixExpression* infix)

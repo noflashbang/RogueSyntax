@@ -20,7 +20,7 @@ bool TestConstantValues(ConstantValue expected, std::shared_ptr<IObject> actual)
 		}
 		else
 		{
-			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(T).name(), typeid(R).name()));
+			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(R).name(), typeid(*(actual.get())).name()));
 		}
 	}
 	return true;
@@ -109,12 +109,15 @@ TEST_CASE("Integer Arthmetic Instructions")
 		{"2 ^ 3",1},
 		{"2 << 3",16},
 		{"8 >> 3",1},
-		//{ "-10", -10 },
-		//{ "-5", -5 },
-		//{"~2",-3}
-		//{ "-50 + 100 + -50", 0 },
-		//{ "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50 },
-		//{ "20 + 2 * -10", 0 },
+		{ "-10", -10 },
+		{ "-5", -5 },
+		{"~2",-3},
+		{ "-50 + 100 + -50", 0 },
+		{ "(5 + 10 * 2 + 15 / 3) * 2 + -10", 50 },
+		{ "20 + 2 * -10", 0 },
+		{ "20d + 2 * -10", 0.0f },
+		{ "20 + 2 * -10d", 0.0f },
+
 	}));
 
 	CAPTURE(input);

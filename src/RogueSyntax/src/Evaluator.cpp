@@ -5,28 +5,6 @@
 
 Evaluator::Evaluator()
 {
-	_coercionTable[ObjectType::INTEGER_OBJ] = {
-		{ ObjectType::INTEGER_OBJ, ObjectType::INTEGER_OBJ },
-		{ ObjectType::DECIMAL_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ }
-	};
-
-	_coercionTable[ObjectType::DECIMAL_OBJ] = {
-		{ ObjectType::INTEGER_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::DECIMAL_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ }
-	};
-
-	_coercionTable[ObjectType::BOOLEAN_OBJ] = {
-		{ ObjectType::INTEGER_OBJ, ObjectType::BOOLEAN_OBJ },
-		{ ObjectType::DECIMAL_OBJ, ObjectType::BOOLEAN_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ }
-	};
-
-	_coercionMap[ObjectType::INTEGER_OBJ] = std::bind(&Evaluator::EvalAsInteger, this, std::placeholders::_1, std::placeholders::_2);
-	_coercionMap[ObjectType::DECIMAL_OBJ] = std::bind(&Evaluator::EvalAsDecimal, this, std::placeholders::_1, std::placeholders::_2);
-	_coercionMap[ObjectType::BOOLEAN_OBJ] = std::bind(&Evaluator::EvalAsBoolean, this, std::placeholders::_1, std::placeholders::_2);
-
 	EvalBuiltIn = std::make_shared<BuiltIn>();
 	EvalEnvironment = std::make_shared<Environment>();
 }
@@ -131,9 +109,9 @@ std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, cons
 	}
 	else if (left->Type() != right->Type())
 	{
-		if (CanCoerceTypes(left.get(), right.get()))
+		if (_coercer.CanCoerceTypes(left.get(), right.get()))
 		{
-			auto [left_c, right_c] = CoerceTypes(optor, left.get(), right.get());
+			auto [left_c, right_c] = _coercer.CoerceTypes(left.get(), right.get());
 			
 			result = EvalInfixExpression(optor, left_c, right_c);
 		}
@@ -216,156 +194,6 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 	}
 	return result;
 
-}
-
-bool Evaluator::CanCoerceTypes(const IObject* const left, const IObject* const right) const
-{
-	auto leftCoercion = _coercionTable.find(left->Type());
-	if (leftCoercion != _coercionTable.end())
-	{
-		auto rightCoercion = leftCoercion->second.find(right->Type());
-		if (rightCoercion != leftCoercion->second.end())
-		{
-			return true;
-		}
-	}
-}
-
-std::tuple<std::shared_ptr<IObject>, std::shared_ptr<IObject>> Evaluator::CoerceTypes(const Token& context, const IObject* const left, const IObject* const right) const
-{
-	std::string rName = right->Type().ToString();
-	std::string lName = left->Type().ToString();
-
-	std::shared_ptr<IObject> leftResult = CoerceThis(context, right, left);
-	std::shared_ptr<IObject> rightResult = CoerceThis(context, left, right);
-
-	return std::make_tuple(leftResult, rightResult);
-}
-
-std::shared_ptr<IObject> Evaluator::CoerceThis(const Token& context, const IObject* const source, const IObject* const target) const
-{
-	std::shared_ptr<IObject> result = nullptr;
-
-	auto sourceCoercion = _coercionTable.find(source->Type());
-	if (sourceCoercion != _coercionTable.end())
-	{
-		auto targetCoercion = sourceCoercion->second.find(target->Type());
-		if (targetCoercion != sourceCoercion->second.end())
-		{
-			auto rightTT = targetCoercion->second;
-			auto coercion = _coercionMap.find(rightTT);
-			if (coercion != _coercionMap.end())
-			{
-				result = coercion->second(context, target);
-			}
-		}
-	}
-
-	if (result == nullptr)
-	{
-		result = MakeError(std::format("type mismatch can not coerce types: {} -> {}", source->Type().Name, target->Type().Name), context);
-	}
-	return result;
-}
-
-std::shared_ptr<IObject> Evaluator::EvalAsBoolean(const Token& context, const IObject* const obj) const
-{
-	std::shared_ptr<IObject> result = nullptr;
-	if (obj == NullObj::NULL_OBJ_REF.get())
-	{
-		result = BooleanObj::FALSE_OBJ_REF;
-	}
-
-	if (obj == BooleanObj::TRUE_OBJ_REF.get())
-	{
-		result = BooleanObj::TRUE_OBJ_REF;
-	}
-	
-	if(obj == BooleanObj::FALSE_OBJ_REF.get())
-	{
-		result = BooleanObj::FALSE_OBJ_REF;
-	}
-
-	if (obj->Type() == ObjectType::INTEGER_OBJ)
-	{
-		auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-		result = value == 0 ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
-	}
-
-	if (obj->Type() == ObjectType::DECIMAL_OBJ)
-	{
-		auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-		result = abs(value) <= FLT_EPSILON ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
-	}
-
-	if (result == nullptr)
-	{
-		result = MakeError(std::format("illegal expression, type {} can not be evaluated as boolean: {}", obj->Type().Name, obj->Inspect()), context);
-	}
-		
-	return result;
-}
-
-std::shared_ptr<IObject> Evaluator::EvalAsDecimal(const Token& context, const IObject* const obj) const
-{
-	std::shared_ptr<IObject> result = nullptr;
-	if (obj->Type() != ObjectType::DECIMAL_OBJ)
-	{
-		if (obj->Type() == ObjectType::INTEGER_OBJ)
-		{
-			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-			result = DecimalObj::New(static_cast<float>(value));
-		}
-
-		if (obj->Type() == ObjectType::BOOLEAN_OBJ)
-		{
-			auto value = dynamic_cast<const BooleanObj const *>(obj)->Value;
-			result = DecimalObj::New(value ? 1.0f : 0.0f);
-		}
-	}
-	else
-	{
-		auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-		result = DecimalObj::New(value);
-	}
-
-	if (result == nullptr)
-	{
-		result = MakeError(std::format("illegal expression, type {} can not be evaluated as decimal: {}", obj->Type().Name, obj->Inspect()), context);
-	}
-
-	return result;
-}
-
-std::shared_ptr<IObject> Evaluator::EvalAsInteger(const Token& context, const IObject* const obj) const
-{
-	std::shared_ptr<IObject> result = nullptr;
-	if (obj->Type() != ObjectType::INTEGER_OBJ)
-	{
-		if (obj->Type() == ObjectType::DECIMAL_OBJ)
-		{
-			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-			result = IntegerObj::New(static_cast<int>(value));
-		}
-
-		if (obj->Type() == ObjectType::BOOLEAN_OBJ)
-		{
-			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
-			result = IntegerObj::New(value ? 1 : 0);
-		}
-	}
-	else
-	{
-		auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-		result = IntegerObj::New(value);
-	}
-
-	if (result == nullptr)
-	{
-		result = MakeError(std::format("illegal expression, type {} can not be evaluated as integer: {}", obj->Type().Name, obj->Inspect()), context);
-	}
-
-	return result;
 }
 
 std::shared_ptr<IObject> Evaluator::EvalNullInfixExpression(const Token& op, const IObject* const left, const IObject* const right) const
@@ -605,6 +433,40 @@ std::shared_ptr<IObject> Evaluator::EvalStringInfixExpression(const Token& optor
 	return result;
 }
 
+std::shared_ptr<IObject> Evaluator::EvalAsBoolean(const Token& context, const IObject* const obj) const
+{
+	try
+	{
+		return _coercer.EvalAsBoolean(obj);
+	}
+	catch (const std::exception& e)
+	{
+		return MakeError(e.what(), context);
+	}
+}
+std::shared_ptr<IObject> Evaluator::EvalAsDecimal(const Token& context, const IObject* const obj) const
+{
+	try
+	{
+		return _coercer.EvalAsDecimal(obj);
+	}
+	catch (const std::exception& e)
+	{
+		return MakeError(e.what(), context);
+	}
+}
+std::shared_ptr<IObject> Evaluator::EvalAsInteger(const Token& context, const IObject* const obj) const
+{
+	try
+	{
+		return _coercer.EvalAsInteger(obj);
+	}
+	catch (const std::exception& e)
+	{
+		return MakeError(e.what(), context);
+	}
+}
+
 std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
 {
 	std::shared_ptr<IObject> result = nullptr;
@@ -665,10 +527,7 @@ std::shared_ptr<IObject> Evaluator::EvalBitwiseNotPrefixOperatorExpression(const
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::MakeError(const std::string& message, const Token& token)
-{
-	return ErrorObj::New(message, token);
-}
+
 
 uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args)
 {
