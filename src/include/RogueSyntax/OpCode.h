@@ -59,7 +59,9 @@ struct OpCode
 		OP_SET_GLOBAL,
 		//op
 		OP_INDEX,
-
+		OP_CALL,
+		OP_RETURN,
+		OP_RETURN_VALUE,
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;

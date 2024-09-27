@@ -3,6 +3,8 @@
 RogueVM::RogueVM(const ByteCode& byteCode)
 	: _byteCode(byteCode)
 {
+	//main frame
+	PushFrame(Frame(FunctionCompiledObj::New(_byteCode.Instructions)));
 }
 
 RogueVM::~RogueVM()
@@ -11,30 +13,29 @@ RogueVM::~RogueVM()
 
 void RogueVM::Run()
 {
-	auto instructions = _byteCode.Instructions;
-	auto constants = _byteCode.Constants;
-	size_t ip = 0;
-	while (ip < instructions.size())
+	auto constants = _byteCode.Constants;	
+	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
-		auto opcode = OpCode::GetOpcode(instructions, ip);
-		ip++;
-			
+		auto instructions = CurrentFrame().Instructions();
+		auto opcode = OpCode::GetOpcode(instructions, CurrentFrame().Ip());
+		IncrementFrameIp();
+
 		switch (opcode)
 		{
 		case OpCode::Constants::OP_CONSTANT:
 		{
-			auto idx = instructions[ip] << 8 | instructions[ip + 1];
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			auto constant = constants[idx];
 			//std::cout << constant->Inspect() << std::endl;
-			ip += 2;
+			IncrementFrameIp(2);
 
 			Push(constant);
 			break;
 		}
 		case OpCode::Constants::OP_ARRAY:
 		{
-			auto numElements = instructions[ip] << 8 | instructions[ip + 1];
-			ip += 2;
+			auto numElements = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
 
 			std::vector<std::shared_ptr<IObject>> elements;
 			for (int i = 0; i < numElements; i++)
@@ -48,8 +49,8 @@ void RogueVM::Run()
 		}
 		case OpCode::Constants::OP_HASH:
 		{
-			auto numElements = instructions[ip] << 8 | instructions[ip + 1];
-			ip += 2;
+			auto numElements = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
 
 			std::unordered_map<HashKey, HashEntry> pairs;
 			for (int i = 0; i < numElements; i++)
@@ -114,20 +115,20 @@ void RogueVM::Run()
 		}
 		case OpCode::Constants::OP_JUMP:
 		{
-			auto pos = instructions[ip] << 8 | instructions[ip + 1];
-			ip = pos;
+			auto pos = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			SetFrameIp(pos);
 			break;
 		}
 		case OpCode::Constants::OP_JUMP_IF_FALSE:
 		{
-			auto pos = instructions[ip] << 8 | instructions[ip + 1];
-			ip += 2;
+			auto pos = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
 			auto condition = Pop();
 			if (condition->Type() == ObjectType::BOOLEAN_OBJ)
 			{
 				if (condition == BooleanObj::FALSE_OBJ_REF)
 				{
-					ip = pos;
+					SetFrameIp(pos);
 				}
 			}
 			else
@@ -135,7 +136,7 @@ void RogueVM::Run()
 				auto coerced = _coercer.EvalAsBoolean(condition.get());
 				if (coerced == BooleanObj::FALSE_OBJ_REF)
 				{
-					ip = pos;
+					SetFrameIp(pos);
 				}
 			}
 			break;
@@ -147,16 +148,16 @@ void RogueVM::Run()
 		}
 		case OpCode::Constants::OP_GET_GLOBAL:
 		{
-			auto idx = instructions[ip] << 8 | instructions[ip + 1];
-			ip += 2;
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
 			auto global = _globals[idx];
 			Push(global);
 			break;
 		}
 		case OpCode::Constants::OP_SET_GLOBAL:
 		{
-			auto idx = instructions[ip] << 8 | instructions[ip + 1];
-			ip += 2;
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
 			auto global = Pop();
 			_globals[idx] = global;
 			break;
@@ -168,6 +169,36 @@ void RogueVM::Run()
 
 			ExecuteIndexOperation(left.get(), index.get());
 			
+			break;
+		}
+		case OpCode::Constants::OP_CALL:
+		{
+			//auto numArgs = instructions[ip] << 8 | instructions[ip + 1];
+			//ip += 2;
+
+			auto callee = Top();
+			if (callee->Type() != ObjectType::FUNCTION_COMPILED_OBJ)
+			{
+				throw std::runtime_error("Can only call functions");
+			}
+			auto fn = std::dynamic_pointer_cast<FunctionCompiledObj>(callee);
+			auto frame = Frame(fn);
+			PushFrame(frame);
+
+			break;
+		}
+		case OpCode::Constants::OP_RETURN:
+		{
+			auto frame = PopFrame();
+			Pop();
+			break;
+		}
+		case OpCode::Constants::OP_RETURN_VALUE:
+		{
+			auto result = Pop();
+			auto frame = PopFrame();
+			Pop();
+			Push(result);
 			break;
 		}
 		default:
@@ -208,6 +239,34 @@ std::shared_ptr<IObject> RogueVM::LastPoppped() const
 	}
 	return _stack[_sp];
 }
+
+const Frame& RogueVM::CurrentFrame() const
+{
+	if (_frameIndex == 0)
+	{
+		throw std::exception("No frames");
+	}
+	return _frames[_frameIndex - 1];
+}
+
+void RogueVM::PushFrame(Frame frame)
+{
+	if (_frameIndex >= MAX_FRAMES)
+	{
+		throw std::exception("Frame stack overflow");
+	}
+	_frames[_frameIndex++] = frame;
+}
+
+Frame RogueVM::PopFrame()
+{
+	if (_frameIndex == 0)
+	{
+		throw std::exception("Frame stack underflow");
+	}
+	return _frames[--_frameIndex];
+}
+
 
 void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 {

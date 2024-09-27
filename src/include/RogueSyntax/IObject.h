@@ -3,6 +3,7 @@
 #include "StandardLib.h"
 #include "Token.h"
 #include "AstNode.h"
+#include "OpCode.h"
 
 struct Environment;
 
@@ -71,6 +72,8 @@ struct ObjectType
 	static const ObjectType ERROR_OBJ;
 	static const ObjectType FUNCTION_OBJ;
 	static const ObjectType BUILTIN_OBJ;
+
+	static const ObjectType FUNCTION_COMPILED_OBJ;
 
 	//special flow control objects
 	static const ObjectType BREAK_OBJ;
@@ -602,4 +605,30 @@ public:
 
 	std::string Name;
 	static std::shared_ptr<BuiltInObj> New(const std::string& name);
+};
+
+class FunctionCompiledObj : public IObject
+{
+public:
+	FunctionCompiledObj(const Instructions& instructions) : FuncInstructions(instructions) {}
+	virtual ~FunctionCompiledObj() = default;
+
+	const ObjectType& Type() const override
+	{
+		return ObjectType::FUNCTION_COMPILED_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return OpCode::PrintInstructions(FuncInstructions);
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(FuncInstructions);
+	}
+	
+	Instructions FuncInstructions;
+
+	static std::shared_ptr<FunctionCompiledObj> New(const Instructions& instructions);
 };

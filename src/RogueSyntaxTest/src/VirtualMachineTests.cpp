@@ -1,135 +1,9 @@
 #include <vector>
+#include "CompilerTestHelpers.h"
 #include <RogueSyntaxCore.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
-
-typedef std::variant<int, std::string, float, bool, NullObj, std::shared_ptr<ArrayObj>, std::shared_ptr<HashObj>> ConstantValue;
-
-bool TestIObjects(std::shared_ptr<IObject> expected, std::shared_ptr<IObject> actual)
-{
-	if (typeid(*(expected.get())) != typeid(*(actual.get())))
-	{
-		throw std::runtime_error(std::format("Expected and actual object types are not the same. Expected={} Actual={}", typeid(*(expected.get())).name(), typeid(*(actual.get())).name()));
-	}
-	if (expected->Inspect() != actual->Inspect())
-	{
-		throw std::runtime_error(std::format("Expected and actual object values are not the same. Expected={} Actual={}", expected->Inspect(), actual->Inspect()));
-	}
-	return true;
-}
-
-template<typename T, typename R>
-bool TestConstantValues(ConstantValue expected, std::shared_ptr<IObject> actual)
-{
-	if (std::holds_alternative<T>(expected))
-	{
-		if (typeid(*(actual.get())) == typeid(R))
-		{
-			if (std::get<T>(expected) != std::dynamic_pointer_cast<R>(actual)->Value)
-			{
-				throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", std::get<T>(expected), std::dynamic_pointer_cast<R>(actual)->Value));
-			}
-		}
-		else
-		{
-			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(R).name(), typeid(*(actual.get())).name()));
-		}
-	}
-	return true;
-}
-
-bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>& actual)
-{
-	if (std::holds_alternative<int>(expected))
-	{
-		return TestConstantValues<int, IntegerObj>(expected, actual);
-	}
-	else if (std::holds_alternative<std::string>(expected))
-	{
-		return TestConstantValues<std::string, StringObj>(expected, actual);
-	}
-	else if (std::holds_alternative<float>(expected))
-	{
-		return TestConstantValues<float, DecimalObj>(expected, actual);
-	}
-	else if (std::holds_alternative<bool>(expected))
-	{
-		return TestConstantValues<bool, BooleanObj>(expected, actual);
-	}
-	else if (std::holds_alternative<NullObj>(expected))
-	{
-		if (typeid(*(actual.get())) != typeid(NullObj))
-		{
-			throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", "null", actual->Inspect()));
-		}
-	}
-	else if (std::holds_alternative<std::shared_ptr<ArrayObj>>(expected))
-	{
-		auto arr = std::get<std::shared_ptr<ArrayObj>>(expected);
-		auto actualArr = std::dynamic_pointer_cast<ArrayObj>(actual);
-
-		for (int i = 0; i < arr->Elements.size(); i++)
-		{
-			auto expectedValue = arr->Elements[i];
-			auto actualValue = actualArr->Elements[i];
-			TestIObjects(expectedValue, actualValue);
-		}
-	}
-	else if (std::holds_alternative<std::shared_ptr<HashObj>>(expected))
-	{
-		auto hash = std::get<std::shared_ptr<HashObj>>(expected);
-		auto actualHash = std::dynamic_pointer_cast<HashObj>(actual);
-
-		for (const auto& [key, value] : hash->Elements)
-		{
-			auto actualValue = actualHash->Elements[key];
-			TestIObjects(value.Value, actualValue.Value);
-		}
-	}
-	else
-	{
-		throw std::runtime_error(std::format("Unknown constant type."));
-	}
-	return true;
-}
-
-bool VmTest(std::string input, ConstantValue expected)
-{
-	Compiler compiler;
-	Lexer lexer(input);
-	Parser parser(lexer);
-
-	auto node = parser.ParseProgram();
-	auto errors = parser.Errors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	compiler.Compile(node);
-	errors = compiler.GetErrors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	auto byteCode = compiler.GetByteCode();
-	RogueVM vm(byteCode);
-	vm.Run();
-
-	auto actual = vm.LastPoppped();
-	REQUIRE(actual != nullptr);
-	return TestConstant(expected, actual);
-}
 
 TEST_CASE("Integer Arthmetic Instructions")
 {
@@ -293,6 +167,37 @@ TEST_CASE("Hash instructions")
 			{ "{1: 2, 2: 3}[2]", 3 },
 			{ "{1: 2}[2]", NullObj() },
 			{ "{1: 2}[0]", NullObj() },
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Function instructions")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{ "fn() { 5; }()", 5 },
+			{ "fn() { let a = 5; let b = a; let c = a + b + 5; c; }()", 15 },
+			{ "let a = 5; let b = 10; let c = 15; fn() { let a = 20; let b = 25; let c = 30; a + b + c; }()", 75 },
+			//{ "let identity = fn(x) { x; }; identity(5);", 5 },
+			//{ "fn(x) { x + 2; }(2)", 4 },
+			//{ "let double = fn(x) { x * 2; }; double(5);", 10 },
+			//{ "let add = fn(x, y) { x + y; }; add(5, 5);", 10 },
+			//{ "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20 },
+			//{ "fn(x) { x; }(5)", 5 },
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Functions without arguments")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{ "let one = fn() { 1; }; let two = fn() {2;}; one() + two();", 3 },
+			{ "let a = fn() { 1; }; let b = fn() { a() + 1; }; let c = fn() { b() + 1; }; c();", 3 },
 		}));
 
 	CAPTURE(input);

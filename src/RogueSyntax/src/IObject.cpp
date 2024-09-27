@@ -16,6 +16,8 @@ const ObjectType ObjectType::ARRAY_OBJ     = { NextObjectType++, "ARRAY" };
 const ObjectType ObjectType::HASH_OBJ      = { NextObjectType++, "HASH" };
 const ObjectType ObjectType::IDENT_OBJ     = { NextObjectType++, "IDENT" };
 
+const ObjectType ObjectType::FUNCTION_COMPILED_OBJ = { NextObjectType++, "FUNCTION_COMPILED" };
+
 const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
 const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
 
@@ -138,6 +140,9 @@ std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
 	return std::make_shared<BuiltInObj>(name);
 }
 
-
+std::shared_ptr<FunctionCompiledObj> FunctionCompiledObj::New(const Instructions& instructions)
+{
+	return std::make_shared<FunctionCompiledObj>(instructions);
+}
 
 

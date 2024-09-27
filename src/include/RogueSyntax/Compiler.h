@@ -36,6 +36,21 @@ private:
 	std::string _scope;
 };
 
+struct CompilationUnit
+{
+	Instructions UnitInstructions;
+	Instructions LastInstruction;
+	Instructions PreviousLastInstruction;
+
+	void SetLastInstruction(const Instructions& instruction);
+	int AddInstruction(Instructions instructions);
+
+	void RemoveLastPop();
+	bool LastInstructionIs(OpCode::Constants opcode);
+	void RemoveLastInstruction();
+	void ChangeOperand(int position, int operand);
+	void ReplaceInstruction(int position, Instructions instructions);
+};
 
 enum class CompilerError
 {
@@ -70,16 +85,13 @@ public:
 	CompilerError Compile(INode* node);
 
 	ByteCode GetByteCode() const;
+
+	int EnterUnit();
+	CompilationUnit ExitUnit();
+
 	int AddConstant(std::shared_ptr<IObject> obj);
 	int Emit(OpCode::Constants opcode, std::vector<int> operands);
-	int AddInstruction(Instructions instructions);
-
-	void RemoveLastPop();
-	bool LastInstructionIs(OpCode::Constants opcode);
-	void RemoveLastInstruction();
-	void ChangeOperand(int position, int operand);
-	void ReplaceInstruction(int position, Instructions instructions);
-
+	
 	std::vector<std::string> GetErrors() const { return _errors; };
 	inline bool HasErrors() const { return !_errors.empty(); };
 
@@ -109,14 +121,10 @@ public:
 
 	static std::shared_ptr<Compiler> New();
 private:
-	Instructions _instructions;
+	std::stack<CompilationUnit> _CompilationUnits;
+
 	std::vector<std::shared_ptr<IObject>> _constants;
 	
-	void SetLastInstruction(const Instructions& instruction);
-
-	Instructions _lastInstruction;
-	Instructions _previousLastInstruction;
-
 	std::shared_ptr<SymbolTable> _globalSymbolTable;
 
 	std::vector<std::string> _errors;

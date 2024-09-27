@@ -37,6 +37,59 @@ Symbol SymbolTable::Resolve(const std::string& name)
 	return symbol;
 }
 
+int CompilationUnit::AddInstruction(Instructions instructions)
+{
+	auto position = UnitInstructions.size();
+	UnitInstructions.insert(UnitInstructions.end(), instructions.begin(), instructions.end());
+
+	SetLastInstruction(instructions);
+	return position;
+}
+
+void CompilationUnit::RemoveLastPop()
+{
+	if (LastInstructionIs(OpCode::Constants::OP_POP))
+	{
+		RemoveLastInstruction();
+	}
+}
+
+bool CompilationUnit::LastInstructionIs(OpCode::Constants opcode)
+{
+	if (LastInstruction.empty())
+	{
+		return false;
+	}
+
+	return LastInstruction[0] == static_cast<uint8_t>(opcode);
+}
+
+void CompilationUnit::RemoveLastInstruction()
+{
+	UnitInstructions.resize(UnitInstructions.size() - LastInstruction.size());
+	SetLastInstruction(PreviousLastInstruction);
+}
+
+void CompilationUnit::ChangeOperand(int position, int operand)
+{
+	auto instruction = OpCode::Make(static_cast<OpCode::Constants>(UnitInstructions[position]), { operand });
+	ReplaceInstruction(position, instruction);
+}
+
+void CompilationUnit::ReplaceInstruction(int position, Instructions instructions)
+{
+	for (const auto& instr : instructions)
+	{
+		UnitInstructions[position++] = instr;
+	}
+}
+
+void CompilationUnit::SetLastInstruction(const Instructions& instruction)
+{
+	PreviousLastInstruction = LastInstruction;
+	LastInstruction = instruction;
+}
+
 Compiler::Compiler()
 {
 	_globalSymbolTable = SymbolTable::New(SCOPE_GLOBAL);
@@ -62,7 +115,24 @@ CompilerError Compiler::Compile(INode* node)
 
 ByteCode Compiler::GetByteCode() const
 {
-	return ByteCode {_instructions, _constants };
+	if (_CompilationUnits.empty())
+	{
+		throw std::runtime_error("No compilation units");
+	}
+	return ByteCode{ _CompilationUnits.top().UnitInstructions, _constants };
+}
+
+int Compiler::EnterUnit()
+{
+	_CompilationUnits.push(CompilationUnit{});
+	return _CompilationUnits.size() - 1;
+}
+
+CompilationUnit Compiler::ExitUnit()
+{
+	auto unit = _CompilationUnits.top();
+	_CompilationUnits.pop();
+	return unit;
 }
 
 int Compiler::AddConstant(std::shared_ptr<IObject> obj)
@@ -74,53 +144,12 @@ int Compiler::AddConstant(std::shared_ptr<IObject> obj)
 int Compiler::Emit(OpCode::Constants opcode, std::vector<int> operands)
 {
 	auto instructions = OpCode::Make(opcode, operands);
-	return AddInstruction(instructions);
-}
-
-int Compiler::AddInstruction(Instructions instructions)
-{
-	auto position = _instructions.size();
-	_instructions.insert(_instructions.end(), instructions.begin(), instructions.end());
-
-	SetLastInstruction(instructions);
-	return position;
-}
-
-void Compiler::RemoveLastPop()
-{
-	if (LastInstructionIs(OpCode::Constants::OP_POP))
-	{
-		RemoveLastInstruction();
-	}
-}
-
-bool Compiler::LastInstructionIs(OpCode::Constants opcode)
-{
-	return _lastInstruction[0] == static_cast<uint8_t>(opcode);
-}
-
-void Compiler::RemoveLastInstruction()
-{
-	_instructions.resize(_instructions.size() - _lastInstruction.size());
-	SetLastInstruction(_previousLastInstruction);
-}
-
-void Compiler::ChangeOperand(int position, int operand)
-{
-	auto instruction = OpCode::Make(static_cast<OpCode::Constants>(_instructions[position]), { operand });
-	ReplaceInstruction(position, instruction);
-}
-
-void Compiler::ReplaceInstruction(int position, Instructions instructions)
-{
-	for (const auto& instr : instructions)
-	{
-		_instructions[position++] = instr;
-	}
+	return _CompilationUnits.top().AddInstruction(instructions);
 }
 
 void Compiler::NodeCompile(Program* program)
 {
+	EnterUnit(); // enter global unit
 	for (auto stmt : program->Statements)
 	{
 		stmt->Compile(this);
@@ -155,6 +184,12 @@ void Compiler::NodeCompile(ExpressionStatement* expression)
 
 void Compiler::NodeCompile(ReturnStatement* ret)
 {
+	ret->ReturnValue->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+	Emit(OpCode::Constants::OP_RETURN_VALUE, {});
 }
 
 void Compiler::NodeCompile(LetStatement* let)
@@ -341,11 +376,11 @@ void Compiler::NodeCompile(IfExpression* ifExpr)
 		return;
 	}
 
-	RemoveLastPop();
+	_CompilationUnits.top().RemoveLastPop();
 	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { 9999 });
 
-	auto afterConsequencePos = _instructions.size();
-	ChangeOperand(jumpNotTruthyPos, afterConsequencePos);
+	auto afterConsequencePos = _CompilationUnits.top().UnitInstructions.size();
+	_CompilationUnits.top().ChangeOperand(jumpNotTruthyPos, afterConsequencePos);
 	
 	if (ifExpr->Alternative != nullptr)
 	{
@@ -354,23 +389,62 @@ void Compiler::NodeCompile(IfExpression* ifExpr)
 		{
 			return;
 		}
-		RemoveLastPop();
+		_CompilationUnits.top().RemoveLastPop();
 	}
 	else
 	{
 		Emit(OpCode::Constants::OP_NULL, {});
 	}
 
-	auto afterAlternativePos = _instructions.size();
-	ChangeOperand(jumpPos, afterAlternativePos);
+	auto afterAlternativePos = _CompilationUnits.top().UnitInstructions.size();
+	_CompilationUnits.top().ChangeOperand(jumpPos, afterAlternativePos);
 }
 
 void Compiler::NodeCompile(FunctionLiteral* function)
 {
+	EnterUnit();
+
+	function->Body->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	auto unit = ExitUnit();
+
+	if (unit.LastInstructionIs(OpCode::Constants::OP_POP))
+	{
+		unit.RemoveLastPop();
+		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}));
+	}
+
+	if (!unit.LastInstructionIs(OpCode::Constants::OP_RETURN_VALUE))
+	{
+		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN, {}));
+	}
+
+	auto index = AddConstant(FunctionCompiledObj::New(unit.UnitInstructions));
+	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
 void Compiler::NodeCompile(CallExpression* call)
 {
+	call->Function->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	//for (auto arg : call->Arguments)
+	//{
+	//	arg->Compile(this);
+	//	if (HasErrors())
+	//	{
+	//		return;
+	//	}
+	//}
+
+	Emit(OpCode::Constants::OP_CALL, { });
 }
 
 void Compiler::NodeCompile(ArrayLiteral* array)
@@ -445,8 +519,4 @@ std::shared_ptr<Compiler> Compiler::New()
 	return std::make_shared<Compiler>();
 }
 
-void Compiler::SetLastInstruction(const Instructions& instruction)
-{
-	_previousLastInstruction = _lastInstruction;
-	_lastInstruction = instruction;
-}
+

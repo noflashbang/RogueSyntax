@@ -1,133 +1,9 @@
 #include <vector>
+#include "CompilerTestHelpers.h"
 #include <RogueSyntaxCore.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
-
-typedef std::variant<int, std::string, float, bool> ConstantValue;
-
-template<typename T, typename R>
-bool TestConstantValues(ConstantValue expected, std::shared_ptr<IObject> actual)
-{
-	if (std::holds_alternative<T>(expected))
-	{
-		if (typeid(*(actual.get())) == typeid(R))
-		{
-			if (std::get<T>(expected) != std::dynamic_pointer_cast<R>(actual)->Value)
-			{
-				throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", std::get<T>(expected), std::dynamic_pointer_cast<R>(actual)->Value));
-			}
-		}
-		else
-		{
-			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(R).name(), typeid(*(actual.get())).name()));
-		}
-	}
-	return true;
-}
-
-bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<std::shared_ptr<IObject>>& actual)
-{
-	if (expected.size() != actual.size())
-	{
-		throw std::runtime_error(std::format("Expected and actual number of constants are not the same size. Expected={} Actual={}",expected.size(), actual.size()));
-	}
-
-	for (size_t i = 0; i < expected.size(); i++)
-	{
-		auto expectedValue = expected[i];
-		auto actualValue = actual[i];
-		if (std::holds_alternative<int>(expectedValue))
-		{
-			return TestConstantValues<int, IntegerObj>(expectedValue, actualValue);
-		}
-		else if (std::holds_alternative<std::string>(expectedValue))
-		{
-			return TestConstantValues<std::string, StringObj>(expectedValue, actualValue);
-		}
-		else if (std::holds_alternative<float>(expectedValue))
-		{
-			return TestConstantValues<float, DecimalObj>(expectedValue, actualValue);
-		}
-		else if (std::holds_alternative<bool>(expectedValue))
-		{
-			return TestConstantValues<bool, BooleanObj>(expectedValue, actualValue);
-		}
-		else
-		{
-			throw std::runtime_error(std::format("Unknown constant type."));
-		}
-	}
-	return true;
-}
-
-bool TestInstructions(const Instructions& expected, const Instructions& actual)
-{
-	if (expected.size() != actual.size())
-	{
-		const auto print = OpCode::PrintInstuctionsCompared(expected, actual);
-		throw std::runtime_error(std::format("Expected and actual number of instructions are not the same size. Expected={} Actual={}\n{}", expected.size(), actual.size(), print));
-	}
-
-	for (size_t i = 0; i < expected.size(); i++)
-	{
-		if (expected[i] != actual[i])
-		{
-			const auto print = OpCode::PrintInstuctionsCompared(expected, actual);
-			throw std::runtime_error(std::format("Expected and actual instructions are not the same @offset{}. Expected={} Actual={}\n{}", i, expected[i], actual[i], print));
-		}
-	}
-	return true;
-}
-
-Instructions ConcatInstructions(const std::vector<Instructions>& instructions)
-{
-	Instructions result;
-	for (const auto& instruction : instructions)
-	{
-		result.insert(result.end(), instruction.begin(), instruction.end());
-	}
-	return result;
-}
-
-bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ByteCode& actual)
-{
-	auto flattened = ConcatInstructions(expectedInstructions);
-	return TestInstructions(flattened, actual.Instructions) && TestConstants(expectedConstants, actual.Constants);
-}
-
-bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
-{
-	Compiler compiler;
-	Lexer lexer(input);
-	Parser parser(lexer);
-
-	auto node = parser.ParseProgram();
-	auto errors = parser.Errors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	
-	compiler.Compile(node);
-	errors = compiler.GetErrors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	auto byteCode = compiler.GetByteCode();
-	return TestByteCode(expectedConstants, expectedInstructions, byteCode);
-}
 
 TEST_CASE("Instruction String")
 {
@@ -821,6 +697,79 @@ TEST_CASE("Index Tests")
 					OpCode::Make(OpCode::Constants::OP_HASH, {1}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_INDEX, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Function Tests")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "fn() { return 5 + 10; }", { 5, 10, FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}))},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "fn() { 5 + 10; }", { 5, 10, FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}))},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "fn() { 1; 2; }", { 1, 2, FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}))},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "fn() { }", { FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_RETURN, {}),
+				}))},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "fn() { 25; }()", { 25, FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}))},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "let noArg = fn() { 24; }; noArg();", { 24,  FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}))},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
