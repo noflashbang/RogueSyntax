@@ -799,33 +799,33 @@ TEST_CASE("Hash Tests")
 	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
 }
 
-//TEST_CASE("Index Tests")
-//{
-//	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
-//		{
-//			{ "[1, 2, 3][1]", { 1, 2, 3 },
-//				{
-//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
-//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
-//					OpCode::Make(OpCode::Constants::OP_ARRAY, {3}),
-//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
-//					OpCode::Make(OpCode::Constants::OP_INDEX, {}),
-//					OpCode::Make(OpCode::Constants::OP_POP, {})
-//				}
-//			},
-//			{ "{1: 2}[1]", { 1, 2 },
-//				{
-//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
-//					OpCode::Make(OpCode::Constants::OP_HASH, {2}),
-//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
-//					OpCode::Make(OpCode::Constants::OP_INDEX, {}),
-//					OpCode::Make(OpCode::Constants::OP_POP, {})
-//				}
-//			}
-//		}));
-//
-//	CAPTURE(input);
-//	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
-//}
+TEST_CASE("Index Tests")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "[1, 2, 3][1]", { 1, 2, 3, 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_ARRAY, {3}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_INDEX, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "{1: 2}[1]", { 1, 2, 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_HASH, {1}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_INDEX, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}

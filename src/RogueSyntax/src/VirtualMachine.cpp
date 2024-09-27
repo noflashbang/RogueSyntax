@@ -161,6 +161,15 @@ void RogueVM::Run()
 			_globals[idx] = global;
 			break;
 		}
+		case OpCode::Constants::OP_INDEX:
+		{
+			auto index = Pop();
+			auto left = Pop();
+
+			ExecuteIndexOperation(left.get(), index.get());
+			
+			break;
+		}
 		default:
 			throw std::runtime_error("Unknown opcode");
 		}
@@ -660,6 +669,37 @@ void RogueVM::ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj)
 		throw std::runtime_error(MakeOpCodeError("ExecuteNullPrefix: Unsupported opcode", opcode));
 	}
 }
+
+void RogueVM::ExecuteIndexOperation(IObject* left, IObject* index)
+{
+	if (left->Type() == ObjectType::ARRAY_OBJ)
+	{
+		auto arr = dynamic_cast<ArrayObj*>(left);
+		auto idx = dynamic_cast<IntegerObj*>(index);
+		if (idx == nullptr)
+		{
+			throw std::runtime_error("Index must be an integer");
+		}
+		if (idx->Value < 0 || idx->Value >= arr->Elements.size())
+		{
+			throw std::runtime_error("Index out of bounds");
+		}
+		auto value = arr->Elements[idx->Value];
+		Push(value);
+	}
+	else if (left->Type() == ObjectType::HASH_OBJ)
+	{
+		auto hash = dynamic_cast<HashObj*>(left);
+		auto key = HashKey{ index->Type(), index->Inspect() };
+		auto entry = hash->Elements[key];
+		Push(entry.Value);
+	}
+	else
+	{
+		throw std::runtime_error("Index operation not supported");
+	}
+}
+
 
 std::string RogueVM::MakeOpCodeError(const std::string& message, OpCode::Constants opcode)
 {

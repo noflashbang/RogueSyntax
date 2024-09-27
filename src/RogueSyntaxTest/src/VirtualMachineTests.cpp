@@ -268,16 +268,14 @@ TEST_CASE("Array instructions")
 			{ "[1,2,3,4];", ArrayObj::New( { IntegerObj::New(1), IntegerObj::New(2), IntegerObj::New(3), IntegerObj::New(4) } ) },
 			{ "[1 + 2, 3 * 4, 5 + 6];", ArrayObj::New({ IntegerObj::New(3), IntegerObj::New(12), IntegerObj::New(11) }) },
 			{ "[1, 2 * 2, 3 + 3];", ArrayObj::New({ IntegerObj::New(1), IntegerObj::New(4), IntegerObj::New(6) }) },
-			//{ "[1, 2, 3][0]", 1 },
-			//{ "[1, 2, 3][1]", 2 },
-			//{ "[1, 2, 3][2]", 3 },
-			//{ "let i = 0; [1][i];", 1 },
-			//{ "[1, 2, 3][1 + 1];", 3 },
-			//{ "let myArray = [1, 2, 3]; myArray[2];", 3 },
-			//{ "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6 },
-			//{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2 },
-			//{ "[1, 2, 3][3]", NullObj() },
-			//{ "[1, 2, 3][-1]", NullObj() },
+			{ "[1, 2, 3][0]", 1 },
+			{ "[1, 2, 3][1]", 2 },
+			{ "[1, 2, 3][2]", 3 },
+			{ "let i = 0; [1][i];", 1 },
+			{ "[1, 2, 3][1 + 1];", 3 },
+			{ "let myArray = [1, 2, 3]; myArray[2];", 3 },
+			{ "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6 },
+			{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2 },
 		}));
 
 	CAPTURE(input);
@@ -291,10 +289,10 @@ TEST_CASE("Hash instructions")
 			{ "{}", HashObj::New({}) },
 			{ "{1: 2, 2: 3}", HashObj::New({{HashKey{ IntegerObj::New(1)->Type(),  IntegerObj::New(1)->Inspect()},HashEntry{ IntegerObj::New(1),IntegerObj::New(2)}}, {HashKey{ IntegerObj::New(2)->Type(),  IntegerObj::New(2)->Inspect()},HashEntry{ IntegerObj::New(2),IntegerObj::New(3)}}})},
 			{ "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", HashObj::New({{HashKey{ IntegerObj::New(2)->Type(),  IntegerObj::New(2)->Inspect()},HashEntry{ IntegerObj::New(2), IntegerObj::New(4)}}, {HashKey{ IntegerObj::New(6)->Type(),  IntegerObj::New(6)->Inspect()},HashEntry{ IntegerObj::New(6), IntegerObj::New(16)}}})},
-			//{ "{1: 2, 2: 3}[1]", 2 },
-			//{ "{1: 2, 2: 3}[2]", 3 },
-			//{ "{1: 2}[2]", NullObj() },
-			//{ "{1: 2}[0]", NullObj() },
+			{ "{1: 2, 2: 3}[1]", 2 },
+			{ "{1: 2, 2: 3}[2]", 3 },
+			{ "{1: 2}[2]", NullObj() },
+			{ "{1: 2}[0]", NullObj() },
 		}));
 
 	CAPTURE(input);

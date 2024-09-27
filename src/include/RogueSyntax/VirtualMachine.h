@@ -41,6 +41,8 @@ protected:
 	void ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj);
 	void ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj);
 
+	void ExecuteIndexOperation(IObject* left, IObject* index);
+
 	std::string MakeOpCodeError(const std::string& message, OpCode::Constants opcode);
 
 private:

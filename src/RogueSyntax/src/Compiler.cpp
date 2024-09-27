@@ -388,6 +388,17 @@ void Compiler::NodeCompile(ArrayLiteral* array)
 
 void Compiler::NodeCompile(IndexExpression* index)
 {
+	index->Left->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+	index->Index->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+	Emit(OpCode::Constants::OP_INDEX, {});
 }
 
 void Compiler::NodeCompile(HashLiteral* hash)
