@@ -31,6 +31,39 @@ void RogueVM::Run()
 			Push(constant);
 			break;
 		}
+		case OpCode::Constants::OP_ARRAY:
+		{
+			auto numElements = instructions[ip] << 8 | instructions[ip + 1];
+			ip += 2;
+
+			std::vector<std::shared_ptr<IObject>> elements;
+			for (int i = 0; i < numElements; i++)
+			{
+				elements.push_back(Pop());
+			}
+			std::reverse(elements.begin(), elements.end());
+			auto array = ArrayObj::New(elements);
+			Push(array);
+			break;
+		}
+		case OpCode::Constants::OP_HASH:
+		{
+			auto numElements = instructions[ip] << 8 | instructions[ip + 1];
+			ip += 2;
+
+			std::unordered_map<HashKey, HashEntry> pairs;
+			for (int i = 0; i < numElements; i++)
+			{
+				auto value = Pop();
+				auto key = Pop();
+
+				pairs[HashKey{ key->Type(), key->Inspect() }] = HashEntry{ key, value };
+			}
+
+			auto hash = HashObj::New(pairs);
+			Push(hash);
+			break;
+		}
 		case OpCode::Constants::OP_ADD:
 		case OpCode::Constants::OP_SUB:
 		case OpCode::Constants::OP_MUL:
@@ -110,6 +143,22 @@ void RogueVM::Run()
 		case OpCode::Constants::OP_NULL:
 		{
 			Push(NullObj::NULL_OBJ_REF);
+			break;
+		}
+		case OpCode::Constants::OP_GET_GLOBAL:
+		{
+			auto idx = instructions[ip] << 8 | instructions[ip + 1];
+			ip += 2;
+			auto global = _globals[idx];
+			Push(global);
+			break;
+		}
+		case OpCode::Constants::OP_SET_GLOBAL:
+		{
+			auto idx = instructions[ip] << 8 | instructions[ip + 1];
+			ip += 2;
+			auto global = Pop();
+			_globals[idx] = global;
 			break;
 		}
 		default:
@@ -525,6 +574,10 @@ void RogueVM::ExecutePrefix(OpCode::Constants opcode)
 	{
 		ExecuteBooleanPrefix(opcode, *std::dynamic_pointer_cast<BooleanObj>(right));
 	}
+	else if (right->Type() == ObjectType::NULL_OBJ)
+	{
+		ExecuteNullPrefix(opcode, *std::dynamic_pointer_cast<NullObj>(right));
+	}
 	else
 	{
 		throw std::runtime_error(std::format("ExecutePrefix: Unsupported type {}", right->Type().Name));
@@ -591,6 +644,20 @@ void RogueVM::ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj)
 	}
 	default:
 		throw std::runtime_error(MakeOpCodeError("ExecuteBooleanPrefix: Unsupported opcode", opcode));
+	}
+}
+
+void RogueVM::ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj)
+{
+	switch (opcode)
+	{
+	case OpCode::Constants::OP_NOT:
+	{
+		Push(BooleanObj::TRUE_OBJ_REF);
+		break;
+	}
+	default:
+		throw std::runtime_error(MakeOpCodeError("ExecuteNullPrefix: Unsupported opcode", opcode));
 	}
 }
 

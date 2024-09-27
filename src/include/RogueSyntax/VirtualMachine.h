@@ -4,6 +4,7 @@
 
 
 #define STACK_SIZE 2048
+#define GLOBAL_SIZE std::numeric_limits<int16_t>::max()
 
 class RogueVM
 {
@@ -38,6 +39,7 @@ protected:
 	void ExecuteIntegerPrefix(OpCode::Constants opcode, IntegerObj obj);
 	void ExecuteDecimalPrefix(OpCode::Constants opcode, DecimalObj obj);
 	void ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj);
+	void ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj);
 
 	std::string MakeOpCodeError(const std::string& message, OpCode::Constants opcode);
 
@@ -45,6 +47,7 @@ private:
 	TypeCoercer _coercer;
 	ByteCode _byteCode;
 	std::array<std::shared_ptr<IObject>, STACK_SIZE> _stack;
+	std::array<std::shared_ptr<IObject>, GLOBAL_SIZE> _globals;
 	uint16_t _sp = 0;
 	
 };

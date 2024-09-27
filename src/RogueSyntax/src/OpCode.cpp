@@ -6,6 +6,8 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_FALSE,    Definition{ "OP_FALSE", {} } },
 	{ OpCode::Constants::OP_TRUE,     Definition{ "OP_TRUE", {} } },
 	{ OpCode::Constants::OP_NULL,     Definition{ "OP_NULL", {} } },
+	{ OpCode::Constants::OP_ARRAY,    Definition{ "OP_ARRAY", {2} } },
+	{ OpCode::Constants::OP_HASH,     Definition{ "OP_HASH", {2} } },
 	{ OpCode::Constants::OP_POP,      Definition{ "OP_POP", {} } },
 	{ OpCode::Constants::OP_ADD,      Definition{ "OP_ADD", {} } },
 	{ OpCode::Constants::OP_SUB,      Definition{ "OP_SUB", {} } },
@@ -30,6 +32,10 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_BNOT, Definition{ "OP_BNOT", {} } },
 	{ OpCode::Constants::OP_JUMP, Definition{ "OP_JUMP", { 2 } } },
 	{ OpCode::Constants::OP_JUMP_IF_FALSE, Definition{ "OP_JUMP_IF_FALSE", { 2 } } },
+	{ OpCode::Constants::OP_GET_LOCAL, Definition{ "OP_GET_LOCAL", { 2 } } },
+	{ OpCode::Constants::OP_SET_LOCAL, Definition{ "OP_SET_LOCAL", { 2 } } },
+	{ OpCode::Constants::OP_GET_GLOBAL, Definition{ "OP_GET_GLOBAL", { 2 } } },
+	{ OpCode::Constants::OP_SET_GLOBAL, Definition{ "OP_SET_GLOBAL", { 2 } } },
 };
 
 std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opcode)

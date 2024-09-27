@@ -652,3 +652,180 @@ TEST_CASE("Conditional with Else Test")
 	CAPTURE(input);
 	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
 }
+
+TEST_CASE("Let statement")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "let one = 1; let two = 2;", { 1, 2 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {1})
+				}
+			},
+			{ "let one = 1; one;", { 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "let one = 1; let two = one; two;", { 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("string tests")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{"\"1\";", {"1"},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "\"Hello\" + \"World\";", { "Hello", "World"},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Array Tests")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "[]", { },
+				{
+					OpCode::Make(OpCode::Constants::OP_ARRAY, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "[1, 2, 3]", { 1, 2, 3 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_ARRAY, {3}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "[1 + 2, 3 - 4, 5 * 6]", { 1, 2, 3, 4, 5, 6 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_SUB, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {4}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {5}),
+					OpCode::Make(OpCode::Constants::OP_MUL, {}),
+					OpCode::Make(OpCode::Constants::OP_ARRAY, {3}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Hash Tests")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "{}", { },
+				{
+					OpCode::Make(OpCode::Constants::OP_HASH, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "{1: 2, 3: 4, 5: 6}", { 1, 2, 3, 4, 5, 6 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {4}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {5}),
+					OpCode::Make(OpCode::Constants::OP_HASH, {3}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "{1 + 2: 3 - 4, 5 * 6: 7 / 8}", { 1, 2, 3, 4, 5, 6, 7, 8 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_SUB, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {4}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {5}),
+					OpCode::Make(OpCode::Constants::OP_MUL, {}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {6}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {7}),
+					OpCode::Make(OpCode::Constants::OP_DIV, {}),
+					OpCode::Make(OpCode::Constants::OP_HASH, {2}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+					}
+		}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+//TEST_CASE("Index Tests")
+//{
+//	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+//		{
+//			{ "[1, 2, 3][1]", { 1, 2, 3 },
+//				{
+//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+//					OpCode::Make(OpCode::Constants::OP_ARRAY, {3}),
+//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+//					OpCode::Make(OpCode::Constants::OP_INDEX, {}),
+//					OpCode::Make(OpCode::Constants::OP_POP, {})
+//				}
+//			},
+//			{ "{1: 2}[1]", { 1, 2 },
+//				{
+//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+//					OpCode::Make(OpCode::Constants::OP_HASH, {2}),
+//					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+//					OpCode::Make(OpCode::Constants::OP_INDEX, {}),
+//					OpCode::Make(OpCode::Constants::OP_POP, {})
+//				}
+//			}
+//		}));
+//
+//	CAPTURE(input);
+//	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+//}

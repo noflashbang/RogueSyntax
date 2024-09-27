@@ -21,6 +21,8 @@ struct OpCode
 		OP_TRUE,
 		OP_FALSE,
 		OP_NULL,
+		OP_ARRAY,
+		OP_HASH,
 		//stack
 		OP_POP,
 		//arithmetic
@@ -50,6 +52,12 @@ struct OpCode
 		//jump
 		OP_JUMP,
 		OP_JUMP_IF_FALSE,
+		//mem
+		OP_GET_LOCAL,
+		OP_SET_LOCAL,
+		OP_GET_GLOBAL,
+		OP_SET_GLOBAL,
+
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;

@@ -10,6 +10,7 @@ public:
 
 	void Start();
 	void Run();
+	void PrintDecompile();
 
 private:
 	const std::string _prompt = ">> ";

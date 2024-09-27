@@ -4,6 +4,39 @@
 #include <IObject.h>
 #include <OpCode.h>
 
+#define SCOPE_GLOBAL "GLOBAL"
+
+struct Symbol
+{
+	std::string Name;
+	std::string Scope;
+	int Index;
+};
+
+class SymbolTable
+{
+public:
+	SymbolTable(std::string scope);
+	SymbolTable();
+
+	Symbol Define(const std::string& name);
+	Symbol Resolve(const std::string& name);
+	
+	static std::shared_ptr<SymbolTable> New()
+	{
+		return std::make_shared<SymbolTable>();
+	}
+	static std::shared_ptr<SymbolTable> New(std::string scope)
+	{
+		return std::make_shared<SymbolTable>(scope);
+	}
+
+private:
+	std::vector<Symbol> _store;
+	std::string _scope;
+};
+
+
 enum class CompilerError
 {
 	NoError,
@@ -83,6 +116,8 @@ private:
 
 	Instructions _lastInstruction;
 	Instructions _previousLastInstruction;
+
+	std::shared_ptr<SymbolTable> _globalSymbolTable;
 
 	std::vector<std::string> _errors;
 	std::stack<CompilerErrorInfo> _errorStack;

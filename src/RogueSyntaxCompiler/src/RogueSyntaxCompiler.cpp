@@ -50,7 +50,8 @@ void InteractiveCompiler::Run()
 	auto vm = RogueVM::New(bytecode);
 
 	vm->Run();
-	auto top = vm->LastPoppped();
+	//auto top = vm->LastPoppped();
+	auto top = vm->Top();
 
 	if (top->Type() == ObjectType::ERROR_OBJ)
 	{
@@ -71,5 +72,35 @@ void InteractiveCompiler::Run()
 	{
 		std::cout << top->Inspect() << std::endl;
 	}
+}
+
+void InteractiveCompiler::PrintDecompile()
+{
+	Lexer lexer(_input);
+	Parser parser(lexer);
+
+	auto program = parser.ParseProgram();
+	if (!parser.Errors().empty())
+	{
+		for (const auto& error : parser.Errors())
+		{
+			std::cout << "Parser error: " << error << std::endl;
+		}
+		return;
+	}
+
+	auto compile = Compiler::New();
+	auto compError = compile->Compile(program);
+	if (compile->HasErrors())
+	{
+		for (const auto& error : compile->GetErrors())
+		{
+			std::cout << "Compiler error: " << error << std::endl;
+		}
+		return;
+	}
+
+	auto bytecode = compile->GetByteCode();
+	std::cout << OpCode::PrintInstructions(bytecode.Instructions) << std::endl;
 }
 

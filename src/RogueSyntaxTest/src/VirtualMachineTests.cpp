@@ -4,7 +4,20 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
-typedef std::variant<int, std::string, float, bool, NullObj> ConstantValue;
+typedef std::variant<int, std::string, float, bool, NullObj, std::shared_ptr<ArrayObj>, std::shared_ptr<HashObj>> ConstantValue;
+
+bool TestIObjects(std::shared_ptr<IObject> expected, std::shared_ptr<IObject> actual)
+{
+	if (typeid(*(expected.get())) != typeid(*(actual.get())))
+	{
+		throw std::runtime_error(std::format("Expected and actual object types are not the same. Expected={} Actual={}", typeid(*(expected.get())).name(), typeid(*(actual.get())).name()));
+	}
+	if (expected->Inspect() != actual->Inspect())
+	{
+		throw std::runtime_error(std::format("Expected and actual object values are not the same. Expected={} Actual={}", expected->Inspect(), actual->Inspect()));
+	}
+	return true;
+}
 
 template<typename T, typename R>
 bool TestConstantValues(ConstantValue expected, std::shared_ptr<IObject> actual)
@@ -49,6 +62,29 @@ bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>&
 		if (typeid(*(actual.get())) != typeid(NullObj))
 		{
 			throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", "null", actual->Inspect()));
+		}
+	}
+	else if (std::holds_alternative<std::shared_ptr<ArrayObj>>(expected))
+	{
+		auto arr = std::get<std::shared_ptr<ArrayObj>>(expected);
+		auto actualArr = std::dynamic_pointer_cast<ArrayObj>(actual);
+
+		for (int i = 0; i < arr->Elements.size(); i++)
+		{
+			auto expectedValue = arr->Elements[i];
+			auto actualValue = actualArr->Elements[i];
+			TestIObjects(expectedValue, actualValue);
+		}
+	}
+	else if (std::holds_alternative<std::shared_ptr<HashObj>>(expected))
+	{
+		auto hash = std::get<std::shared_ptr<HashObj>>(expected);
+		auto actualHash = std::dynamic_pointer_cast<HashObj>(actual);
+
+		for (const auto& [key, value] : hash->Elements)
+		{
+			auto actualValue = actualHash->Elements[key];
+			TestIObjects(value.Value, actualValue.Value);
 		}
 	}
 	else
@@ -203,6 +239,62 @@ TEST_CASE("Conditional Instructions")
 			{ "if(1 > 2) {5} else {10} ", 10 },
 			{ "if(1 > 2) {5} ", NullObj()},
 			{ "if(1 < 2) {5} ", 5 },
+			{ "if(if(false) {10}) {10} else {20}", 20},
+			{ "if(if(true) {10}) {10} else {20}", 10},
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Let assignment instructions")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{ "let a = 5; a", 5 },
+			{ "let a = 5 * 5; a", 25 },
+			{ "let a = 5; let b = a; b", 5 },
+			{ "let a = 5; let b = a; let c = a + b + 5; c", 15 },
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Array instructions")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{ "[1,2,3,4];", ArrayObj::New( { IntegerObj::New(1), IntegerObj::New(2), IntegerObj::New(3), IntegerObj::New(4) } ) },
+			{ "[1 + 2, 3 * 4, 5 + 6];", ArrayObj::New({ IntegerObj::New(3), IntegerObj::New(12), IntegerObj::New(11) }) },
+			{ "[1, 2 * 2, 3 + 3];", ArrayObj::New({ IntegerObj::New(1), IntegerObj::New(4), IntegerObj::New(6) }) },
+			//{ "[1, 2, 3][0]", 1 },
+			//{ "[1, 2, 3][1]", 2 },
+			//{ "[1, 2, 3][2]", 3 },
+			//{ "let i = 0; [1][i];", 1 },
+			//{ "[1, 2, 3][1 + 1];", 3 },
+			//{ "let myArray = [1, 2, 3]; myArray[2];", 3 },
+			//{ "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6 },
+			//{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2 },
+			//{ "[1, 2, 3][3]", NullObj() },
+			//{ "[1, 2, 3][-1]", NullObj() },
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Hash instructions")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{ "{}", HashObj::New({}) },
+			{ "{1: 2, 2: 3}", HashObj::New({{HashKey{ IntegerObj::New(1)->Type(),  IntegerObj::New(1)->Inspect()},HashEntry{ IntegerObj::New(1),IntegerObj::New(2)}}, {HashKey{ IntegerObj::New(2)->Type(),  IntegerObj::New(2)->Inspect()},HashEntry{ IntegerObj::New(2),IntegerObj::New(3)}}})},
+			{ "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", HashObj::New({{HashKey{ IntegerObj::New(2)->Type(),  IntegerObj::New(2)->Inspect()},HashEntry{ IntegerObj::New(2), IntegerObj::New(4)}}, {HashKey{ IntegerObj::New(6)->Type(),  IntegerObj::New(6)->Inspect()},HashEntry{ IntegerObj::New(6), IntegerObj::New(16)}}})},
+			//{ "{1: 2, 2: 3}[1]", 2 },
+			//{ "{1: 2, 2: 3}[2]", 3 },
+			//{ "{1: 2}[2]", NullObj() },
+			//{ "{1: 2}[0]", NullObj() },
 		}));
 
 	CAPTURE(input);

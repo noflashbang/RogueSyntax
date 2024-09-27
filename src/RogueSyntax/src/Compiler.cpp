@@ -1,7 +1,45 @@
 #include <pch.h>
 
+
+SymbolTable::SymbolTable(std::string scope)
+	: _scope(scope)
+{
+}
+
+SymbolTable::SymbolTable()
+	: _scope(SCOPE_GLOBAL)
+{
+}
+
+Symbol SymbolTable::Define(const std::string& name)
+{
+	auto current = Resolve(name);
+	if (current.Index != -1)
+	{
+		return current;
+	}
+
+	auto symbol = Symbol{ name, _scope, static_cast<int>(_store.size()) };
+	_store.push_back(symbol);
+	return symbol;
+}
+
+Symbol SymbolTable::Resolve(const std::string& name)
+{
+	auto symbol = Symbol{ name, _scope, -1 };
+	for (int i = _store.size() - 1; i >= 0; i--)
+	{
+		if (_store[i].Name == name)
+		{
+			symbol = _store[i];
+		}
+	}
+	return symbol;
+}
+
 Compiler::Compiler()
 {
+	_globalSymbolTable = SymbolTable::New(SCOPE_GLOBAL);
 }
 
 Compiler::~Compiler()
@@ -121,10 +159,26 @@ void Compiler::NodeCompile(ReturnStatement* ret)
 
 void Compiler::NodeCompile(LetStatement* let)
 {
+	let->Value->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+	if (typeid(*(let->Name.get())) == typeid(Identifier))
+	{
+		auto ident = dynamic_cast<Identifier*>(let->Name.get());
+		auto symbol = _globalSymbolTable->Define(ident->Value);
+		Emit(OpCode::Constants::OP_SET_GLOBAL, { symbol.Index });
+	}
 }
 
 void Compiler::NodeCompile(Identifier* ident)
 {
+	auto symbol = _globalSymbolTable->Resolve(ident->Value);
+	if (symbol.Scope == SCOPE_GLOBAL)
+	{
+		Emit(OpCode::Constants::OP_GET_GLOBAL, { symbol.Index });
+	}
 }
 
 void Compiler::NodeCompile(IntegerLiteral* integer)
@@ -321,6 +375,15 @@ void Compiler::NodeCompile(CallExpression* call)
 
 void Compiler::NodeCompile(ArrayLiteral* array)
 {
+	for(auto elem : array->Elements)
+	{
+		elem->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+	}
+	Emit(OpCode::Constants::OP_ARRAY, { static_cast<int>(array->Elements.size()) });
 }
 
 void Compiler::NodeCompile(IndexExpression* index)
@@ -329,6 +392,20 @@ void Compiler::NodeCompile(IndexExpression* index)
 
 void Compiler::NodeCompile(HashLiteral* hash)
 {
+	for (auto pair : hash->Elements)
+	{
+		pair.first->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+		pair.second->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+	}
+	Emit(OpCode::Constants::OP_HASH, { static_cast<int>(hash->Elements.size()) });
 }
 
 void Compiler::NodeCompile(NullLiteral* null)
