@@ -2,39 +2,64 @@
 
 
 SymbolTable::SymbolTable(std::string scope)
-	: _scope(scope)
+	: _scope(scope), _outer(nullptr)
 {
 }
 
 SymbolTable::SymbolTable()
-	: _scope(SCOPE_GLOBAL)
+	: _scope(SCOPE_GLOBAL), _outer(nullptr)
+{
+}
+
+SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> outer)
+	: _outer(outer), _scope(SCOPE_LOCAL)
 {
 }
 
 Symbol SymbolTable::Define(const std::string& name)
 {
-	auto current = Resolve(name);
-	if (current.Index != -1)
-	{
-		return current;
-	}
-
-	auto symbol = Symbol{ name, _scope, static_cast<int>(_store.size()) };
-	_store.push_back(symbol);
-	return symbol;
-}
-
-Symbol SymbolTable::Resolve(const std::string& name)
-{
-	auto symbol = Symbol{ name, _scope, -1 };
+	int index = -1;
 	for (int i = _store.size() - 1; i >= 0; i--)
 	{
 		if (_store[i].Name == name)
 		{
-			symbol = _store[i];
+			index = i;
 		}
 	}
-	return symbol;
+
+	if (index != -1)
+	{
+		return _store[index];
+	}
+	
+	index = _store.size();
+	auto symbol = Symbol{ name, _scope, index };
+	_store.push_back(symbol);
+	return symbol;	
+}
+
+Symbol SymbolTable::Resolve(const std::string& name)
+{
+	int index = -1;
+	for (int i = _store.size() - 1; i >= 0; i--)
+	{
+		if (_store[i].Name == name)
+		{
+			index = i;
+		}
+	}
+
+	if (index == -1 && _outer != nullptr)
+	{
+		return _outer->Resolve(name);
+	}
+
+	if (index == -1)
+	{
+		throw std::runtime_error("Symbol not found");
+	}
+
+	return _store[index];
 }
 
 int CompilationUnit::AddInstruction(Instructions instructions)
@@ -92,7 +117,6 @@ void CompilationUnit::SetLastInstruction(const Instructions& instruction)
 
 Compiler::Compiler()
 {
-	_globalSymbolTable = SymbolTable::New(SCOPE_GLOBAL);
 }
 
 Compiler::~Compiler()
@@ -124,7 +148,15 @@ ByteCode Compiler::GetByteCode() const
 
 int Compiler::EnterUnit()
 {
-	_CompilationUnits.push(CompilationUnit{});
+	if (_CompilationUnits.empty())
+	{
+		_CompilationUnits.push(CompilationUnit());
+	}
+	else
+	{
+		auto outer = _CompilationUnits.top().SymbolTable;
+		_CompilationUnits.push(CompilationUnit(outer));
+	}
 	return _CompilationUnits.size() - 1;
 }
 
@@ -202,15 +234,26 @@ void Compiler::NodeCompile(LetStatement* let)
 	if (typeid(*(let->Name.get())) == typeid(Identifier))
 	{
 		auto ident = dynamic_cast<Identifier*>(let->Name.get());
-		auto symbol = _globalSymbolTable->Define(ident->Value);
-		Emit(OpCode::Constants::OP_SET_GLOBAL, { symbol.Index });
+		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
+		if (symbol.Scope == SCOPE_LOCAL)
+		{
+			Emit(OpCode::Constants::OP_SET_LOCAL, { symbol.Index });
+		}
+		else
+		{
+			Emit(OpCode::Constants::OP_SET_GLOBAL, { symbol.Index });
+		}
 	}
 }
 
 void Compiler::NodeCompile(Identifier* ident)
 {
-	auto symbol = _globalSymbolTable->Resolve(ident->Value);
-	if (symbol.Scope == SCOPE_GLOBAL)
+	auto symbol = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
+	if (symbol.Scope == SCOPE_LOCAL)
+	{
+		Emit(OpCode::Constants::OP_GET_LOCAL, { symbol.Index });
+	}
+	else
 	{
 		Emit(OpCode::Constants::OP_GET_GLOBAL, { symbol.Index });
 	}
@@ -404,6 +447,17 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 {
 	EnterUnit();
 
+	for (auto param : function->Parameters)
+	{
+		auto ident = dynamic_cast<Identifier*>(param.get());
+		if (ident == nullptr)
+		{
+			_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownError, "Expected identifier"));
+			return;
+		}
+		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
+	}
+
 	function->Body->Compile(this);
 	if (HasErrors())
 	{
@@ -423,7 +477,7 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN, {}));
 	}
 
-	auto index = AddConstant(FunctionCompiledObj::New(unit.UnitInstructions));
+	auto index = AddConstant(FunctionCompiledObj::New(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), function->Parameters.size()));
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
@@ -435,16 +489,16 @@ void Compiler::NodeCompile(CallExpression* call)
 		return;
 	}
 
-	//for (auto arg : call->Arguments)
-	//{
-	//	arg->Compile(this);
-	//	if (HasErrors())
-	//	{
-	//		return;
-	//	}
-	//}
+	for (auto arg : call->Arguments)
+	{
+		arg->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+	}
 
-	Emit(OpCode::Constants::OP_CALL, { });
+	Emit(OpCode::Constants::OP_CALL, { static_cast<int>(call->Arguments.size())});
 }
 
 void Compiler::NodeCompile(ArrayLiteral* array)

@@ -5,6 +5,7 @@
 #include <OpCode.h>
 
 #define SCOPE_GLOBAL "GLOBAL"
+#define SCOPE_LOCAL "LOCAL"
 
 struct Symbol
 {
@@ -16,12 +17,16 @@ struct Symbol
 class SymbolTable
 {
 public:
+	SymbolTable(std::shared_ptr<SymbolTable> outer);
 	SymbolTable(std::string scope);
 	SymbolTable();
 
 	Symbol Define(const std::string& name);
 	Symbol Resolve(const std::string& name);
 	
+	inline int NumberOfSymbols() const { return _store.size(); };
+	inline std::shared_ptr<SymbolTable> Outer() const { return _outer; };
+
 	static std::shared_ptr<SymbolTable> New()
 	{
 		return std::make_shared<SymbolTable>();
@@ -30,17 +35,31 @@ public:
 	{
 		return std::make_shared<SymbolTable>(scope);
 	}
-
+	static std::shared_ptr<SymbolTable> New(std::shared_ptr<SymbolTable> outer)
+	{
+		return std::make_shared<SymbolTable>(outer);
+	}
 private:
+	std::shared_ptr<SymbolTable> _outer;
 	std::vector<Symbol> _store;
 	std::string _scope;
 };
 
 struct CompilationUnit
 {
+	CompilationUnit(std::shared_ptr<SymbolTable> symbolTable)
+	{
+		SymbolTable = SymbolTable::New(symbolTable);
+	}
+	CompilationUnit()
+	{
+		SymbolTable = SymbolTable::New();
+	}
+
 	Instructions UnitInstructions;
 	Instructions LastInstruction;
 	Instructions PreviousLastInstruction;
+	std::shared_ptr<SymbolTable> SymbolTable;
 
 	void SetLastInstruction(const Instructions& instruction);
 	int AddInstruction(Instructions instructions);
@@ -124,8 +143,6 @@ private:
 	std::stack<CompilationUnit> _CompilationUnits;
 
 	std::vector<std::shared_ptr<IObject>> _constants;
-	
-	std::shared_ptr<SymbolTable> _globalSymbolTable;
 
 	std::vector<std::string> _errors;
 	std::stack<CompilerErrorInfo> _errorStack;

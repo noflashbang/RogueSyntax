@@ -715,7 +715,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}))},
+				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
@@ -726,7 +726,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}))},
+				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
@@ -737,7 +737,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}))},
+				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
@@ -745,7 +745,7 @@ TEST_CASE("Function Tests")
 			},
 			{ "fn() { }", { FunctionCompiledObj::New(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_RETURN, {}),
-				}))},
+				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
@@ -754,7 +754,7 @@ TEST_CASE("Function Tests")
 			{ "fn() { 25; }()", { 25, FunctionCompiledObj::New(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}))},
+				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
@@ -764,12 +764,78 @@ TEST_CASE("Function Tests")
 			{ "let noArg = fn() { 24; }; noArg();", { 24,  FunctionCompiledObj::New(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}))},
+				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "let manyArg = fn(x,y,z) { return x+y+z;}; manyArg(1,2,3);", { FunctionCompiledObj::New(ConcatInstructions({
+				OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+				OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {1}),
+				OpCode::Make(OpCode::Constants::OP_ADD, {}),
+				OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {2}),
+				OpCode::Make(OpCode::Constants::OP_ADD, {}),
+				OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}),0,3), 1,2,3},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_CALL, {3}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Let statement scopes tests")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "let x = 5; fn() { x; }", { 5, FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}),0,0)},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "fn() { let x = 5; x; }", {5, FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}),1,0)},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+			{ "fn() { let x = 5; let y = 10; x + y; }", { 5, 10, FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_SET_LOCAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}),2,0)},
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}

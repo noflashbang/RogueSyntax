@@ -140,9 +140,9 @@ std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
 	return std::make_shared<BuiltInObj>(name);
 }
 
-std::shared_ptr<FunctionCompiledObj> FunctionCompiledObj::New(const Instructions& instructions)
+std::shared_ptr<FunctionCompiledObj> FunctionCompiledObj::New(const Instructions& instructions, int numLocals, int numParameters)
 {
-	return std::make_shared<FunctionCompiledObj>(instructions);
+	return std::make_shared<FunctionCompiledObj>(instructions, numLocals, numParameters);
 }
 
 

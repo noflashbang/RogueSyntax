@@ -4,7 +4,7 @@ RogueVM::RogueVM(const ByteCode& byteCode)
 	: _byteCode(byteCode)
 {
 	//main frame
-	PushFrame(Frame(FunctionCompiledObj::New(_byteCode.Instructions)));
+	PushFrame(Frame(FunctionCompiledObj::New(_byteCode.Instructions, 0, 0), 0));
 }
 
 RogueVM::~RogueVM()
@@ -162,6 +162,23 @@ void RogueVM::Run()
 			_globals[idx] = global;
 			break;
 		}
+		case OpCode::Constants::OP_GET_LOCAL:
+		{
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			auto local = CurrentFrame().BasePointer() + idx;
+			Push(_stack[local]);
+			break;
+		}
+		case OpCode::Constants::OP_SET_LOCAL:
+		{
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			auto local = Pop();
+			auto localIdx = CurrentFrame().BasePointer() + idx;
+			_stack[localIdx] = local;
+			break;
+		}
 		case OpCode::Constants::OP_INDEX:
 		{
 			auto index = Pop();
@@ -173,23 +190,32 @@ void RogueVM::Run()
 		}
 		case OpCode::Constants::OP_CALL:
 		{
-			//auto numArgs = instructions[ip] << 8 | instructions[ip + 1];
-			//ip += 2;
+			auto numArgs = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
 
-			auto callee = Top();
+			auto calleeIdx = _sp - 1 - numArgs;
+			auto callee = _stack[calleeIdx];
 			if (callee->Type() != ObjectType::FUNCTION_COMPILED_OBJ)
 			{
 				throw std::runtime_error("Can only call functions");
 			}
 			auto fn = std::dynamic_pointer_cast<FunctionCompiledObj>(callee);
-			auto frame = Frame(fn);
-			PushFrame(frame);
 
+			if (numArgs != fn->NumParameters)
+			{
+				throw std::runtime_error(std::format("Expected {} arguments but got {}", fn->NumParameters, numArgs));
+			}
+
+			auto frame = Frame(fn, _sp-numArgs);
+			PushFrame(frame);
+			//make room for locals
+			_sp = frame.BasePointer() + fn->NumLocals;
 			break;
 		}
 		case OpCode::Constants::OP_RETURN:
 		{
 			auto frame = PopFrame();
+			_sp = frame.BasePointer();
 			Pop();
 			break;
 		}
@@ -197,6 +223,7 @@ void RogueVM::Run()
 		{
 			auto result = Pop();
 			auto frame = PopFrame();
+			_sp = frame.BasePointer();
 			Pop();
 			Push(result);
 			break;

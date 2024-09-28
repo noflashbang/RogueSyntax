@@ -610,7 +610,7 @@ public:
 class FunctionCompiledObj : public IObject
 {
 public:
-	FunctionCompiledObj(const Instructions& instructions) : FuncInstructions(instructions) {}
+	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) {}
 	virtual ~FunctionCompiledObj() = default;
 
 	const ObjectType& Type() const override
@@ -625,10 +625,12 @@ public:
 
 	std::shared_ptr<IObject> Clone() const override
 	{
-		return New(FuncInstructions);
+		return New(FuncInstructions, NumLocals, NumParameters);
 	}
 	
 	Instructions FuncInstructions;
+	int NumLocals;
+	int NumParameters;
 
-	static std::shared_ptr<FunctionCompiledObj> New(const Instructions& instructions);
+	static std::shared_ptr<FunctionCompiledObj> New(const Instructions& instructions, int numLocals, int numParameters);
 };
