@@ -206,6 +206,7 @@ void Compiler::NodeCompile(BlockStatement* block)
 
 void Compiler::NodeCompile(ExpressionStatement* expression)
 {
+
 	expression->Expression->Compile(this);
 	if (HasErrors())
 	{

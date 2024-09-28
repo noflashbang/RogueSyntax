@@ -50,8 +50,8 @@ void InteractiveCompiler::Run()
 	auto vm = RogueVM::New(bytecode);
 
 	vm->Run();
-	//auto top = vm->LastPoppped();
-	auto top = vm->Top();
+	auto top = vm->LastPoppped();
+	//auto top = vm->Top();
 
 	if (top->Type() == ObjectType::ERROR_OBJ)
 	{
