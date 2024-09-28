@@ -20,15 +20,15 @@ public:
 	void NodeEval(DecimalLiteral* decimal) override;
 	void NodeEval(PrefixExpression* prefix) override;
 	void NodeEval(InfixExpression* infix) override;
-	void NodeEval(IfExpression* ifExpr) override;
+	void NodeEval(IfStatement* ifExpr) override;
 	void NodeEval(FunctionLiteral* function) override;
 	void NodeEval(CallExpression* call) override;
 	void NodeEval(ArrayLiteral* array) override;
 	void NodeEval(IndexExpression* index) override;
 	void NodeEval(HashLiteral* hash) override;
 	void NodeEval(NullLiteral* null) override;
-	void NodeEval(WhileExpression* whileExp) override;
-	void NodeEval(ForExpression* forExp) override;
+	void NodeEval(WhileStatement* whileExp) override;
+	void NodeEval(ForStatement* forExp) override;
 	void NodeEval(ContinueStatement* cont) override;
 	void NodeEval(BreakStatement* brk) override;
 

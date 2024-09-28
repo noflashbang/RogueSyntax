@@ -21,12 +21,13 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 	_prefixDispatch[TokenType::TOKEN_FALSE] = std::bind(&Parser::ParseBoolean, this);
 	_prefixDispatch[TokenType::TOKEN_TRUE] = std::bind(&Parser::ParseBoolean, this);
 	_prefixDispatch[TokenType::TOKEN_LPAREN] = std::bind(&Parser::ParseGroupedExpression, this);
-	_prefixDispatch[TokenType::TOKEN_IF] = std::bind(&Parser::ParseIfExpression, this);
 	_prefixDispatch[TokenType::TOKEN_FUNCTION] = std::bind(&Parser::ParseFunctionLiteral, this);
-	_prefixDispatch[TokenType::TOKEN_WHILE] = std::bind(&Parser::ParseWhileExpression, this);
-	_prefixDispatch[TokenType::TOKEN_FOR] = std::bind(&Parser::ParseForExpression, this);
 	_prefixDispatch[TokenType::TOKEN_LBRACKET] = std::bind(&Parser::ParseArrayLiteral, this);
 	_prefixDispatch[TokenType::TOKEN_LBRACE] = std::bind(&Parser::ParseHashLiteral, this);
+
+	//_prefixDispatch[TokenType::TOKEN_IF] = std::bind(&Parser::ParseIfExpression, this);
+	//_prefixDispatch[TokenType::TOKEN_FOR] = std::bind(&Parser::ParseForExpression, this);
+	//_prefixDispatch[TokenType::TOKEN_WHILE] = std::bind(&Parser::ParseWhileExpression, this);
 
 	//register infix operators
 	_infixDispatch[TokenType::TOKEN_PLUS] = std::bind(&Parser::ParseInfixExpression, this, std::placeholders::_1);
@@ -117,6 +118,18 @@ std::shared_ptr<IStatement> Parser::ParseStatement()
 	else if (_currentToken.Type == TokenType::TOKEN_CONTINUE)
 	{
 		statement = ParseContinueStatement();
+	}
+	else if (_currentToken.Type == TokenType::TOKEN_IF)
+	{
+		statement = ParseIfStatement();
+	}
+	else if (_currentToken.Type == TokenType::TOKEN_FOR)
+	{
+		statement = ParseForStatement();
+	}
+	else if (_currentToken.Type == TokenType::TOKEN_WHILE)
+	{
+		statement = ParseWhileStatement();
 	}
 	else
 	{
@@ -248,7 +261,7 @@ std::shared_ptr<IExpression> Parser::ParseGroupedExpression()
 	return expression;
 }
 
-std::shared_ptr<IExpression> Parser::ParseIfExpression()
+std::shared_ptr<IStatement> Parser::ParseIfStatement()
 {
 	auto token = _currentToken;
 
@@ -288,10 +301,10 @@ std::shared_ptr<IExpression> Parser::ParseIfExpression()
 		alternative.swap(alt);
 	}
 
-	return IfExpression::New(token, condition, consequence, alternative);
+	return IfStatement::New(token, condition, consequence, alternative);
 }
 
-std::shared_ptr<IExpression> Parser::ParseWhileExpression()
+std::shared_ptr<IStatement> Parser::ParseWhileStatement()
 {
 	auto token = _currentToken;
 
@@ -317,10 +330,10 @@ std::shared_ptr<IExpression> Parser::ParseWhileExpression()
 	//parse the consequence
 	auto action = ParseBlockStatement();
 
-	return WhileExpression::New(token, condition, action);
+	return WhileStatement::New(token, condition, action);
 }
 
-std::shared_ptr<IExpression> Parser::ParseForExpression()
+std::shared_ptr<IStatement> Parser::ParseForStatement()
 {
 	auto token = _currentToken;
 
@@ -363,7 +376,7 @@ std::shared_ptr<IExpression> Parser::ParseForExpression()
 	//parse the action
 	auto action = ParseBlockStatement();
 
-	return ForExpression::New(token, init, condition, post, action);
+	return ForStatement::New(token, init, condition, post, action);
 }
 
 std::shared_ptr<IExpression> Parser::ParseArrayLiteral()
@@ -742,11 +755,18 @@ std::shared_ptr<IStatement> Parser::ParseExpressionStatement()
 {
 	auto token = _currentToken;
 
+	//if the current token is a semicolon, consume it
+	while (_currentToken.Type == TokenType::TOKEN_SEMICOLON)
+	{
+		NextToken();
+		token = _currentToken;
+	}
+
 	//parse the expression
 	auto expression = ParseExpression(Precedence::LOWEST);
 
 	//if the next token is a semicolon, consume it
-	if (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	while (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
 	{
 		NextToken();
 	}

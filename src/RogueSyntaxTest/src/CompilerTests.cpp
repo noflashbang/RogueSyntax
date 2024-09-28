@@ -492,13 +492,11 @@ TEST_CASE("Conditional Test")
 			{ "if (true) { 10 }; 3333;", { 10, 3333 },
 				{
 					OpCode::Make(OpCode::Constants::OP_TRUE, {}),             //0000
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 10 }),//0001
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 8 }), //0001
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),        //0004
-					OpCode::Make(OpCode::Constants::OP_JUMP, {11}),           //0007
-					OpCode::Make(OpCode::Constants::OP_NULL, {}),             //0010
-					OpCode::Make(OpCode::Constants::OP_POP, {}),              //0011
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),        //0012
-					OpCode::Make(OpCode::Constants::OP_POP, {}) 		      //0015
+					OpCode::Make(OpCode::Constants::OP_POP, {}),              //0007
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),        //0008
+					OpCode::Make(OpCode::Constants::OP_POP, {}) 		      //0011
 				}
 			}
 		}));
@@ -514,13 +512,14 @@ TEST_CASE("Conditional with Else Test")
 			{ "if (true) { 10 } else { 20 }; 3333;", { 10, 20, 3333 },
 				{
 					OpCode::Make(OpCode::Constants::OP_TRUE, {}),             //0000
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 10}), //0001
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 11}), //0001
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),        //0004
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 13 }),         //0007
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),        //0010
-					OpCode::Make(OpCode::Constants::OP_POP, {}),		      //0013
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),        //0014
-					OpCode::Make(OpCode::Constants::OP_POP, {}) 		      //0017
+					OpCode::Make(OpCode::Constants::OP_POP, {}),              //0007
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 15 }),         //0008
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),        //0011
+					OpCode::Make(OpCode::Constants::OP_POP, {}),		      //0014
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),        //0015
+					OpCode::Make(OpCode::Constants::OP_POP, {}) 		      //0018
 				}
 			}
 		}));
@@ -837,6 +836,142 @@ TEST_CASE("Let statement scopes tests")
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("While test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "let x = 10; while (x > 0) { x = x - 1; }", { 10, 0, 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_SUB, {}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+				}
+			},
+		{ "let x = 10; while (x > 0) { x = x - 1; if(x == 5) {break;} }; x;", { 10, 0, 1, 5 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_SUB, {}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 39 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {}),
+				}
+		},
+		{ "let x = 10; while (x > 0) { x = x - 1; if(x == 5) {continue;} }; x;", { 10, 0, 1, 5 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_SUB, {}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 39 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {}),
+				}
+		}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("For loop test")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "for (let i = 0; i < 10; i = i + 1) { i; }", { 0, 10, 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 33 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_POP, {}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+				}
+			},
+			{ "for (let i = 0; i < 10; i = i + 1) { if(i == 5) {break;} }", { 0, 10, 5, 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+				}
+			},
+			{ "for (let i = 0; i < 10; i = i + 1) { if(i == 5) {continue;} }", { 0, 10, 5, 1 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 29 }),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
 				}
 			}
 		}));

@@ -75,14 +75,15 @@ public:
 	std::shared_ptr<IExpression> ParseInfixExpression(const std::shared_ptr<IExpression>& left);
 	std::shared_ptr<IExpression> ParseBoolean();
 	std::shared_ptr<IExpression> ParseGroupedExpression();
-	std::shared_ptr<IExpression> ParseIfExpression();
 	std::shared_ptr<IExpression> ParseFunctionLiteral();
 	std::shared_ptr<IExpression> ParseCallExpression(const std::shared_ptr<IExpression>& function);
-	std::shared_ptr<IExpression> ParseWhileExpression();
-	std::shared_ptr<IExpression> ParseForExpression();
 	std::shared_ptr<IExpression> ParseIndexExpression(const std::shared_ptr<IExpression>& left);
 	std::shared_ptr<IExpression> ParseAssignExpression(const std::shared_ptr<IExpression>& left);
 	std::shared_ptr<IExpression> ParseOpAssignExpression(const std::shared_ptr<IExpression>& left);
+
+	std::shared_ptr<IStatement> ParseIfStatement();
+	std::shared_ptr<IStatement> ParseWhileStatement();
+	std::shared_ptr<IStatement> ParseForStatement();
 
 	std::shared_ptr<IStatement> ParseBlockStatement();
 	std::shared_ptr<IStatement> ParseLetStatement();

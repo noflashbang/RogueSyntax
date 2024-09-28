@@ -404,7 +404,7 @@ void Compiler::NodeCompile(InfixExpression* infix)
 	}
 }
 
-void Compiler::NodeCompile(IfExpression* ifExpr)
+void Compiler::NodeCompile(IfStatement* ifExpr)
 {
 	ifExpr->Condition->Compile(this);
 	if (HasErrors())
@@ -420,28 +420,25 @@ void Compiler::NodeCompile(IfExpression* ifExpr)
 		return;
 	}
 
-	_CompilationUnits.top().RemoveLastPop();
-	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { 9999 });
-
-	auto afterConsequencePos = _CompilationUnits.top().UnitInstructions.size();
-	_CompilationUnits.top().ChangeOperand(jumpNotTruthyPos, afterConsequencePos);
-	
 	if (ifExpr->Alternative != nullptr)
 	{
+		auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { 9999 });
+		auto afterConsequencePos = _CompilationUnits.top().UnitInstructions.size();
+		_CompilationUnits.top().ChangeOperand(jumpNotTruthyPos, afterConsequencePos);
+
 		ifExpr->Alternative->Compile(this);
 		if (HasErrors())
 		{
 			return;
 		}
-		_CompilationUnits.top().RemoveLastPop();
+		auto afterAlternativePos = _CompilationUnits.top().UnitInstructions.size();
+		_CompilationUnits.top().ChangeOperand(jumpPos, afterAlternativePos);
 	}
 	else
 	{
-		Emit(OpCode::Constants::OP_NULL, {});
+		auto afterConsequencePos = _CompilationUnits.top().UnitInstructions.size();
+		_CompilationUnits.top().ChangeOperand(jumpNotTruthyPos, afterConsequencePos);
 	}
-
-	auto afterAlternativePos = _CompilationUnits.top().UnitInstructions.size();
-	_CompilationUnits.top().ChangeOperand(jumpPos, afterAlternativePos);
 }
 
 void Compiler::NodeCompile(FunctionLiteral* function)
@@ -553,20 +550,106 @@ void Compiler::NodeCompile(NullLiteral* null)
 	Emit(OpCode::Constants::OP_NULL, {});
 }
 
-void Compiler::NodeCompile(WhileExpression* whileExp)
+void Compiler::NodeCompile(WhileStatement* whileExp)
 {
+	auto conditionPos = _CompilationUnits.top().UnitInstructions.size();
+	whileExp->Condition->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	//
+	whileExp->Action->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { static_cast<int>(conditionPos) });
+	auto afterBodyPos = _CompilationUnits.top().UnitInstructions.size();
+	_CompilationUnits.top().ChangeOperand(jumpNotTruthyPos, afterBodyPos);
+
+	//check for break and continue
+	while (!_CompilationUnits.top().LoopJumps.empty())
+	{
+		auto jump = _CompilationUnits.top().LoopJumps.top();
+		_CompilationUnits.top().LoopJumps.pop();
+		if (jump.Type == LoopJumpType::LOOP_JUMP_CONTINUE)
+		{
+			_CompilationUnits.top().ChangeOperand(jump.Instruction, conditionPos);
+		}
+		
+		if (jump.Type == LoopJumpType::LOOP_JUMP_BREAK)
+		{
+			_CompilationUnits.top().ChangeOperand(jump.Instruction, afterBodyPos);
+		}
+	}
 }
 
-void Compiler::NodeCompile(ForExpression* forExp)
+void Compiler::NodeCompile(ForStatement* forExp)
 {
+	forExp->Init->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	auto conditionPos = _CompilationUnits.top().UnitInstructions.size();
+	forExp->Condition->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	forExp->Action->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+
+	auto afterBodyPos = _CompilationUnits.top().UnitInstructions.size();
+
+	forExp->Post->Compile(this);
+	if (HasErrors())
+	{
+		return;
+	}
+	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { static_cast<int>(conditionPos) });
+	
+	auto afterLoopPos = _CompilationUnits.top().UnitInstructions.size();
+
+	_CompilationUnits.top().ChangeOperand(jumpNotTruthyPos, afterLoopPos);
+
+	//check for break and continue
+	while (!_CompilationUnits.top().LoopJumps.empty())
+	{
+		auto jump = _CompilationUnits.top().LoopJumps.top();
+		_CompilationUnits.top().LoopJumps.pop();
+		if (jump.Type == LoopJumpType::LOOP_JUMP_CONTINUE)
+		{
+			_CompilationUnits.top().ChangeOperand(jump.Instruction, afterBodyPos);
+		}
+
+		if (jump.Type == LoopJumpType::LOOP_JUMP_BREAK)
+		{
+			_CompilationUnits.top().ChangeOperand(jump.Instruction, afterLoopPos);
+		}
+	}
 }
 
 void Compiler::NodeCompile(ContinueStatement* cont)
 {
+	auto location = Emit(OpCode::Constants::OP_JUMP, { 9999 });
+	_CompilationUnits.top().LoopJumps.push({LoopJumpType::LOOP_JUMP_CONTINUE, location});
 }
 
 void Compiler::NodeCompile(BreakStatement* brk)
 {
+	auto location = Emit(OpCode::Constants::OP_JUMP, { 9999 });
+	_CompilationUnits.top().LoopJumps.push({ LoopJumpType::LOOP_JUMP_BREAK, location });
 }
 
 std::shared_ptr<Compiler> Compiler::New()

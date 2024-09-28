@@ -103,6 +103,7 @@ TEST_CASE("Boolean Arthmetic Instructions")
 
 TEST_CASE("Conditional Instructions")
 {
+	//these check the "last popped value" from the stack
 	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
 		{
 			{ "if(true) {5} ", 5 },
@@ -111,10 +112,8 @@ TEST_CASE("Conditional Instructions")
 			{ "if(1) {5} else {10} ", 5 },
 			{ "if(1 < 2) {5} else {10} ", 5 },
 			{ "if(1 > 2) {5} else {10} ", 10 },
-			{ "if(1 > 2) {5} ", NullObj()},
+			{ "if(1 > 2) {5} ", false},
 			{ "if(1 < 2) {5} ", 5 },
-			{ "if(if(false) {10}) {10} else {20}", 20},
-			{ "if(if(true) {10}) {10} else {20}", 10},
 		}));
 
 	CAPTURE(input);
@@ -182,11 +181,11 @@ TEST_CASE("Function instructions")
 			{ "let a = 5; let b = 10; let c = 15; fn() { let a = 20; let b = 25; let c = 30; a + b + c; }()", 75 },
 			{ "let a = 5; let b = 10; let c = 15; let test = fn() { let a = 20; let b = 25; let c = 30; a + b + c; }; test() + b;", 85 },
 			{ "let identity = fn(x) { x; }; identity(5);", 5 },
-			//{ "fn(x) { x + 2; }(2)", 4 },
-			//{ "let double = fn(x) { x * 2; }; double(5);", 10 },
-			//{ "let add = fn(x, y) { x + y; }; add(5, 5);", 10 },
-			//{ "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20 },
-			//{ "fn(x) { x; }(5)", 5 },
+			{ "fn(x) { x + 2; }(2)", 4 },
+			{ "let double = fn(x) { x * 2; }; double(5);", 10 },
+			{ "let add = fn(x, y) { x + y; }; add(5, 5);", 10 },
+			{ "let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20 },
+			{ "fn(x) { x; }(5)", 5 },
 		}));
 
 	CAPTURE(input);
@@ -204,3 +203,53 @@ TEST_CASE("Functions without arguments")
 	CAPTURE(input);
 	REQUIRE(VmTest(input, expected));
 }
+
+TEST_CASE("While loop instruction")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{"let i = 0; while (i < 10) { let i = i + 1; }; i;", 10},
+			{"let i = 0; while (i < 10) { let i = i + 1; if (i == 5) { break; } }; i;", 5},
+			{"let i = 0; while (i < 10) { let i = i + 1; if (i == 5) { continue; let i = 12; } }; i;", 10},
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("For loop instruction")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { sum = sum + i; }; sum;", 45},
+			{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { if (i == 5) { break; } sum = sum + i; }; sum;", 10},
+			{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { if (i == 5) { continue; } sum = sum + i; }; sum;", 40},
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+
+#ifdef DO_BENCHMARK
+
+TEST_CASE("BENCHMARK VM")
+{
+	auto input = "let x = 0; for (let i = 0; i < 100; i = i + 1) { x = x + i; }; x;";
+	auto expected = 4950;
+
+	SECTION("BENCHMARK VM - VERIFY")
+	{
+		REQUIRE(VmTest(input, expected));
+	}
+
+	SECTION("BENCHMARK VM - TIME")
+	{
+		BENCHMARK("BENCHMARK VM")
+		{
+			return VmTest(input, expected);
+		};
+	}
+}
+
+#endif

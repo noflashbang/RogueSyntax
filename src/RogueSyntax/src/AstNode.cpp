@@ -345,16 +345,16 @@ void BlockStatement::Compile(Compiler* compiler)
 	compiler->NodeCompile(this);
 }
 
-IfExpression::IfExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative) : IExpression(token), Condition(condition), Consequence(consequence), Alternative(alternative)
+IfStatement::IfStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative) : IStatement(token), Condition(condition), Consequence(consequence), Alternative(alternative)
 {
 }
 
-std::shared_ptr<IfExpression> IfExpression::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative)
+std::shared_ptr<IfStatement> IfStatement::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative)
 {
-	return std::make_shared<IfExpression>(token, condition, consequence, alternative);
+	return std::make_shared<IfStatement>(token, condition, consequence, alternative);
 }
 
-std::string IfExpression::ToString() const
+std::string IfStatement::ToString() const
 {
 	std::string result;
 	result.append("if");
@@ -369,12 +369,12 @@ std::string IfExpression::ToString() const
 	return result;
 }
 
-void IfExpression::Eval(Evaluator* evaluator)
+void IfStatement::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
 
-void IfExpression::Compile(Compiler* compiler)
+void IfStatement::Compile(Compiler* compiler)
 {
 	compiler->NodeCompile(this);
 }
@@ -457,16 +457,16 @@ void CallExpression::Compile(Compiler* compiler)
 	compiler->NodeCompile(this);
 }
 
-WhileExpression::WhileExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action) : IExpression(token), Condition(condition), Action(action)
+WhileStatement::WhileStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action) : IStatement(token), Condition(condition), Action(action)
 {
 }
 
-std::shared_ptr<WhileExpression> WhileExpression::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action)
+std::shared_ptr<WhileStatement> WhileStatement::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action)
 {
-	return std::make_shared<WhileExpression>(token, condition, action);
+	return std::make_shared<WhileStatement>(token, condition, action);
 }
 
-std::string WhileExpression::ToString() const
+std::string WhileStatement::ToString() const
 {
 	std::string result;
 	result.append("while");
@@ -476,12 +476,12 @@ std::string WhileExpression::ToString() const
 	return result;
 }
 
-void WhileExpression::Eval(Evaluator* evaluator)
+void WhileStatement::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
 
-void WhileExpression::Compile(Compiler* compiler)
+void WhileStatement::Compile(Compiler* compiler)
 {
 	compiler->NodeCompile(this);
 }
@@ -533,16 +533,16 @@ void ContinueStatement::Compile(Compiler* compiler)
 	compiler->NodeCompile(this);
 }
 
-ForExpression::ForExpression(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action) : IExpression(token), Init(init), Condition(condition), Post(post), Action(action)
+ForStatement::ForStatement(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action) : IStatement(token), Init(init), Condition(condition), Post(post), Action(action)
 {
 }
 
-std::shared_ptr<ForExpression> ForExpression::New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action)
+std::shared_ptr<ForStatement> ForStatement::New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action)
 {
-	return std::make_shared<ForExpression>(token, init, condition, post, action);
+	return std::make_shared<ForStatement>(token, init, condition, post, action);
 }
 
-std::string ForExpression::ToString() const
+std::string ForStatement::ToString() const
 {
 	std::string result;
 	result.append("for (");
@@ -560,11 +560,11 @@ std::string ForExpression::ToString() const
 	return result;
 }
 
-void ForExpression::Eval(Evaluator* evaluator)
+void ForStatement::Eval(Evaluator* evaluator)
 {
 	evaluator->NodeEval(this);
 }
-void ForExpression::Compile(Compiler* compiler)
+void ForStatement::Compile(Compiler* compiler)
 {
 	compiler->NodeCompile(this);
 }

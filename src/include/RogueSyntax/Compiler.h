@@ -7,6 +7,8 @@
 #define SCOPE_GLOBAL "GLOBAL"
 #define SCOPE_LOCAL "LOCAL"
 
+
+
 struct Symbol
 {
 	std::string Name;
@@ -45,6 +47,19 @@ private:
 	std::string _scope;
 };
 
+
+enum LoopJumpType
+{
+	LOOP_JUMP_CONTINUE,
+	LOOP_JUMP_BREAK,
+};
+
+struct LoopJump
+{
+	LoopJumpType Type;
+	int Instruction;
+};
+
 struct CompilationUnit
 {
 	CompilationUnit(std::shared_ptr<SymbolTable> symbolTable)
@@ -60,6 +75,8 @@ struct CompilationUnit
 	Instructions LastInstruction;
 	Instructions PreviousLastInstruction;
 	std::shared_ptr<SymbolTable> SymbolTable;
+
+	std::stack<LoopJump> LoopJumps;
 
 	void SetLastInstruction(const Instructions& instruction);
 	int AddInstruction(Instructions instructions);
@@ -126,15 +143,15 @@ public:
 	void NodeCompile(DecimalLiteral* decimal);
 	void NodeCompile(PrefixExpression* prefix);
 	void NodeCompile(InfixExpression* infix);
-	void NodeCompile(IfExpression* ifExpr);
+	void NodeCompile(IfStatement* ifExpr);
 	void NodeCompile(FunctionLiteral* function);
 	void NodeCompile(CallExpression* call);
 	void NodeCompile(ArrayLiteral* array);
 	void NodeCompile(IndexExpression* index);
 	void NodeCompile(HashLiteral* hash);
 	void NodeCompile(NullLiteral* null);
-	void NodeCompile(WhileExpression* whileExp);
-	void NodeCompile(ForExpression* forExp);
+	void NodeCompile(WhileStatement* whileExp);
+	void NodeCompile(ForStatement* forExp);
 	void NodeCompile(ContinueStatement* cont);
 	void NodeCompile(BreakStatement* brk);
 

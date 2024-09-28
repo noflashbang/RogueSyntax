@@ -200,15 +200,15 @@ struct BlockStatement : IStatement
 	std::vector<std::shared_ptr<IStatement>> Statements;
 };
 
-struct IfExpression : IExpression
+struct IfStatement : IStatement
 {
-	IfExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
-	virtual ~IfExpression() = default;
+	IfStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
+	virtual ~IfStatement() = default;
 	std::string ToString() const override;
 
 	void Eval(Evaluator* evaluator);
 	void Compile(Compiler* compiler);
-	static std::shared_ptr<IfExpression> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
+	static std::shared_ptr<IfStatement> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
 
 	std::shared_ptr<IExpression> Condition;
 	std::shared_ptr<IStatement> Consequence;
@@ -243,15 +243,15 @@ struct CallExpression : IExpression
 	std::vector<std::shared_ptr<IExpression>> Arguments;
 };
 
-struct WhileExpression : IExpression
+struct WhileStatement : IStatement
 {
-	WhileExpression(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
-	virtual ~WhileExpression() = default;
+	WhileStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
+	virtual ~WhileStatement() = default;
 	std::string ToString() const override;
 
 	void Eval(Evaluator* evaluator);
 	void Compile(Compiler* compiler);
-	static std::shared_ptr<WhileExpression> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
+	static std::shared_ptr<WhileStatement> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
 
 	std::shared_ptr<IExpression> Condition;
 	std::shared_ptr<IStatement> Action;
@@ -280,15 +280,15 @@ struct ContinueStatement : IStatement
 
 };
 
-struct ForExpression : IExpression
+struct ForStatement : IStatement
 {
-	ForExpression(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
-	virtual ~ForExpression() = default;
+	ForStatement(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
+	virtual ~ForStatement() = default;
 	std::string ToString() const override;
 
 	void Eval(Evaluator* evaluator);
 	void Compile(Compiler* compiler);
-	static std::shared_ptr<ForExpression> New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
+	static std::shared_ptr<ForStatement> New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
 
 	std::shared_ptr<IStatement> Init;
 	std::shared_ptr<IExpression> Condition;

@@ -207,7 +207,7 @@ void RecursiveEvaluator::NodeEval(InfixExpression* infix)
 	_results.push(EvalInfixExpression(infix->BaseToken, left, right));
 }
 
-void RecursiveEvaluator::NodeEval(IfExpression* ifExpr)
+void RecursiveEvaluator::NodeEval(IfStatement* ifExpr)
 {
 	auto condition = Eval(ifExpr->Condition, _env);
 
@@ -356,7 +356,7 @@ void RecursiveEvaluator::NodeEval(HashLiteral* hash)
 	_results.push(HashObj::New(elems));
 }
 
-void RecursiveEvaluator::NodeEval(WhileExpression* whileEx)
+void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 {
 	auto condition = Eval(whileEx->Condition, _env);
 
@@ -425,7 +425,7 @@ void RecursiveEvaluator::NodeEval(WhileExpression* whileEx)
 	_results.push(NullObj::NULL_OBJ_REF);
 }
 
-void RecursiveEvaluator::NodeEval(ForExpression* forEx)
+void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 {
 	auto init = Eval(forEx->Init, _env);
 

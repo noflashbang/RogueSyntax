@@ -32,15 +32,15 @@ public:
 	virtual void NodeEval(DecimalLiteral* decimal) = 0;
 	virtual void NodeEval(PrefixExpression* prefix) = 0;
 	virtual void NodeEval(InfixExpression* infix) = 0;
-	virtual void NodeEval(IfExpression* ifExpr) = 0;
+	virtual void NodeEval(IfStatement* ifExpr) = 0;
 	virtual void NodeEval(FunctionLiteral* function) = 0;
 	virtual void NodeEval(CallExpression* call) = 0;
 	virtual void NodeEval(ArrayLiteral* array) = 0;
 	virtual void NodeEval(IndexExpression* index) = 0;
 	virtual void NodeEval(HashLiteral* hash) = 0;
 	virtual void NodeEval(NullLiteral* null) = 0;
-	virtual void NodeEval(WhileExpression* whileExp) = 0;
-	virtual void NodeEval(ForExpression* forExp) = 0;
+	virtual void NodeEval(WhileStatement* whileExp) = 0;
+	virtual void NodeEval(ForStatement* forExp) = 0;
 	virtual void NodeEval(ContinueStatement* cont) = 0;
 	virtual void NodeEval(BreakStatement* brk)=0;
 
