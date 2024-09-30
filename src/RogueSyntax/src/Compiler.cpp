@@ -250,15 +250,17 @@ void Compiler::NodeCompile(ReturnStatement* ret)
 
 void Compiler::NodeCompile(LetStatement* let)
 {
-	let->Value->Compile(this);
-	if (HasErrors())
-	{
-		return;
-	}
+	
 	if (typeid(*(let->Name.get())) == typeid(Identifier))
 	{
 		auto ident = dynamic_cast<Identifier*>(let->Name.get());
 		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
+		let->Value->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+
 		if (symbol.Scope == SCOPE_LOCAL)
 		{
 			Emit(OpCode::Constants::OP_SET_LOCAL, { symbol.Index });

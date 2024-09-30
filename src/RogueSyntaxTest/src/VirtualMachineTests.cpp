@@ -266,6 +266,19 @@ TEST_CASE("Closure Tests")
 	REQUIRE(VmTest(input, expected));
 }
 
+TEST_CASE("Recursive function call")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{"let i = 0; let countDown = fn(x,y) { if (x == 0) { return y; } countDown(x - 1, y + 1); }; countDown(1,i);", 1},
+			{"let i = 0; let countDown = fn(x,y) { if (x == 0) { return y; } countDown(x - 1, y + 1); }; countDown(2,i);", 2},
+			{"let i = 0; let countDown = fn(x,y) { if (x == 0) { return y; } countDown(x - 1, y + 1); }; countDown(3,i);", 3},
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
 #ifdef DO_BENCHMARK
 
 TEST_CASE("BENCHMARK VM")
