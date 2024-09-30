@@ -1,18 +1,20 @@
+#include "Compiler.h"
+#include "Compiler.h"
 #include <pch.h>
 
 
-SymbolTable::SymbolTable(std::string scope)
-	: _scope(scope), _outer(nullptr)
+SymbolTable::SymbolTable(std::string scope, std::shared_ptr<BuiltIn> externs)
+	: _scope(scope), _outer(nullptr), _externals(externs)
 {
 }
 
-SymbolTable::SymbolTable()
-	: _scope(SCOPE_GLOBAL), _outer(nullptr)
+SymbolTable::SymbolTable(std::shared_ptr<BuiltIn> externs)
+	: _scope(SCOPE_GLOBAL), _outer(nullptr), _externals(externs)
 {
 }
 
 SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> outer)
-	: _outer(outer), _scope(SCOPE_LOCAL)
+	: _outer(outer), _scope(SCOPE_LOCAL), _externals(outer->_externals)
 {
 }
 
@@ -51,15 +53,35 @@ Symbol SymbolTable::Resolve(const std::string& name)
 
 	if (index == -1 && _outer != nullptr)
 	{
-		return _outer->Resolve(name);
+		auto upval = _outer->Resolve(name);
+
+		if (upval.Scope == SCOPE_GLOBAL || upval.Scope == SCOPE_EXTERN)
+		{
+			return upval;
+		}
+
+		return DefineFree(upval);
 	}
 
 	if (index == -1)
 	{
+		if (_externals->IsBuiltIn(name))
+		{
+			auto index = _externals->BuiltInIdx(name);
+			return Symbol{ name, SCOPE_EXTERN, index };
+		}
 		throw std::runtime_error("Symbol not found");
 	}
 
 	return _store[index];
+}
+
+Symbol SymbolTable::DefineFree(const Symbol& symbol)
+{
+	_free.push_back(symbol);
+	auto freeSym = Symbol{ symbol.Name, SCOPE_FREE, static_cast<int>(_free.size()-1) };
+	_store.push_back(freeSym);
+	return freeSym;
 }
 
 int CompilationUnit::AddInstruction(Instructions instructions)
@@ -123,8 +145,9 @@ Compiler::~Compiler()
 {
 }
 
-CompilerError Compiler::Compile(std::shared_ptr<INode> node)
+CompilerError Compiler::Compile(std::shared_ptr<INode> node, const std::shared_ptr<BuiltIn>& externs)
 {
+	_externals = externs;
 	return Compile(node.get());
 }
 
@@ -150,7 +173,7 @@ int Compiler::EnterUnit()
 {
 	if (_CompilationUnits.empty())
 	{
-		_CompilationUnits.push(CompilationUnit());
+		_CompilationUnits.push(CompilationUnit(_externals));
 	}
 	else
 	{
@@ -254,9 +277,17 @@ void Compiler::NodeCompile(Identifier* ident)
 	{
 		Emit(OpCode::Constants::OP_GET_LOCAL, { symbol.Index });
 	}
-	else
+	else if(symbol.Scope == SCOPE_GLOBAL)
 	{
 		Emit(OpCode::Constants::OP_GET_GLOBAL, { symbol.Index });
+	}
+	else if(symbol.Scope == SCOPE_EXTERN)
+	{
+		Emit(OpCode::Constants::OP_GET_EXTRN, { symbol.Index });
+	}
+	else
+	{
+		Emit(OpCode::Constants::OP_GET_FREE, { symbol.Index });
 	}
 }
 
@@ -464,6 +495,27 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 
 	auto unit = ExitUnit();
 
+	auto frees = unit.SymbolTable->FreeSymbols();
+	for (auto sym : frees)
+	{
+		if (sym.Scope == SCOPE_LOCAL)
+		{
+			Emit(OpCode::Constants::OP_GET_LOCAL, { sym.Index });
+		}
+		else if (sym.Scope == SCOPE_GLOBAL)
+		{
+			Emit(OpCode::Constants::OP_GET_GLOBAL, { sym.Index });
+		}
+		else if (sym.Scope == SCOPE_EXTERN)
+		{
+			Emit(OpCode::Constants::OP_GET_EXTRN, { sym.Index });
+		}
+		else
+		{
+			Emit(OpCode::Constants::OP_GET_FREE, { sym.Index });
+		}
+	}
+	
 	if (unit.LastInstructionIs(OpCode::Constants::OP_POP))
 	{
 		unit.RemoveLastPop();
@@ -476,7 +528,7 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 	}
 
 	auto index = AddConstant(FunctionCompiledObj::New(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), function->Parameters.size()));
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<int>(frees.size())});
 }
 
 void Compiler::NodeCompile(CallExpression* call)

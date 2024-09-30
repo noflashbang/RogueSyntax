@@ -13,7 +13,7 @@ TEST_CASE("Instruction String")
 		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {65535}) }
 	};
 
-	std::string expected = { "0000:  OP_CONSTANT            1\n0003:  OP_CONSTANT            2\n0006:  OP_CONSTANT        65535" };
+	std::string expected = { "0000:  OP_CONSTANT     1       \n0003:  OP_CONSTANT     2       \n0006:  OP_CONSTANT     65535   " };
 
 	auto flattened = ConcatInstructions(instructions);
 	auto actual = OpCode::PrintInstructions(flattened);
@@ -28,7 +28,7 @@ TEST_CASE("Instruction String 2")
 		{ OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}) }
 	};
 
-	std::string expected = { "0000:  OP_ADD          \n0001:  OP_CONSTANT            2\n0004:  OP_CONSTANT            3" };
+	std::string expected = { "0000:  OP_ADD          \n0001:  OP_CONSTANT     2       \n0004:  OP_CONSTANT     3       " };
 
 	auto flattened = ConcatInstructions(instructions);
 	auto actual = OpCode::PrintInstructions(flattened);
@@ -716,7 +716,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2, 0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
@@ -727,7 +727,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2, 0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
@@ -738,7 +738,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2, 0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
@@ -746,7 +746,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN, {}),
 				}),0,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
@@ -755,7 +755,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
@@ -765,7 +765,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
 					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
@@ -781,7 +781,7 @@ TEST_CASE("Function Tests")
 				OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,3), 1,2,3},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 0}),
 					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
@@ -808,7 +808,7 @@ TEST_CASE("Let statement scopes tests")
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
@@ -819,7 +819,7 @@ TEST_CASE("Let statement scopes tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),1,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1,0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
@@ -834,7 +834,7 @@ TEST_CASE("Let statement scopes tests")
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),2,0)},
 				{
-					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2,0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -974,6 +974,59 @@ TEST_CASE("For loop test")
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
 				}
 			}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("External functions")
+{
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "len([]);", { },
+				{
+					OpCode::Make(OpCode::Constants::OP_GET_EXTRN, {0}),
+					OpCode::Make(OpCode::Constants::OP_ARRAY, {0}),
+					OpCode::Make(OpCode::Constants::OP_CALL, {1}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
+		}));
+	
+	CAPTURE(input);
+	REQUIRE(CompilerTest(expectedConstants, expectedInstructions, input));
+}
+
+TEST_CASE("Closure Test")
+{
+		auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		{
+			{ "let newClosure = fn(a) { fn(b) { a + b; }; }; let closure = newClosure(2); closure(3);", { 
+				FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_GET_FREE, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_ADD, {}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}),1,1), 
+				FunctionCompiledObj::New(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 1}),
+					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
+				}),0,0), 2, 3 },
+				{
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
+					OpCode::Make(OpCode::Constants::OP_CALL, {1}),
+					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
+					OpCode::Make(OpCode::Constants::OP_CALL, {1}),
+					OpCode::Make(OpCode::Constants::OP_POP, {})
+				}
+			},
 		}));
 
 	CAPTURE(input);

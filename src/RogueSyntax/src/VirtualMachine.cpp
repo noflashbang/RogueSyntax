@@ -1,10 +1,18 @@
+#include "VirtualMachine.h"
 #include "pch.h"
 
 RogueVM::RogueVM(const ByteCode& byteCode)
 	: _byteCode(byteCode)
 {
 	//main frame
-	PushFrame(Frame(FunctionCompiledObj::New(_byteCode.Instructions, 0, 0), 0));
+	PushFrame(Frame(ClosureObj::New(FunctionCompiledObj::New(_byteCode.Instructions, 0, 0), {}), 0));
+	_externals = nullptr;
+}
+
+RogueVM::RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals) : _byteCode(byteCode), _externals(externals)
+{
+	//main frame
+	PushFrame(Frame(ClosureObj::New(FunctionCompiledObj::New(_byteCode.Instructions, 0, 0), {}), 0));
 }
 
 RogueVM::~RogueVM()
@@ -188,6 +196,21 @@ void RogueVM::Run()
 			
 			break;
 		}
+		case OpCode::Constants::OP_GET_EXTRN:
+		{
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			Push(BuiltInObj::New(idx));
+			break;
+		}
+		case OpCode::Constants::OP_GET_FREE:
+		{
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			auto free = CurrentFrame().Closure()->Frees[idx];
+			Push(free);
+			break;
+		}
 		case OpCode::Constants::OP_CALL:
 		{
 			auto numArgs = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
@@ -195,21 +218,62 @@ void RogueVM::Run()
 
 			auto calleeIdx = _sp - 1 - numArgs;
 			auto callee = _stack[calleeIdx];
-			if (callee->Type() != ObjectType::FUNCTION_COMPILED_OBJ)
+			if (callee->Type() == ObjectType::CLOSURE_OBJ)
 			{
-				throw std::runtime_error("Can only call functions");
-			}
-			auto fn = std::dynamic_pointer_cast<FunctionCompiledObj>(callee);
+				auto closure = std::dynamic_pointer_cast<ClosureObj>(callee);
+				auto fn = closure->Function;
+				if (numArgs != fn->NumParameters)
+				{
+					throw std::runtime_error(std::format("Expected {} arguments but got {}", fn->NumParameters, numArgs));
+				}
 
-			if (numArgs != fn->NumParameters)
+				auto frame = Frame(closure, _sp - numArgs);
+				PushFrame(frame);
+				//make room for locals
+				_sp = frame.BasePointer() + fn->NumLocals;
+			}
+			else if (callee->Type() == ObjectType::BUILTIN_OBJ)
 			{
-				throw std::runtime_error(std::format("Expected {} arguments but got {}", fn->NumParameters, numArgs));
-			}
+				if (_externals == nullptr)
+				{
+					throw std::runtime_error("No external symbols provided");
+				}
 
-			auto frame = Frame(fn, _sp-numArgs);
-			PushFrame(frame);
-			//make room for locals
-			_sp = frame.BasePointer() + fn->NumLocals;
+				auto builtin = std::dynamic_pointer_cast<BuiltInObj>(callee);
+				auto args = std::vector<std::shared_ptr<IObject>>(_stack.begin() + calleeIdx + 1, _stack.begin() + _sp);
+				auto fn = builtin->Resolve(_externals);
+				auto result = fn(args);
+				_sp = calleeIdx;
+
+				if (result != nullptr && result->Type() != ObjectType::VOID_OBJ)
+				{
+					Push(result);
+				}
+			}
+			else
+			{
+				throw std::runtime_error("Can only call functions or externals");
+			}
+			break;
+		}
+		case OpCode::Constants::OP_CLOSURE:
+		{
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			auto numFree = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+
+			auto fn = std::dynamic_pointer_cast<FunctionCompiledObj>(constants[idx]);
+			
+			std::vector<std::shared_ptr<IObject>> free(numFree);
+			for (int i = 0; i < numFree; i++)
+			{
+				free[i] = _stack[_sp - numFree + i];
+			}
+			_sp = _sp - numFree;
+
+			auto closure = ClosureObj::New(fn, free);
+			Push(closure);
 			break;
 		}
 		case OpCode::Constants::OP_RETURN:
@@ -293,7 +357,6 @@ Frame RogueVM::PopFrame()
 	}
 	return _frames[--_frameIndex];
 }
-
 
 void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 {

@@ -1,3 +1,4 @@
+#include "IObject.h"
 #include "pch.h"
 
 unsigned int ObjectType::NextObjectType = 0;
@@ -17,6 +18,7 @@ const ObjectType ObjectType::HASH_OBJ      = { NextObjectType++, "HASH" };
 const ObjectType ObjectType::IDENT_OBJ     = { NextObjectType++, "IDENT" };
 
 const ObjectType ObjectType::FUNCTION_COMPILED_OBJ = { NextObjectType++, "FUNCTION_COMPILED" };
+const ObjectType ObjectType::CLOSURE_OBJ = { NextObjectType++, "CLOSURE" };
 
 const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
 const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
@@ -135,9 +137,23 @@ std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<std::shared_ptr<
 	return std::make_shared<FunctionObj>(parameters, body);
 }
 
+std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> BuiltInObj::Resolve(std::shared_ptr<BuiltIn> externals) const
+{
+	if (Idx != -1)
+	{
+		return externals->GetBuiltInFunction(Idx);
+	}
+	return externals->GetBuiltInFunction(Name);
+}
+
 std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
 {
 	return std::make_shared<BuiltInObj>(name);
+}
+
+std::shared_ptr<BuiltInObj> BuiltInObj::New(const int idx)
+{
+	return std::make_shared<BuiltInObj>(idx);
 }
 
 std::shared_ptr<FunctionCompiledObj> FunctionCompiledObj::New(const Instructions& instructions, int numLocals, int numParameters)
@@ -145,4 +161,8 @@ std::shared_ptr<FunctionCompiledObj> FunctionCompiledObj::New(const Instructions
 	return std::make_shared<FunctionCompiledObj>(instructions, numLocals, numParameters);
 }
 
+std::shared_ptr<ClosureObj> ClosureObj::New(const std::shared_ptr<FunctionCompiledObj>& function, const std::vector<std::shared_ptr<IObject>>& free)
+{
+	return std::make_shared<ClosureObj>(function, free);
+}
 

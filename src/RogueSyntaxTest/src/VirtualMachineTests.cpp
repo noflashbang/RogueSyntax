@@ -230,6 +230,41 @@ TEST_CASE("For loop instruction")
 	REQUIRE(VmTest(input, expected));
 }
 
+TEST_CASE("Extern/Builtin Function tests")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{"len(\"\")", 0},
+			{"len(\"four\")", 4},
+			{"len(\"hello world\")", 11},
+			{"len(1)", "argument to `len` not supported, got INTEGER"},
+			{"len(\"one\", \"two\")", "wrong number of arguments. got=2, wanted=1"},
+			{"len([1, 2, 3])", 3},
+			{"first([1, 2, 3])", 1},
+			{"last([1, 2, 3])", 3},
+			{"rest([1, 2, 3])", ArrayObj::New({ IntegerObj::New(2), IntegerObj::New(3) })},
+			{"push([1, 2, 3], 4)", ArrayObj::New({ IntegerObj::New(1), IntegerObj::New(2), IntegerObj::New(3), IntegerObj::New(4) })},
+			{"push([1, 2, 3], 4, 5)", "wrong number of arguments. got=3, wanted=2"},
+			{"push(1, 2)", "argument to `push` must be ARRAY, got INTEGER"},
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Closure Tests")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{"let newClosure = fn(a) { fn() { a; }; }; let closure = newClosure(99); closure();", 99},
+			{"let newAdder = fn(a, b) { fn(c) { a + b + c; }; }; let adder = newAdder(1, 2); adder(8);", 11},
+			{"let newAdder = fn(a, b) { let c = a + b; fn(d) { c + d; }; }; let adder = newAdder(1, 2); adder(8);", 11},
+			{"let newClosure = fn(a) { fn(b) { a + b; }; }; let closure = newClosure(2); closure(3);", 5}
+		}));
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
 
 #ifdef DO_BENCHMARK
 

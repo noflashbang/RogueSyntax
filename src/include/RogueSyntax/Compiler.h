@@ -6,6 +6,8 @@
 
 #define SCOPE_GLOBAL "GLOBAL"
 #define SCOPE_LOCAL "LOCAL"
+#define SCOPE_EXTERN "EXTERN"
+#define SCOPE_FREE "FREE"
 
 
 
@@ -20,30 +22,36 @@ class SymbolTable
 {
 public:
 	SymbolTable(std::shared_ptr<SymbolTable> outer);
-	SymbolTable(std::string scope);
-	SymbolTable();
+	SymbolTable(std::string scope, std::shared_ptr<BuiltIn> externs);
+	SymbolTable(std::shared_ptr<BuiltIn> externs);
 
 	Symbol Define(const std::string& name);
 	Symbol Resolve(const std::string& name);
+
+	Symbol DefineFree(const Symbol& symbol);
 	
 	inline int NumberOfSymbols() const { return _store.size(); };
 	inline std::shared_ptr<SymbolTable> Outer() const { return _outer; };
 
-	static std::shared_ptr<SymbolTable> New()
+	std::vector<Symbol> FreeSymbols() { return _free; };
+
+	static std::shared_ptr<SymbolTable> New(std::shared_ptr<BuiltIn> externs)
 	{
-		return std::make_shared<SymbolTable>();
+		return std::make_shared<SymbolTable>(externs);
 	}
-	static std::shared_ptr<SymbolTable> New(std::string scope)
+	static std::shared_ptr<SymbolTable> New(std::string scope, std::shared_ptr<BuiltIn> externs)
 	{
-		return std::make_shared<SymbolTable>(scope);
+		return std::make_shared<SymbolTable>(scope, externs);
 	}
 	static std::shared_ptr<SymbolTable> New(std::shared_ptr<SymbolTable> outer)
 	{
 		return std::make_shared<SymbolTable>(outer);
 	}
 private:
+	std::shared_ptr<BuiltIn> _externals;
 	std::shared_ptr<SymbolTable> _outer;
 	std::vector<Symbol> _store;
+	std::vector<Symbol> _free;
 	std::string _scope;
 };
 
@@ -66,9 +74,9 @@ struct CompilationUnit
 	{
 		SymbolTable = SymbolTable::New(symbolTable);
 	}
-	CompilationUnit()
+	CompilationUnit(std::shared_ptr<BuiltIn> externs)
 	{
-		SymbolTable = SymbolTable::New();
+		SymbolTable = SymbolTable::New(externs);
 	}
 
 	Instructions UnitInstructions;
@@ -117,7 +125,7 @@ class Compiler
 public:
 	Compiler();
 	~Compiler();
-	CompilerError Compile(std::shared_ptr<INode> node);
+	CompilerError Compile(std::shared_ptr<INode> node, const std::shared_ptr<BuiltIn>& externs);
 	CompilerError Compile(INode* node);
 
 	ByteCode GetByteCode() const;
@@ -158,9 +166,10 @@ public:
 	static std::shared_ptr<Compiler> New();
 private:
 	std::stack<CompilationUnit> _CompilationUnits;
+	std::shared_ptr<BuiltIn> _externals;
 
 	std::vector<std::shared_ptr<IObject>> _constants;
-
+	
 	std::vector<std::string> _errors;
 	std::stack<CompilerErrorInfo> _errorStack;
 };

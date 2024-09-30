@@ -22,6 +22,7 @@ void InteractiveCompiler::Start()
 
 void InteractiveCompiler::Run()
 {
+	auto builtin = BuiltIn::New();
 	Lexer lexer(_input);
 	Parser parser(lexer);
 
@@ -36,7 +37,7 @@ void InteractiveCompiler::Run()
 	}
 
 	auto compile = Compiler::New();
-	auto compError = compile->Compile(program);
+	auto compError = compile->Compile(program, builtin);
 	if (compile->HasErrors())
 	{
 		for (const auto& error : compile->GetErrors())
@@ -76,6 +77,7 @@ void InteractiveCompiler::Run()
 
 void InteractiveCompiler::PrintDecompile()
 {
+	auto builtin = BuiltIn::New();
 	Lexer lexer(_input);
 	Parser parser(lexer);
 
@@ -90,7 +92,7 @@ void InteractiveCompiler::PrintDecompile()
 	}
 
 	auto compile = Compiler::New();
-	auto compError = compile->Compile(program);
+	auto compError = compile->Compile(program, builtin);
 	if (compile->HasErrors())
 	{
 		for (const auto& error : compile->GetErrors())

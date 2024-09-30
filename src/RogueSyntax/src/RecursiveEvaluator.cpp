@@ -282,7 +282,18 @@ void RecursiveEvaluator::NodeEval(CallExpression* call)
 			return;
 		}
 
-		_results.push(builtInToCall(evalArgs, call->BaseToken));
+		try
+		{
+			auto result = builtInToCall(evalArgs);
+			if (result != VoidObj::VOID_OBJ_REF) //check for a "void" return
+			{
+				_results.push(result);
+			}
+		}
+		catch (const std::exception& e)
+		{
+			_results.push(MakeError(e.what(), call->BaseToken));
+		}
 	}
 	else
 	{

@@ -36,8 +36,11 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_SET_LOCAL, Definition{ "OP_SET_LOCAL", { 2 } } },
 	{ OpCode::Constants::OP_GET_GLOBAL, Definition{ "OP_GET_GLOBAL", { 2 } } },
 	{ OpCode::Constants::OP_SET_GLOBAL, Definition{ "OP_SET_GLOBAL", { 2 } } },
+	{ OpCode::Constants::OP_GET_EXTRN, Definition{ "OP_GET_EXTRN", { 2 } } },
+	{ OpCode::Constants::OP_GET_FREE, Definition{ "OP_GET_FREE", { 2 } } },
 	{ OpCode::Constants::OP_INDEX, Definition{ "OP_INDEX", {} } },
 	{ OpCode::Constants::OP_CALL, Definition{ "OP_CALL", { 2 } } },
+	{ OpCode::Constants::OP_CLOSURE, Definition{ "OP_CLOSURE", { 2, 2 } } },
 	{ OpCode::Constants::OP_RETURN, Definition{ "OP_RETURN", {} } },
 	{ OpCode::Constants::OP_RETURN_VALUE, Definition{ "OP_RETURN_VALUE", {} } },
 };
@@ -140,10 +143,24 @@ std::string OpCode::PrintInstructions(const Instructions& instructions)
 	{
 		auto [op, operands, readOffset] = OpCode::ReadOperand(instructions, offset);
 		result += std::format("{:0>4}:  {:16}", offset, std::get<Definition>(OpCode::Lookup(op)).Name);
-		for (const auto& operand : operands)
+		if (operands.size() == 1)
 		{
-			result += std::format("{:8}", operand);
+			result += std::format("{: <8}", operands[0]);
 		}
+		else if (operands.size() == 2)
+		{
+			result += std::format("{: <4}", operands[0]);
+			result += std::format("{: <4}", operands[1]);
+
+		}
+		else
+		{
+			for (const auto& operand : operands)
+			{
+				result += std::format("{: <2}", operand);
+			}
+		}
+
 		result += "\n";
 		offset = readOffset;
 	}

@@ -131,6 +131,7 @@ bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std
 
 bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
 {
+	auto builtIn = BuiltIn::New();
 	Compiler compiler;
 	Lexer lexer(input);
 	Parser parser(lexer);
@@ -147,7 +148,7 @@ bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std
 	REQUIRE(errors.size() == 0);
 
 
-	compiler.Compile(node);
+	compiler.Compile(node, builtIn);
 	errors = compiler.GetErrors();
 	if (errors.size() > 0)
 	{
@@ -164,6 +165,7 @@ bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std
 
 bool VmTest(std::string input, ConstantValue expected)
 {
+	auto builtIn = BuiltIn::New();
 	Compiler compiler;
 	Lexer lexer(input);
 	Parser parser(lexer);
@@ -179,7 +181,7 @@ bool VmTest(std::string input, ConstantValue expected)
 	}
 	REQUIRE(errors.size() == 0);
 
-	compiler.Compile(node);
+	compiler.Compile(node, builtIn);
 	errors = compiler.GetErrors();
 	if (errors.size() > 0)
 	{
@@ -191,10 +193,26 @@ bool VmTest(std::string input, ConstantValue expected)
 	REQUIRE(errors.size() == 0);
 
 	auto byteCode = compiler.GetByteCode();
-	RogueVM vm(byteCode);
-	vm.Run();
+	RogueVM vm(byteCode, builtIn);
 
-	auto actual = vm.LastPoppped();
-	REQUIRE(actual != nullptr);
-	return TestConstant(expected, actual);
+	try
+	{
+		vm.Run();
+		auto actual = vm.LastPoppped();
+		REQUIRE(actual != nullptr);
+		return TestConstant(expected, actual);
+	}
+	catch (const std::exception& e)
+	{
+		if (std::holds_alternative<std::string>(expected))
+		{
+			auto expectedError = std::get<std::string>(expected);
+			REQUIRE(expectedError == e.what());
+			return true;
+		}
+		else
+		{
+			throw;
+		}
+	}
 }

@@ -57,9 +57,12 @@ struct OpCode
 		OP_SET_LOCAL,
 		OP_GET_GLOBAL,
 		OP_SET_GLOBAL,
+		OP_GET_EXTRN,
+		OP_GET_FREE,
 		//op
 		OP_INDEX,
 		OP_CALL,
+		OP_CLOSURE,
 		OP_RETURN,
 		OP_RETURN_VALUE,
 	};

@@ -405,10 +405,18 @@ void StackEvaluator::NodeEval(CallExpression* call)
 				Push_Result(MakeError(std::format("unknown function: {}", func->Name), call->BaseToken));
 				return;
 			}
-			auto result = builtInToCall(evalArgs, call->BaseToken);
-			if (result != VoidObj::VOID_OBJ_REF) //check for a "void" return
+
+			try
 			{
-				Push_Result(result);
+				auto result = builtInToCall(evalArgs);
+				if (result != VoidObj::VOID_OBJ_REF) //check for a "void" return
+				{
+					Push_Result(result);
+				}
+			}
+			catch (const std::exception& e)
+			{
+				_results.push(MakeError(e.what(), call->BaseToken));
 			}
 		}
 		else
