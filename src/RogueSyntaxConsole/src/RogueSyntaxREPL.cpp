@@ -9,53 +9,60 @@ void Repl::Start()
 
 	while (true)
 	{
+		std::string current;
 		std::cout << _prompt;
-		std::getline(std::cin, input);
+		std::getline(std::cin, current);
 
-		if(input.empty())
+		
+
+		if (current.empty())
 		{
 			break;
 		}
-
-		Lexer lexer(input);
-		Parser parser(lexer);
-
-		auto program = parser.ParseProgram();
-		if (!parser.Errors().empty())
+		else
 		{
-			for (const auto& error : parser.Errors())
-			{
-				std::cout << "Parser error: " << error << std::endl;
-			}
-			continue;
+			input.append(current);
 		}
+	}
 
-		auto result = eval->Eval(program, env);
+	Lexer lexer(input);
+	Parser parser(lexer);
 
-		if (result == nullptr)
+	auto program = parser.ParseProgram();
+	if (!parser.Errors().empty())
+	{
+		for (const auto& error : parser.Errors())
 		{
-			continue;
+			std::cout << "Parser error: " << error << std::endl;
 		}
+		return;
+	}
 
-		if (result->Type() == ObjectType::ERROR_OBJ)
+	auto result = eval->Eval(program, env);
+
+	if (result == nullptr)
+	{
+		return;
+	}
+
+	if (result->Type() == ObjectType::ERROR_OBJ)
+	{
+		auto error = std::dynamic_pointer_cast<ErrorObj>(result);
+		std::cout << "Error: " << error->Message << std::endl;
+
+		//print out the source and error location
+		auto location = error->Token.Location;
+		std::cout << input << std::endl;
+		for (size_t i = 1; i < location.Character; i++)
 		{
-			auto error = std::dynamic_pointer_cast<ErrorObj>(result);
-			std::cout << "Error: " << error->Message << std::endl;
-
-			//print out the source and error location
-			auto location = error->Token.Location;
-			std::cout << input << std::endl;
-			for (size_t i = 1; i < location.Character; i++)
-			{
-				std::cout << " ";
-			}
-			std::cout << "^" << std::endl;
+			std::cout << " ";
 		}
+		std::cout << "^" << std::endl;
+	}
 
-		if (result != nullptr)
-		{
-			std::cout << result->Inspect() << std::endl;
-		}
+	if (result != nullptr)
+	{
+		std::cout << result->Inspect() << std::endl;
 	}
 
 	eval->FreeEnv(env);

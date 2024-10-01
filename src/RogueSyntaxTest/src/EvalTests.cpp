@@ -582,6 +582,7 @@ TEST_CASE("Incrementer Tests")
 	REQUIRE(result->Inspect() == expected);
 }
 
+#ifdef DO_BENCHMARK
 
 TEST_CASE("BENCHMARK STACK EVALUATOR")
 {
@@ -622,3 +623,5 @@ TEST_CASE("BENCHMARK RECURSIVE EVALUATOR")
 		};
 	}
 }
+
+#endif

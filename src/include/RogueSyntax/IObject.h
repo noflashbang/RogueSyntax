@@ -3,7 +3,9 @@
 #include "StandardLib.h"
 #include "Token.h"
 #include "AstNode.h"
+#include "OpCode.h"
 
+class BuiltIn;
 struct Environment;
 
 struct ObjectType
@@ -71,6 +73,9 @@ struct ObjectType
 	static const ObjectType ERROR_OBJ;
 	static const ObjectType FUNCTION_OBJ;
 	static const ObjectType BUILTIN_OBJ;
+
+	static const ObjectType FUNCTION_COMPILED_OBJ;
+	static const ObjectType CLOSURE_OBJ;
 
 	//special flow control objects
 	static const ObjectType BREAK_OBJ;
@@ -582,9 +587,12 @@ public:
 class BuiltInObj : public IObject
 {
 public:
-	BuiltInObj(const std::string& name) : Name(name) {}
+	BuiltInObj(const std::string& name) : Name(name), Idx(-1) {}
+	BuiltInObj(const int idx) : Name(""), Idx(idx) {}
 	virtual ~BuiltInObj() = default;
 
+	std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> Resolve(std::shared_ptr<BuiltIn> externals) const;
+	
 	const ObjectType& Type() const override
 	{
 		return ObjectType::BUILTIN_OBJ;
@@ -597,9 +605,71 @@ public:
 
 	std::shared_ptr<IObject> Clone() const override
 	{
+		if (Idx != -1)
+		{
+			return New(Idx);
+		}
 		return New(Name);
 	}
 
 	std::string Name;
+	int Idx;
+
 	static std::shared_ptr<BuiltInObj> New(const std::string& name);
+	static std::shared_ptr<BuiltInObj> New(const int idx);
+};
+
+class FunctionCompiledObj : public IObject
+{
+public:
+	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) {}
+	virtual ~FunctionCompiledObj() = default;
+
+	const ObjectType& Type() const override
+	{
+		return ObjectType::FUNCTION_COMPILED_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return OpCode::PrintInstructions(FuncInstructions);
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(FuncInstructions, NumLocals, NumParameters);
+	}
+	
+	Instructions FuncInstructions;
+	int NumLocals;
+	int NumParameters;
+
+	static std::shared_ptr<FunctionCompiledObj> New(const Instructions& instructions, int numLocals, int numParameters);
+};
+
+class ClosureObj : public IObject
+{
+public:
+	ClosureObj(const std::shared_ptr<FunctionCompiledObj>& fun, const std::vector<std::shared_ptr<IObject>>& free) : Function(fun), Frees(free) { }
+	virtual ~ClosureObj() = default;
+
+	const ObjectType& Type() const override
+	{
+		return ObjectType::CLOSURE_OBJ;
+	}
+
+	std::string Inspect() const override
+	{
+		return Function->Inspect();
+	}
+
+	std::shared_ptr<IObject> Clone() const override
+	{
+		return New(Function, Frees);
+	}
+
+	std::shared_ptr<FunctionCompiledObj> Function;
+	std::vector<std::shared_ptr<IObject>> Frees;
+	
+	static std::shared_ptr<ClosureObj> New(const std::shared_ptr<FunctionCompiledObj>& fun, const std::vector<std::shared_ptr<IObject>>& free);
 };

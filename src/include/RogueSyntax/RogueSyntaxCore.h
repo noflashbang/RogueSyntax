@@ -29,7 +29,11 @@
 #include "IObject.h"
 #include "Environment.h"
 #include "Builtin.h"
+#include "TypeCoercer.h"
 #include "Evaluator.h"
+#include "OpCode.h"
+#include "Compiler.h"
+#include "VirtualMachine.h"
 
 
 

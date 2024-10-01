@@ -722,10 +722,7 @@ TEST_CASE("Test If Expression")
 
 	REQUIRE(program->Statements.size() == 1);
 
-	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-	REQUIRE(expressionStatement != nullptr);
-
-	auto ifStatement = dynamic_cast<IfExpression*>(expressionStatement->Expression.get());		
+	auto ifStatement = dynamic_cast<IfStatement*>(program->Statements[0].get());
 	REQUIRE(ifStatement != nullptr);
 	REQUIRE(ifStatement->TokenLiteral() == "if");
 		
@@ -757,10 +754,8 @@ TEST_CASE("Test If Else Expression")
 	REQUIRE(errors.size() == 0);
 
 	REQUIRE(program->Statements.size() == 1);
-	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-	REQUIRE(expressionStatement != nullptr);
 
-	auto ifStatement = dynamic_cast<IfExpression*>(expressionStatement->Expression.get());
+	auto ifStatement = dynamic_cast<IfStatement*>(program->Statements[0].get());
 	REQUIRE(ifStatement != nullptr);
 	REQUIRE(ifStatement->TokenLiteral() == "if");
 
@@ -772,8 +767,6 @@ TEST_CASE("Test If Else Expression")
 	auto statement = dynamic_cast<ExpressionStatement*>(consequence->Statements[0].get());
 	REQUIRE(statement != nullptr);
 	REQUIRE(TestIdentifier(statement->Expression.get(), "x"));
-		
-
 
 	auto alternative = dynamic_cast<BlockStatement*>(ifStatement->Alternative.get());
 	REQUIRE(alternative != nullptr);
@@ -906,10 +899,8 @@ TEST_CASE("Test While expression")
 	REQUIRE(errors.size() == 0);
 
 	REQUIRE(program->Statements.size() == 1);
-	auto expressionStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
-	REQUIRE(expressionStatement != nullptr);
 
-	auto whileStatement = dynamic_cast<WhileExpression*>(expressionStatement->Expression.get());
+	auto whileStatement = dynamic_cast<WhileStatement*>(program->Statements[0].get());
 	REQUIRE(whileStatement != nullptr);
 	REQUIRE(whileStatement->TokenLiteral() == "while");
 
@@ -995,7 +986,7 @@ TEST_CASE("Test assignemnt")
 
 TEST_CASE("Test function assignemnt")
 {
-	std::string input = "x = fn(x){ return x*x;};";
+	std::string input = "x = fn(x) { return x * x;}";
 	Lexer lexer(input);
 	Parser parser(lexer);
 
@@ -1052,7 +1043,7 @@ TEST_CASE("Test for parsing")
 		REQUIRE(errors.size() == 0);
 
 		REQUIRE(program->Statements.size() == 1);
-		auto forStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
+		auto forStatement = dynamic_cast<ForStatement*>(program->Statements[0].get());
 		REQUIRE(forStatement != nullptr);
 		REQUIRE(forStatement->TokenLiteral() == "for");
 

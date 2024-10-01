@@ -14,34 +14,36 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
+    ${PARENT_DIR}/include/RogueSyntax/Opcode.h
+    ${PARENT_DIR}/include/RogueSyntax/Compiler.h
 )
 
-set( consoleHeaders 
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxREPL.h
+set( compilerHeaders 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.h
  )
 
-set( consoleSource 
+set( compilerSource 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxREPL.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.cpp
 )
 if(CMAKE_TIDY_ENABLED)
     set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,modernize-*,bugprone-*,cppcoreguidelines-*,performance-*)
 endif()
 
-add_executable(RogueSyntaxConsole ${testSource} ${externHeaders} ${consoleHeaders})
-target_link_libraries(RogueSyntaxConsole PUBLIC RogueSyntax)
+add_executable(RogueSyntaxCompiler ${testSource} ${externHeaders} ${compilerHeaders})
+target_link_libraries(RogueSyntaxCompiler PUBLIC RogueSyntax)
 
-add_dependencies(RogueSyntaxConsole RogueSyntax)
+add_dependencies(RogueSyntaxCompiler RogueSyntax)
 
-target_include_directories( RogueSyntaxConsole	PUBLIC ${PARENT_DIR}/RogueSyntax/include/RogueSyntax )
+target_include_directories( RogueSyntaxCompiler	PUBLIC ${PARENT_DIR}/RogueSyntax/include/RogueSyntax )
 
-target_sources( RogueSyntaxConsole PRIVATE 
-    ${consoleSource}
+target_sources( RogueSyntaxCompiler PRIVATE 
+    ${compilerSource}
  )
 
- install(TARGETS RogueSyntaxConsole
+ install(TARGETS RogueSyntaxCompiler
         RUNTIME           
           COMPONENT Runtime
           DESTINATION test
 )
-install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxConsole> DESTINATION test)
+install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxCompiler> DESTINATION test)

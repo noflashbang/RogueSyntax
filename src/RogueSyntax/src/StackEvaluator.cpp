@@ -308,7 +308,7 @@ void StackEvaluator::NodeEval(InfixExpression* infix)
 		Push_Result(result);
 	}
 }
-void StackEvaluator::NodeEval(IfExpression* ifExpr)
+void StackEvaluator::NodeEval(IfStatement* ifExpr)
 {
 	if (_currentSignal == 0)
 	{
@@ -405,10 +405,18 @@ void StackEvaluator::NodeEval(CallExpression* call)
 				Push_Result(MakeError(std::format("unknown function: {}", func->Name), call->BaseToken));
 				return;
 			}
-			auto result = builtInToCall(evalArgs, call->BaseToken);
-			if (result != VoidObj::VOID_OBJ_REF) //check for a "void" return
+
+			try
 			{
-				Push_Result(result);
+				auto result = builtInToCall(evalArgs);
+				if (result != VoidObj::VOID_OBJ_REF) //check for a "void" return
+				{
+					Push_Result(result);
+				}
+			}
+			catch (const std::exception& e)
+			{
+				_results.push(MakeError(e.what(), call->BaseToken));
 			}
 		}
 		else
@@ -527,7 +535,7 @@ void StackEvaluator::NodeEval(NullLiteral* null)
 {
 	Push_Result(NullObj::NULL_OBJ_REF);
 }
-void StackEvaluator::NodeEval(WhileExpression* whileExp)
+void StackEvaluator::NodeEval(WhileStatement* whileExp)
 {
 	if (_currentSignal == 0)
 	{
@@ -575,7 +583,7 @@ void StackEvaluator::NodeEval(WhileExpression* whileExp)
 		}
 	}
 }
-void StackEvaluator::NodeEval(ForExpression* forExp)
+void StackEvaluator::NodeEval(ForStatement* forExp)
 {
 	if (_currentSignal == 0)
 	{
