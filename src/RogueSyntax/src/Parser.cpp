@@ -666,6 +666,12 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 		NextToken();
 	}
 
+	if (value->Type() == TokenType::TOKEN_FUNCTION)
+	{
+		auto function = dynamic_pointer_cast<FunctionLiteral>(value);
+		function->Name = dynamic_pointer_cast<Identifier>(holder)->Value;
+	}
+
 	return LetStatement::New(token, holder, value);
 }
 

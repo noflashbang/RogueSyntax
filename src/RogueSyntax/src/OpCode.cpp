@@ -43,6 +43,7 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_CLOSURE, Definition{ "OP_CLOSURE", { 2, 2 } } },
 	{ OpCode::Constants::OP_RETURN, Definition{ "OP_RETURN", {} } },
 	{ OpCode::Constants::OP_RETURN_VALUE, Definition{ "OP_RETURN_VALUE", {} } },
+	{ OpCode::Constants::OP_CURRENT_CLOSURE, Definition{ "OP_CURRENT_CLOSURE", {} } },
 };
 
 std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opcode)

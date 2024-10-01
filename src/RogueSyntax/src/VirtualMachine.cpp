@@ -276,6 +276,12 @@ void RogueVM::Run()
 			Push(closure);
 			break;
 		}
+		case OpCode::Constants::OP_CURRENT_CLOSURE:
+		{
+			auto closure = CurrentFrame().ClosureRef();
+			Push(closure);
+			break;
+		}
 		case OpCode::Constants::OP_RETURN:
 		{
 			auto frame = PopFrame();

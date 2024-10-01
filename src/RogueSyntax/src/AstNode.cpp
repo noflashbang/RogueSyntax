@@ -379,7 +379,7 @@ void IfStatement::Compile(Compiler* compiler)
 	compiler->NodeCompile(this);
 }
 
-FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : IExpression(token), Parameters(parameters), Body(body)
+FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : IExpression(token), Parameters(parameters), Body(body), Name("")
 {
 }
 

@@ -23,6 +23,7 @@ public:
 	inline int BasePointer() const { return _basePointer; };
 	inline void SetBasePointer(int bp) { _basePointer = bp; };
 	inline ClosureObj* Closure() const { return _fn.get(); };
+	inline std::shared_ptr<ClosureObj> ClosureRef() const { return _fn; };
 
 private:
 	int _ip;

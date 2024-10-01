@@ -225,6 +225,7 @@ struct FunctionLiteral : IExpression
 	void Compile(Compiler* compiler);
 	static std::shared_ptr<FunctionLiteral> New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
 
+	std::string Name;
 	std::vector<std::shared_ptr<IExpression>> Parameters;
 	std::shared_ptr<IStatement> Body;
 };

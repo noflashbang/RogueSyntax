@@ -8,6 +8,7 @@
 #define SCOPE_LOCAL "LOCAL"
 #define SCOPE_EXTERN "EXTERN"
 #define SCOPE_FREE "FREE"
+#define SCOPE_FUNCTION "FUNCTION"
 
 
 
@@ -26,6 +27,8 @@ public:
 	SymbolTable(std::shared_ptr<BuiltIn> externs);
 
 	Symbol Define(const std::string& name);
+	Symbol DefineFunctionName(const std::string& name);
+
 	Symbol Resolve(const std::string& name);
 
 	Symbol DefineFree(const Symbol& symbol);
@@ -51,6 +54,7 @@ private:
 	std::shared_ptr<BuiltIn> _externals;
 	std::shared_ptr<SymbolTable> _outer;
 	std::vector<Symbol> _store;
+	uint32_t _nextIndex = 0;
 	std::vector<Symbol> _free;
 	std::string _scope;
 };

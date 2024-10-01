@@ -1,5 +1,6 @@
 #include "Compiler.h"
 #include "Compiler.h"
+#include "Compiler.h"
 #include <pch.h>
 
 
@@ -34,10 +35,18 @@ Symbol SymbolTable::Define(const std::string& name)
 		return _store[index];
 	}
 	
-	index = _store.size();
+	index = _nextIndex++;
 	auto symbol = Symbol{ name, _scope, index };
 	_store.push_back(symbol);
 	return symbol;	
+}
+
+Symbol SymbolTable::DefineFunctionName(const std::string& name)
+{
+	int index = 0; //not used
+	auto symbol = Symbol{ name, SCOPE_FUNCTION, index };
+	_store.push_back(symbol);
+	return symbol;
 }
 
 Symbol SymbolTable::Resolve(const std::string& name)
@@ -274,22 +283,26 @@ void Compiler::NodeCompile(LetStatement* let)
 
 void Compiler::NodeCompile(Identifier* ident)
 {
-	auto symbol = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
-	if (symbol.Scope == SCOPE_LOCAL)
+	auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
+	if (sym.Scope == SCOPE_LOCAL)
 	{
-		Emit(OpCode::Constants::OP_GET_LOCAL, { symbol.Index });
+		Emit(OpCode::Constants::OP_GET_LOCAL, { sym.Index });
 	}
-	else if(symbol.Scope == SCOPE_GLOBAL)
+	else if (sym.Scope == SCOPE_GLOBAL)
 	{
-		Emit(OpCode::Constants::OP_GET_GLOBAL, { symbol.Index });
+		Emit(OpCode::Constants::OP_GET_GLOBAL, { sym.Index });
 	}
-	else if(symbol.Scope == SCOPE_EXTERN)
+	else if (sym.Scope == SCOPE_EXTERN)
 	{
-		Emit(OpCode::Constants::OP_GET_EXTRN, { symbol.Index });
+		Emit(OpCode::Constants::OP_GET_EXTRN, { sym.Index });
 	}
-	else
+	else if (sym.Scope == SCOPE_FREE)
 	{
-		Emit(OpCode::Constants::OP_GET_FREE, { symbol.Index });
+		Emit(OpCode::Constants::OP_GET_FREE, { sym.Index });
+	}
+	else if (sym.Scope == SCOPE_FUNCTION)
+	{
+		Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
 	}
 }
 
@@ -478,6 +491,11 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 {
 	EnterUnit();
 
+	if (!function->Name.empty())
+	{
+		auto fnSymbol = _CompilationUnits.top().SymbolTable->DefineFunctionName(function->Name);
+	}
+
 	for (auto param : function->Parameters)
 	{
 		auto ident = dynamic_cast<Identifier*>(param.get());
@@ -512,9 +530,13 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 		{
 			Emit(OpCode::Constants::OP_GET_EXTRN, { sym.Index });
 		}
-		else
+		else if(sym.Scope == SCOPE_FREE)
 		{
 			Emit(OpCode::Constants::OP_GET_FREE, { sym.Index });
+		}
+		else if (sym.Scope == SCOPE_FUNCTION)
+		{
+			Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
 		}
 	}
 	

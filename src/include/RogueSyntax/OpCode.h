@@ -65,6 +65,7 @@ struct OpCode
 		OP_CLOSURE,
 		OP_RETURN,
 		OP_RETURN_VALUE,
+		OP_CURRENT_CLOSURE,
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;
