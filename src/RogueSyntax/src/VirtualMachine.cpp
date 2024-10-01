@@ -167,7 +167,7 @@ void RogueVM::Run()
 			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 			auto global = Pop();
-			_globals[idx] = global;
+			_globals[idx] = global->Clone();
 			break;
 		}
 		case OpCode::Constants::OP_GET_LOCAL:
@@ -184,7 +184,50 @@ void RogueVM::Run()
 			IncrementFrameIp(2);
 			auto local = Pop();
 			auto localIdx = CurrentFrame().BasePointer() + idx;
-			_stack[localIdx] = local;
+			_stack[localIdx] = local->Clone();
+			break;
+		}
+		case OpCode::Constants::OP_SET_ASSIGN:
+		{
+			auto rvalue = Pop();
+			auto lvalue = Pop();
+
+			if (lvalue->Type() == rvalue->Type())
+			{
+				if (lvalue->Type() == ObjectType::INTEGER_OBJ)
+				{
+					auto l = std::dynamic_pointer_cast<IntegerObj>(lvalue);
+					auto r = std::dynamic_pointer_cast<IntegerObj>(rvalue);
+					l->Value = r->Value;
+				}
+				else if (lvalue->Type() == ObjectType::DECIMAL_OBJ)
+				{
+					auto l = std::dynamic_pointer_cast<DecimalObj>(lvalue);
+					auto r = std::dynamic_pointer_cast<DecimalObj>(rvalue);
+					l->Value = r->Value;
+				}
+				else if (lvalue->Type() == ObjectType::STRING_OBJ)
+				{
+					auto l = std::dynamic_pointer_cast<StringObj>(lvalue);
+					auto r = std::dynamic_pointer_cast<StringObj>(rvalue);
+					l->Value = r->Value;
+				}
+				else if (lvalue->Type() == ObjectType::BOOLEAN_OBJ)
+				{
+					auto l = std::dynamic_pointer_cast<BooleanObj>(lvalue);
+					auto r = std::dynamic_pointer_cast<BooleanObj>(rvalue);
+					l->Value = r->Value;
+				}
+				else if (lvalue->Type() == ObjectType::NULL_OBJ)
+				{
+					//do nothing
+				}
+				else
+				{
+					throw std::runtime_error(std::format("Unsupported type {}", lvalue->Type().Name));
+				}
+			}
+			Push(lvalue);
 			break;
 		}
 		case OpCode::Constants::OP_INDEX:

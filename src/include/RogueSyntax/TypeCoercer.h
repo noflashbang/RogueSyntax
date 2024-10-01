@@ -18,6 +18,7 @@ public:
 	std::shared_ptr<IObject> EvalAsBoolean(const IObject* const obj) const;
 	std::shared_ptr<IObject> EvalAsDecimal(const IObject* const obj) const;
 	std::shared_ptr<IObject> EvalAsInteger(const IObject* const obj) const;
+	std::shared_ptr<IObject> EvalAsString(const IObject* const obj) const;
 
 private:
 	std::map<ObjectType, std::function<std::shared_ptr<IObject>(const IObject* const right)>> _coercionMap;

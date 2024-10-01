@@ -259,7 +259,6 @@ void Compiler::NodeCompile(ReturnStatement* ret)
 
 void Compiler::NodeCompile(LetStatement* let)
 {
-	
 	if (typeid(*(let->Name.get())) == typeid(Identifier))
 	{
 		auto ident = dynamic_cast<Identifier*>(let->Name.get());
@@ -278,6 +277,30 @@ void Compiler::NodeCompile(LetStatement* let)
 		{
 			Emit(OpCode::Constants::OP_SET_GLOBAL, { symbol.Index });
 		}
+	}
+	else if (typeid(*(let->Name.get())) == typeid(IndexExpression))
+	{
+		auto index = dynamic_cast<IndexExpression*>(let->Name.get());
+
+		//get the lvalue
+		index->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+
+		//get the rvalue
+		let->Value->Compile(this);
+		if (HasErrors())
+		{
+			return;
+		}
+
+		Emit(OpCode::Constants::OP_SET_ASSIGN, {});
+	}
+	else
+	{
+		_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownError, "Unknown let statement"));
 	}
 }
 

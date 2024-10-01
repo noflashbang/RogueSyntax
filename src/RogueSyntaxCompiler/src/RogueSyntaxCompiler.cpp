@@ -48,11 +48,11 @@ void InteractiveCompiler::Run()
 	}
 
 	auto bytecode = compile->GetByteCode();
-	auto vm = RogueVM::New(bytecode);
+	auto vm = RogueVM::New(bytecode, builtin);
 
 	vm->Run();
-	auto top = vm->LastPoppped();
-	//auto top = vm->Top();
+	//auto top = vm->LastPoppped();
+	auto top = vm->Top();
 
 	if (top->Type() == ObjectType::ERROR_OBJ)
 	{
@@ -69,10 +69,10 @@ void InteractiveCompiler::Run()
 		std::cout << "^" << std::endl;
 	}
 
-	if (top != nullptr)
-	{
-		std::cout << top->Inspect() << std::endl;
-	}
+	//if (top != nullptr)
+	//{
+	//	std::cout << top->Inspect() << std::endl;
+	//}
 }
 
 void InteractiveCompiler::PrintDecompile()

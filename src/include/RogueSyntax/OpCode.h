@@ -59,6 +59,7 @@ struct OpCode
 		OP_SET_GLOBAL,
 		OP_GET_EXTRN,
 		OP_GET_FREE,
+		OP_SET_ASSIGN,
 		//op
 		OP_INDEX,
 		OP_CALL,

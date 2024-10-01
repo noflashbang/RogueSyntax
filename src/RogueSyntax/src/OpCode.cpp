@@ -38,6 +38,7 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_SET_GLOBAL, Definition{ "OP_SET_GLOBAL", { 2 } } },
 	{ OpCode::Constants::OP_GET_EXTRN, Definition{ "OP_GET_EXTRN", { 2 } } },
 	{ OpCode::Constants::OP_GET_FREE, Definition{ "OP_GET_FREE", { 2 } } },
+	{ OpCode::Constants::OP_SET_ASSIGN, Definition{ "OP_SET_ASSIGN", {} } },
 	{ OpCode::Constants::OP_INDEX, Definition{ "OP_INDEX", {} } },
 	{ OpCode::Constants::OP_CALL, Definition{ "OP_CALL", { 2 } } },
 	{ OpCode::Constants::OP_CLOSURE, Definition{ "OP_CLOSURE", { 2, 2 } } },

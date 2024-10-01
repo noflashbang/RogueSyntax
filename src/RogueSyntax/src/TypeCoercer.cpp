@@ -3,26 +3,38 @@
 TypeCoercer::TypeCoercer()
 {
 	_coercionTable[ObjectType::INTEGER_OBJ] = {
-		{ ObjectType::INTEGER_OBJ, ObjectType::INTEGER_OBJ },
 		{ ObjectType::DECIMAL_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ }
+		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ },
+		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
 	};
 
 	_coercionTable[ObjectType::DECIMAL_OBJ] = {
 		{ ObjectType::INTEGER_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::DECIMAL_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ }
+		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ },
+		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
 	};
 
 	_coercionTable[ObjectType::BOOLEAN_OBJ] = {
 		{ ObjectType::INTEGER_OBJ, ObjectType::BOOLEAN_OBJ },
 		{ ObjectType::DECIMAL_OBJ, ObjectType::BOOLEAN_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ }
+		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
+	};
+
+	_coercionTable[ObjectType::STRING_OBJ] = {
+		{ ObjectType::INTEGER_OBJ, ObjectType::STRING_OBJ },
+		{ ObjectType::DECIMAL_OBJ, ObjectType::STRING_OBJ },
+		{ ObjectType::BOOLEAN_OBJ, ObjectType::STRING_OBJ },
+		{ ObjectType::ARRAY_OBJ, ObjectType::STRING_OBJ }
+	};
+
+	_coercionTable[ObjectType::ARRAY_OBJ] = {
+		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
 	};
 
 	_coercionMap[ObjectType::INTEGER_OBJ] = std::bind(&TypeCoercer::EvalAsInteger, this, std::placeholders::_1);
 	_coercionMap[ObjectType::DECIMAL_OBJ] = std::bind(&TypeCoercer::EvalAsDecimal, this, std::placeholders::_1);
 	_coercionMap[ObjectType::BOOLEAN_OBJ] = std::bind(&TypeCoercer::EvalAsBoolean, this, std::placeholders::_1);
+	_coercionMap[ObjectType::STRING_OBJ] = std::bind(&TypeCoercer::EvalAsString, this, std::placeholders::_1);
 }
 
 TypeCoercer::~TypeCoercer()
@@ -174,6 +186,46 @@ std::shared_ptr<IObject> TypeCoercer::EvalAsInteger(const IObject* const obj) co
 	if (result == nullptr)
 	{
 		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as integer: {}", obj->Type().Name, obj->Inspect()));
+	}
+
+	return result;
+}
+
+std::shared_ptr<IObject> TypeCoercer::EvalAsString(const IObject* const obj) const
+{
+	std::shared_ptr<IObject> result = nullptr;
+	if (obj->Type() != ObjectType::STRING_OBJ)
+	{
+		if (obj->Type() == ObjectType::INTEGER_OBJ)
+		{
+			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
+			result = StringObj::New(std::to_string(value));
+		}
+		else if (obj->Type() == ObjectType::DECIMAL_OBJ)
+		{
+			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
+			result = StringObj::New(std::to_string(value));
+		}
+		else if (obj->Type() == ObjectType::BOOLEAN_OBJ)
+		{
+			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
+			result = StringObj::New(value ? "true" : "false");
+		}
+		else if (obj->Type() == ObjectType::ARRAY_OBJ)
+		{
+			auto value = dynamic_cast<const ArrayObj const*>(obj)->Inspect();
+			result = StringObj::New(value);
+		}
+	}
+	else
+	{
+		auto value = dynamic_cast<const StringObj const*>(obj)->Value;
+		result = StringObj::New(value);
+	}
+
+	if (result == nullptr)
+	{
+		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as string: {}", obj->Type().Name, obj->Inspect()));
 	}
 
 	return result;

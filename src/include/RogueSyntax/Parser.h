@@ -17,8 +17,8 @@ enum class Precedence
 	PRODUCT,     // *
 	PREFIX,      // -X or !X
 	CALL,        // myFunction(X)
-	ASSIGN,      // =
 	INDEX,       // array[index]
+	ASSIGN,      // =
 };
 
 static const std::map<TokenType, Precedence> PRECEDENCES = {

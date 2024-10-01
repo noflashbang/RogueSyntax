@@ -56,7 +56,7 @@ public:
 	void PushFrame(Frame frame);
 	Frame PopFrame();
 
-	static std::shared_ptr<RogueVM> New(const ByteCode& byteCode) { return std::make_shared<RogueVM>(byteCode); }
+	static std::shared_ptr<RogueVM> New(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals) { return std::make_shared<RogueVM>(byteCode, externals); }
 
 protected:
 	void ExecuteArithmeticInfix(OpCode::Constants opcode);
