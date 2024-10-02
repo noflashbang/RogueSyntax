@@ -109,7 +109,7 @@ std::shared_ptr<ReturnObj> ReturnObj::New(const std::shared_ptr<IObject>& value)
 	return std::make_shared<ReturnObj>(value);
 }
 
-std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body)
+std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<IExpression*>& parameters, const IStatement* body)
 {
 	return std::make_shared<FunctionObj>(parameters, body);
 }

@@ -3,12 +3,17 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
-std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input)
+std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input, std::shared_ptr<Program>* progOut)
 {
 	Lexer lexer(input);
 	Parser parser(lexer);
 	
 	auto program = parser.ParseProgram();
+	if (progOut != nullptr)
+	{
+		*progOut = program;
+	}
+
 	auto errors = parser.Errors();
 	if (errors.size() > 0)
 	{
@@ -47,9 +52,9 @@ bool TestIntegerObject(std::shared_ptr<IObject> obj, const int32_t expected)
 	return true;
 }
 
-bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& input, const int32_t expected)
+bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& input, const int32_t expected, std::shared_ptr<Program>* progOut)
 {
-	auto result = EvalTest(eval, input);
+	auto result = EvalTest(eval, input, progOut);
 	if (result->IsThisA<NullObj>() && expected == 0)
 	{
 		return true;
@@ -76,9 +81,9 @@ bool TestBooleanObject(std::shared_ptr<IObject> obj, const bool expected)
 	return true;
 }
 
-bool TestEvalBoolean(const std::shared_ptr<Evaluator>& eval, const std::string& input, const bool expected)
+bool TestEvalBoolean(const std::shared_ptr<Evaluator>& eval, const std::string& input, const bool expected, std::shared_ptr<Program>* progOut)
 {
-	auto result = EvalTest(eval, input);
+	auto result = EvalTest(eval, input, progOut);
 	return TestBooleanObject(result, expected);
 }
 
@@ -112,8 +117,9 @@ TEST_CASE("Simple Integer Type")
 		{"~2",-3}
 	}));
 
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 
 TEST_CASE("Simple Boolean Type")
@@ -142,8 +148,9 @@ TEST_CASE("Simple Boolean Type")
 		{"(1 > 2) == false", true}
 	}));
 
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalBoolean(eng, input, expected));
+	REQUIRE(TestEvalBoolean(eng, input, expected, &prog));
 }
 
 TEST_CASE("Bang Operator")
@@ -159,8 +166,9 @@ TEST_CASE("Bang Operator")
 		{"!!5", true}
 	}));
 
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalBoolean(eng, input, expected));
+	REQUIRE(TestEvalBoolean(eng, input, expected, &prog));
 }
 
 TEST_CASE("Test If Else Expressions")
@@ -178,8 +186,9 @@ TEST_CASE("Test If Else Expressions")
 		{"if (1 < 2) { 10 } else { 20 }", 10}
 	}));
 
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 
 TEST_CASE("Test Return Expression")
@@ -202,8 +211,9 @@ TEST_CASE("Test Return Expression")
 		}
 		}));
 
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 TEST_CASE("Test Error Obj")
 {
@@ -228,7 +238,8 @@ TEST_CASE("Test Error Obj")
 
 	for (auto& test : tests)
 	{
-		auto result = EvalTest(eng, test.first);
+		std::shared_ptr<Program> prog;
+		auto result = EvalTest(eng, test.first, &prog);
 		CAPTURE(test.first);
 		REQUIRE(result->IsThisA<ErrorObj>());
 		auto errorObj = std::dynamic_pointer_cast<ErrorObj>(result);
@@ -247,8 +258,9 @@ TEST_CASE("Test Let Statements")
 		{"let a = 5; let b = a; let c = a + b + 5; c;", 15}
 	}));
 
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 
 TEST_CASE("Test Function Object")
@@ -256,12 +268,12 @@ TEST_CASE("Test Function Object")
 	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto input = "fn(x) { x + 2; };";
 
-	
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->IsThisA<FunctionObj>());
 	auto func = dynamic_pointer_cast<FunctionObj>(result);
 	REQUIRE(func->Parameters.size() == 1);
-	REQUIRE(func->Parameters[0].get()->ToString() == "x");
+	REQUIRE(func->Parameters[0]->ToString() == "x");
 	REQUIRE(func->Body->ToString() == "{(x + 2)}");
 }
 
@@ -281,8 +293,9 @@ TEST_CASE("Test Function Eval")
 		}));
 
 	CAPTURE(eng->Type());
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 
 TEST_CASE("Test While Loop")
@@ -297,8 +310,9 @@ TEST_CASE("Test While Loop")
 		}));
 
 	CAPTURE(eng->Type());
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 
 TEST_CASE("Test assignment")
@@ -313,8 +327,9 @@ TEST_CASE("Test assignment")
 		}));
 
 	CAPTURE(eng->Type());
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 
 TEST_CASE("FOR tests")
@@ -331,8 +346,9 @@ TEST_CASE("FOR tests")
 	}));
 
 	CAPTURE(eng->Type());
+	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected));
+	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 }
 
 TEST_CASE("Decimal and String tests")
@@ -365,7 +381,8 @@ TEST_CASE("Decimal and String tests")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -381,7 +398,8 @@ TEST_CASE("Array Literal Tests")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -397,7 +415,8 @@ TEST_CASE("Hash Literal Tests")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -420,7 +439,8 @@ TEST_CASE("Index Array Expression Test")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -441,7 +461,8 @@ TEST_CASE("Index Hash Expression Test")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -462,7 +483,8 @@ TEST_CASE("Index Assignment Test")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -487,7 +509,8 @@ TEST_CASE("Coerce Tests")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -518,7 +541,8 @@ TEST_CASE("Built In method test")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -551,7 +575,8 @@ TEST_CASE("Null Tests")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -569,7 +594,8 @@ TEST_CASE("Incrementer Tests")
 
 	CAPTURE(eng->Type());
 	CAPTURE(input);
-	auto result = EvalTest(eng, input);
+	std::shared_ptr<Program> prog;
+	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->Inspect() == expected);
 }
 
@@ -583,14 +609,16 @@ TEST_CASE("BENCHMARK STACK EVALUATOR")
 	
 	SECTION("BENCHMARK STACK EVALUATOR - VERIFY")
 	{
-		REQUIRE(TestEvalInteger(eng, input, expected));
+		std::shared_ptr<Program> prog;
+		REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 	}
 	
 	SECTION("BENCHMARK STACK EVALUATOR - TIME")
 	{
 		BENCHMARK("BENCHMARK STACK EVALUATOR")
 		{
-			return TestEvalInteger(eng, input, expected);
+			std::shared_ptr<Program> prog;
+			return TestEvalInteger(eng, input, expected, &prog);
 		};
 	}
 }
@@ -603,14 +631,16 @@ TEST_CASE("BENCHMARK RECURSIVE EVALUATOR")
 
 	SECTION("BENCHMARK RECURSIVE EVALUATOR - VERIFY")
 	{
-		REQUIRE(TestEvalInteger(eng, input, expected));
+		std::shared_ptr<Program> prog;
+		REQUIRE(TestEvalInteger(eng, input, expected, &prog));
 	}
 
 	SECTION("BENCHMARK RECURSIVE EVALUATOR - TIME")
 	{
 		BENCHMARK("BENCHMARK RECURSIVE EVALUATOR")
 		{
-			return TestEvalInteger(eng, input, expected);
+			std::shared_ptr<Program> prog;
+			return TestEvalInteger(eng, input, expected, &prog);
 		};
 	}
 }

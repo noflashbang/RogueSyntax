@@ -534,7 +534,7 @@ uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_
 	auto env = EvalEnvironment->NewEnclosed(rootEnv);
 	for (size_t i = 0; i < func->Parameters.size(); i++)
 	{
-		auto* param = func->Parameters[i].get();
+		auto* param = func->Parameters[i];
 
 		if (typeid(*param) != typeid(Identifier))
 		{
@@ -544,7 +544,7 @@ uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_
 		auto argUnwrapped = UnwrapIfReturnObj(args[i]);
 		argUnwrapped = UnwrapIfIdentObj(argUnwrapped);
 
-		auto* ident = dynamic_cast<Identifier*>(param);
+		auto* ident = dynamic_cast<const Identifier*>(param);
 		EvalEnvironment->Set(env, ident->Value, argUnwrapped);
 	}
 	return env;

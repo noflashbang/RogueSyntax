@@ -12,29 +12,24 @@ std::string Program::ToString() const
 	return result;
 }
 
-std::shared_ptr<Program>  Program::New()
+std::shared_ptr<Program> Program::New(const std::shared_ptr<AstNodeStore>& store)
 {
-	return std::make_shared<Program>();
+	return std::make_shared<Program>(store);
 }
 
-void Program::Eval(Evaluator* evaluator)
+void Program::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void Program::Compile(Compiler* compiler)
+void Program::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-LetStatement::LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value) : IStatement(token), Name(name), Value(value)
+LetStatement::LetStatement(const Token& token, const IExpression* name, const IExpression* value) : IStatement(token), Name(name), Value(value)
 {
 	SetUniqueId(this);
-}
-
-std::shared_ptr<LetStatement> LetStatement::New(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value)
-{
-	return std::make_shared<LetStatement>(token, name, value);
 }
 
 std::string LetStatement::ToString() const
@@ -51,12 +46,12 @@ std::string LetStatement::ToString() const
 	return result;
 }
 
-void LetStatement::Eval(Evaluator* evaluator)
+void LetStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void LetStatement::Compile(Compiler* compiler)
+void LetStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -67,35 +62,25 @@ Identifier::Identifier(const ::Token& token, const std::string& value) : IExpres
 	SetUniqueId(this);
 }
 
-std::shared_ptr<Identifier> Identifier::New(const Token& token, const std::string& value)
-{
-	return std::make_shared<Identifier>(token, value);
-}
-
 std::string Identifier::ToString() const
 {
 	return Value;
 }
 
-void Identifier::Eval(Evaluator* evaluator)
+void Identifier::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void Identifier::Compile(Compiler* compiler)
+void Identifier::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
 
-ReturnStatement::ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue) : IStatement(token), ReturnValue(returnValue)
+ReturnStatement::ReturnStatement(const Token& token, const IExpression* returnValue) : IStatement(token), ReturnValue(returnValue)
 {
 	SetUniqueId(this);
-}
-
-std::shared_ptr<ReturnStatement> ReturnStatement::New(const Token& token, const std::shared_ptr<IExpression>& returnValue)
-{
-	return std::make_shared<ReturnStatement>(token, returnValue);
 }
 
 std::string ReturnStatement::ToString() const
@@ -110,23 +95,18 @@ std::string ReturnStatement::ToString() const
 	return result;
 }
 
-void ReturnStatement::Eval(Evaluator* evaluator)
+void ReturnStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void ReturnStatement::Compile(Compiler* compiler)
+void ReturnStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-ExpressionStatement::ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression) : IStatement(token), Expression(expression)
+ExpressionStatement::ExpressionStatement(const Token& token, const IExpression* expression) : IStatement(token), Expression(expression)
 {
 	SetUniqueId(this);
-}
-
-std::shared_ptr<ExpressionStatement> ExpressionStatement::New(const Token& token, const std::shared_ptr<IExpression>& expression)
-{
-	return std::make_shared<ExpressionStatement>(token,  expression);
 }
 
 std::string ExpressionStatement::ToString() const
@@ -138,11 +118,11 @@ std::string ExpressionStatement::ToString() const
 	return "";
 }
 
-void ExpressionStatement::Eval(Evaluator* evaluator)
+void ExpressionStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void ExpressionStatement::Compile(Compiler* compiler)
+void ExpressionStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -152,22 +132,18 @@ NullLiteral::NullLiteral(const ::Token& token) : IExpression(token)
 	SetUniqueId(this);
 }
 
-std::shared_ptr<NullLiteral> NullLiteral::New(const Token& token)
-{
-	return std::make_shared<NullLiteral>(token);
-}
 
 std::string NullLiteral::ToString() const
 {
 	return "null";
 }
 
-void NullLiteral::Eval(Evaluator* evaluator)
+void NullLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void NullLiteral::Compile(Compiler* compiler)
+void NullLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -177,21 +153,16 @@ IntegerLiteral::IntegerLiteral(const ::Token& token, int value) : IExpression(to
 	SetUniqueId(this);
 }
 
-std::shared_ptr<IntegerLiteral> IntegerLiteral::New(const Token& token, const int value)
-{
-	return std::make_shared<IntegerLiteral>(token, value);
-};
-
 std::string IntegerLiteral::ToString() const
 {
 	return std::to_string(Value);
 }
 
-void IntegerLiteral::Eval(Evaluator* evaluator)
+void IntegerLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void IntegerLiteral::Compile(Compiler* compiler)
+void IntegerLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -201,10 +172,6 @@ BooleanLiteral::BooleanLiteral(const ::Token& token, bool value) : IExpression(t
 	SetUniqueId(this);
 }
 
-std::shared_ptr<BooleanLiteral> BooleanLiteral::New(const Token& token, const bool value)
-{
-	return std::make_shared<BooleanLiteral>(token, value);
-};
 
 
 std::string BooleanLiteral::ToString() const
@@ -212,24 +179,20 @@ std::string BooleanLiteral::ToString() const
 	return Value ? "true" : "false";
 }
 
-void BooleanLiteral::Eval(Evaluator* evaluator)
+void BooleanLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void BooleanLiteral::Compile(Compiler* compiler)
+void BooleanLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-HashLiteral::HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs) : IExpression(token), Elements(pairs)
+HashLiteral::HashLiteral(const Token& token, const std::map<IExpression*, IExpression*>& pairs) : IExpression(token), Elements(pairs)
 {
 	SetUniqueId(this);
 }
 
-std::shared_ptr<HashLiteral> HashLiteral::New(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs)
-{
-	return std::make_shared<HashLiteral>(token, pairs);
-}
 
 std::string HashLiteral::ToString() const
 {
@@ -253,25 +216,21 @@ std::string HashLiteral::ToString() const
 	return result;
 }
 
-void HashLiteral::Eval(Evaluator* evaluator)
+void HashLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void HashLiteral::Compile(Compiler* compiler)
+void HashLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Right(right)
+PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const IExpression* right) : IExpression(token), Operator(op), Right(right)
 {
 	SetUniqueId(this);
 }
 
-std::shared_ptr<PrefixExpression> PrefixExpression::New(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right)
-{
-	return std::make_shared<PrefixExpression>(token, op, right);
-}
 
 std::string PrefixExpression::ToString() const
 {
@@ -283,24 +242,20 @@ std::string PrefixExpression::ToString() const
 	return result;
 }
 
-void PrefixExpression::Eval(Evaluator* evaluator)
+void PrefixExpression::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void PrefixExpression::Compile(Compiler* compiler)
+void PrefixExpression::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-InfixExpression::InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Left(left), Right(right)
+InfixExpression::InfixExpression(const Token& token, const IExpression* left, const std::string& op, const IExpression* right) : IExpression(token), Operator(op), Left(left), Right(right)
 {
 	SetUniqueId(this);
 }
 
-std::shared_ptr<InfixExpression> InfixExpression::New(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right)
-{
-	return std::make_shared<InfixExpression>(token, left, op, right);
-}
 
 std::string InfixExpression::ToString() const
 {
@@ -313,24 +268,19 @@ std::string InfixExpression::ToString() const
 	return result;
 }
 
-void InfixExpression::Eval(Evaluator* evaluator)
+void InfixExpression::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void InfixExpression::Compile(Compiler* compiler)
+void InfixExpression::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-BlockStatement::BlockStatement(const ::Token& token, const std::vector<std::shared_ptr<IStatement>>& statements) : IStatement(token), Statements(statements)
+BlockStatement::BlockStatement(const ::Token& token, const std::vector<IStatement*>& statements) : IStatement(token), Statements(statements)
 {
 	SetUniqueId(this);
-}
-
-std::shared_ptr<BlockStatement> BlockStatement::New(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements)
-{
-	return std::make_shared<BlockStatement>(token, statements);
 }
 
 std::string BlockStatement::ToString() const
@@ -346,24 +296,19 @@ std::string BlockStatement::ToString() const
 	return result;
 }
 
-void BlockStatement::Eval(Evaluator* evaluator)
+void BlockStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void BlockStatement::Compile(Compiler* compiler)
+void BlockStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-IfStatement::IfStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative) : IStatement(token), Condition(condition), Consequence(consequence), Alternative(alternative)
+IfStatement::IfStatement(const Token& token, const IExpression* condition, const IStatement* consequence, const IStatement* alternative) : IStatement(token), Condition(condition), Consequence(consequence), Alternative(alternative)
 {
 	SetUniqueId(this);
-}
-
-std::shared_ptr<IfStatement> IfStatement::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative)
-{
-	return std::make_shared<IfStatement>(token, condition, consequence, alternative);
 }
 
 std::string IfStatement::ToString() const
@@ -381,25 +326,19 @@ std::string IfStatement::ToString() const
 	return result;
 }
 
-void IfStatement::Eval(Evaluator* evaluator)
+void IfStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void IfStatement::Compile(Compiler* compiler)
+void IfStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : IExpression(token), Parameters(parameters), Body(body), Name("")
+FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<IExpression*>& parameters, const IStatement* body) : IExpression(token), Parameters(parameters), Body(body), Name("")
 {
 	SetUniqueId(this);
-}
-
-
-std::shared_ptr<FunctionLiteral> FunctionLiteral::New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body)
-{
-	return std::make_shared<FunctionLiteral>(token, parameters, body);
 }
 
 std::string FunctionLiteral::ToString() const
@@ -422,25 +361,21 @@ std::string FunctionLiteral::ToString() const
 	return result;
 }
 
-void FunctionLiteral::Eval(Evaluator* evaluator)
+void FunctionLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void FunctionLiteral::Compile(Compiler* compiler)
+void FunctionLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-CallExpression::CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments) : IExpression(token), Function(function), Arguments(arguments)
+CallExpression::CallExpression(const Token& token, const IExpression* function, const std::vector<IExpression*>& arguments) : IExpression(token), Function(function), Arguments(arguments)
 {
 	SetUniqueId(this);
 }
 
-std::shared_ptr<CallExpression> CallExpression::New(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments)
-{
-	return std::make_shared<CallExpression>(token, function, arguments);
-}
 
 std::string CallExpression::ToString() const
 {
@@ -461,25 +396,21 @@ std::string CallExpression::ToString() const
 	return result;
 }
 
-void CallExpression::Eval(Evaluator* evaluator)
+void CallExpression::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void CallExpression::Compile(Compiler* compiler)
+void CallExpression::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-WhileStatement::WhileStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action) : IStatement(token), Condition(condition), Action(action)
+WhileStatement::WhileStatement(const Token& token, const IExpression* condition, const IStatement* action) : IStatement(token), Condition(condition), Action(action)
 {
 	SetUniqueId(this);
 }
 
-std::shared_ptr<WhileStatement> WhileStatement::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action)
-{
-	return std::make_shared<WhileStatement>(token, condition, action);
-}
 
 std::string WhileStatement::ToString() const
 {
@@ -491,12 +422,12 @@ std::string WhileStatement::ToString() const
 	return result;
 }
 
-void WhileStatement::Eval(Evaluator* evaluator)
+void WhileStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void WhileStatement::Compile(Compiler* compiler)
+void WhileStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -506,22 +437,18 @@ BreakStatement::BreakStatement(const ::Token& token) : IStatement(token)
 	SetUniqueId(this);
 }
 
-std::shared_ptr<BreakStatement> BreakStatement::New(const ::Token& token)
-{
-	return std::make_shared<BreakStatement>(token);
-}
 
 std::string BreakStatement::ToString() const
 {
 	return "break";
 }
 
-void BreakStatement::Eval(Evaluator* evaluator)
+void BreakStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void BreakStatement::Compile(Compiler* compiler)
+void BreakStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -531,33 +458,23 @@ ContinueStatement::ContinueStatement(const ::Token& token) : IStatement(token)
 	SetUniqueId(this);
 }
 
-std::shared_ptr<ContinueStatement> ContinueStatement::New(const ::Token& token)
-{
-	return std::make_shared<ContinueStatement>(token);
-}
-
 std::string ContinueStatement::ToString() const
 {
 	return "continue";
 }
 
-void ContinueStatement::Eval(Evaluator* evaluator)
+void ContinueStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void ContinueStatement::Compile(Compiler* compiler)
+void ContinueStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
-ForStatement::ForStatement(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action) : IStatement(token), Init(init), Condition(condition), Post(post), Action(action)
+ForStatement::ForStatement(const Token& token, const IStatement* init, const IExpression* condition, const IStatement* post, const IStatement* action) : IStatement(token), Init(init), Condition(condition), Post(post), Action(action)
 {
 	SetUniqueId(this);
-}
-
-std::shared_ptr<ForStatement> ForStatement::New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action)
-{
-	return std::make_shared<ForStatement>(token, init, condition, post, action);
 }
 
 std::string ForStatement::ToString() const
@@ -578,11 +495,11 @@ std::string ForStatement::ToString() const
 	return result;
 }
 
-void ForStatement::Eval(Evaluator* evaluator)
+void ForStatement::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void ForStatement::Compile(Compiler* compiler)
+void ForStatement::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -592,22 +509,18 @@ StringLiteral::StringLiteral(const Token& token, const std::string& value) : IEx
 	SetUniqueId(this);
 }
 
-std::shared_ptr<StringLiteral> StringLiteral::New(const Token& token, const std::string& value)
-{
-	return std::make_shared<StringLiteral>(token, value);
-}
 
 std::string StringLiteral::ToString() const
 {
 	return Value;
 }
 
-void StringLiteral::Eval(Evaluator* evaluator)
+void StringLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void StringLiteral::Compile(Compiler* compiler)
+void StringLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
@@ -618,36 +531,28 @@ DecimalLiteral::DecimalLiteral(const Token& token, float value) : IExpression(to
 	SetUniqueId(this);
 }
 
-std::shared_ptr<DecimalLiteral> DecimalLiteral::New(const Token& token, float value)
-{
-	return std::make_shared<DecimalLiteral>(token, value);
-}
 
 std::string DecimalLiteral::ToString() const
 {
 	return std::to_string(Value);
 }
 
-void DecimalLiteral::Eval(Evaluator* evaluator)
+void DecimalLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void DecimalLiteral::Compile(Compiler* compiler)
+void DecimalLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
 
-ArrayLiteral::ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements) : IExpression(token), Elements(elements)
+ArrayLiteral::ArrayLiteral(const Token& token, const std::vector<IExpression*>& elements) : IExpression(token), Elements(elements)
 {
 	SetUniqueId(this);
 }
 
-std::shared_ptr<ArrayLiteral> ArrayLiteral::New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements)
-{
-	return std::make_shared<ArrayLiteral>(token, elements);
-}
 
 std::string ArrayLiteral::ToString() const
 {
@@ -667,25 +572,21 @@ std::string ArrayLiteral::ToString() const
 	return result;
 }
 
-void ArrayLiteral::Eval(Evaluator* evaluator)
+void ArrayLiteral::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
-void ArrayLiteral::Compile(Compiler* compiler)
+void ArrayLiteral::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }
 
 
-IndexExpression::IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index) : IExpression(token), Left(left), Index(index)
+IndexExpression::IndexExpression(const Token& token, const IExpression* left, const IExpression* index) : IExpression(token), Left(left), Index(index)
 {
 	SetUniqueId(this);
 }
 
-std::shared_ptr<IndexExpression> IndexExpression::New(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index)
-{
-	return std::make_shared<IndexExpression>(token, left, index);
-}
 
 std::string IndexExpression::ToString() const
 {
@@ -698,12 +599,12 @@ std::string IndexExpression::ToString() const
 	return result;
 }
 
-void IndexExpression::Eval(Evaluator* evaluator)
+void IndexExpression::Eval(Evaluator* evaluator) const
 {
 	evaluator->NodeEval(this);
 }
 
-void IndexExpression::Compile(Compiler* compiler)
+void IndexExpression::Compile(Compiler* compiler) const
 {
 	compiler->NodeCompile(this);
 }

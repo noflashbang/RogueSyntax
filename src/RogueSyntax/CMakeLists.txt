@@ -9,6 +9,7 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Token.h
     ${PARENT_DIR}/include/RogueSyntax/Lexer.h
     ${PARENT_DIR}/include/RogueSyntax/AstNode.h
+    ${PARENT_DIR}/include/RogueSyntax/AstNodeStore.h
     ${PARENT_DIR}/include/RogueSyntax/Parser.h
     ${PARENT_DIR}/include/RogueSyntax/StandardLib.h
     ${PARENT_DIR}/include/RogueSyntax/IObject.h
@@ -33,6 +34,7 @@ set( libSource
  "src/Token.cpp"
  "src/Lexer.cpp"
  "src/AstNode.cpp"
+ "src/AstNodeStore.cpp"
  "src/Parser.cpp"  
  "src/IObject.cpp"
  "src/TypeCoercer.cpp"

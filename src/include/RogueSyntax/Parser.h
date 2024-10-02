@@ -4,9 +4,10 @@
 #include "Token.h"
 #include "Lexer.h"
 #include "AstNode.h"
+#include "AstNodeStore.h"
 
-typedef std::function<std::shared_ptr<IExpression>()> PrefixParseFn;
-typedef std::function<std::shared_ptr<IExpression>(std::shared_ptr<IExpression>)> InfixParseFn;
+typedef std::function<IExpression*()> PrefixParseFn;
+typedef std::function<IExpression*(IExpression*)> InfixParseFn;
 
 enum class Precedence
 {
@@ -59,39 +60,40 @@ public:
 
 	void NextToken();
 	std::shared_ptr<Program> ParseProgram();
-	std::shared_ptr<IStatement> ParseStatement();
+	
+	IStatement* ParseStatement();
 
-	std::shared_ptr<IExpression> ParseExpression(const Precedence precedence);
+	IExpression* ParseExpression(const Precedence precedence);
 
-	std::shared_ptr<IExpression> ParseIdentifier();
-	std::shared_ptr<IExpression> ParseNullLiteral();
-	std::shared_ptr<IExpression> ParseIntegerLiteral();
-	std::shared_ptr<IExpression> ParseDecimalLiteral();
-	std::shared_ptr<IExpression> ParseStringLiteral();
-	std::shared_ptr<IExpression> ParseArrayLiteral();
-	std::shared_ptr<IExpression> ParseHashLiteral();
+	IExpression* ParseIdentifier();
+	IExpression* ParseNullLiteral();
+	IExpression* ParseIntegerLiteral();
+	IExpression* ParseDecimalLiteral();
+	IExpression* ParseStringLiteral();
+	IExpression* ParseArrayLiteral();
+	IExpression* ParseHashLiteral();
 
-	std::shared_ptr<IExpression> ParsePrefixExpression();
-	std::shared_ptr<IExpression> ParseInfixExpression(const std::shared_ptr<IExpression>& left);
-	std::shared_ptr<IExpression> ParseBoolean();
-	std::shared_ptr<IExpression> ParseGroupedExpression();
-	std::shared_ptr<IExpression> ParseFunctionLiteral();
-	std::shared_ptr<IExpression> ParseCallExpression(const std::shared_ptr<IExpression>& function);
-	std::shared_ptr<IExpression> ParseIndexExpression(const std::shared_ptr<IExpression>& left);
-	std::shared_ptr<IExpression> ParseAssignExpression(const std::shared_ptr<IExpression>& left);
-	std::shared_ptr<IExpression> ParseOpAssignExpression(const std::shared_ptr<IExpression>& left);
+	IExpression* ParsePrefixExpression();
+	IExpression* ParseInfixExpression(const IExpression* left);
+	IExpression* ParseBoolean();
+	IExpression* ParseGroupedExpression();
+	IExpression* ParseFunctionLiteral();
+	IExpression* ParseCallExpression(const IExpression* function);
+	IExpression* ParseIndexExpression(const IExpression* left);
+	IExpression* ParseAssignExpression(const IExpression* left);
+	IExpression* ParseOpAssignExpression(const IExpression* left);
 
-	std::shared_ptr<IStatement> ParseIfStatement();
-	std::shared_ptr<IStatement> ParseWhileStatement();
-	std::shared_ptr<IStatement> ParseForStatement();
+	IStatement* ParseIfStatement();
+	IStatement* ParseWhileStatement();
+	IStatement* ParseForStatement();
 
-	std::shared_ptr<IStatement> ParseBlockStatement();
-	std::shared_ptr<IStatement> ParseLetStatement();
-	std::shared_ptr<IStatement> ParseAssignStatement();
-	std::shared_ptr<IStatement> ParseReturnStatement();
-	std::shared_ptr<IStatement> ParseBreakStatement();
-	std::shared_ptr<IStatement> ParseContinueStatement();
-	std::shared_ptr<IStatement> ParseExpressionStatement();
+	IStatement* ParseBlockStatement();
+	IStatement* ParseLetStatement();
+	IStatement* ParseAssignStatement();
+	IStatement* ParseReturnStatement();
+	IStatement* ParseBreakStatement();
+	IStatement* ParseContinueStatement();
+	IStatement* ParseExpressionStatement();
 
 	bool ExpectPeek(const TokenType& expectedType);
 	bool CurrentTokenIs(const TokenType& type) const;
@@ -117,4 +119,6 @@ private:
 	std::vector<std::string> _errors;
 	std::map<TokenType, PrefixParseFn> _prefixDispatch;
 	std::map<TokenType, InfixParseFn> _infixDispatch;
+
+	std::shared_ptr<AstNodeStore> _currentStore;
 };

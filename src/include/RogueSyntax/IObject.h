@@ -404,7 +404,7 @@ public:
 class FunctionObj : public IObject
 {
 public:
-	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : Parameters(parameters), Body(body) { SetUniqueId(this); }
+	FunctionObj(const std::vector<IExpression*>& parameters, const IStatement* body) : Parameters(parameters), Body(body) { SetUniqueId(this); }
 	virtual ~FunctionObj() = default;
 
 	std::string Inspect() const override
@@ -435,10 +435,10 @@ public:
 		return New(Parameters, Body);
 	}
 
-	std::vector<std::shared_ptr<IExpression>> Parameters;
-	std::shared_ptr<IStatement> Body;
+	std::vector<IExpression*> Parameters;
+	const IStatement* Body;
 
-	static std::shared_ptr<FunctionObj> New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
+	static std::shared_ptr<FunctionObj> New(const std::vector<IExpression*>& parameters, const IStatement* body);
 };
 
 class BuiltInObj : public IObject

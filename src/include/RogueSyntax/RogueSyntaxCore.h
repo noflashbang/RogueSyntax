@@ -26,6 +26,7 @@
 #include "Token.h"
 #include "Lexer.h"
 #include "AstNode.h"
+#include "AstNodeStore.h"
 #include "Parser.h"
 #include "IObject.h"
 #include "Environment.h"

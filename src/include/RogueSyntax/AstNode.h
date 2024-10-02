@@ -7,6 +7,7 @@
 //forward evaluator
 class Evaluator;
 class Compiler;
+class AstNodeStore;
 
 class INode : public IUnquielyIdentifiable
 {
@@ -18,9 +19,8 @@ public:
 	std::string TokenLiteral() const { return BaseToken.Literal; };
 	Token BaseToken;
 
-	virtual void Eval(Evaluator* evaluator) = 0;
-
-	virtual void Compile(Compiler* compiler) = 0;
+	virtual void Eval(Evaluator* evaluator) const = 0;
+	virtual void Compile(Compiler* compiler) const = 0;
 
 	virtual ~INode() = default;
 };
@@ -41,14 +41,16 @@ public:
 
 struct Program : IStatement
 {
-	Program() : IStatement(Token::New(TokenType::TOKEN_ILLEGAL, "")) { SetUniqueId(this); };
-	std::vector<std::shared_ptr<IStatement>> Statements;
+	Program(const std::shared_ptr<AstNodeStore>& store) : IStatement(Token::New(TokenType::TOKEN_ILLEGAL, "")), _store(store) { SetUniqueId(this); };
+	std::vector<IStatement*> Statements;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 
-	static std::shared_ptr<Program> New();
+	static std::shared_ptr<Program> New(const std::shared_ptr<AstNodeStore>& store);
+private:
+	std::shared_ptr<AstNodeStore> _store;
 };
 
 struct Identifier : IExpression
@@ -57,54 +59,47 @@ struct Identifier : IExpression
 	virtual ~Identifier() = default;
 	std::string ToString() const override;
 
-	static std::shared_ptr<Identifier> New(const Token& token, const std::string& value);
-
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 
 	std::string Value;
 };
 
 struct LetStatement : IStatement
 {
-	LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value);
+	LetStatement(const Token& token, const IExpression* name, const IExpression* value);
 	virtual ~LetStatement() = default;
 	std::string ToString() const override;
 	
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 
-	static std::shared_ptr<LetStatement> New(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value);
-	std::shared_ptr<IExpression> Name;
-	std::shared_ptr<IExpression> Value;
+	const IExpression* Name;
+	const IExpression* Value;
 };
 
 struct ReturnStatement : IStatement
 {
-	ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue);
+	ReturnStatement(const Token& token, const IExpression* returnValue);
 	virtual ~ReturnStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 
-	static std::shared_ptr<ReturnStatement> New(const Token& token, const std::shared_ptr<IExpression>& returnValue);
-
-	std::shared_ptr<IExpression> ReturnValue;
+	const IExpression* ReturnValue;
 };
 
 struct ExpressionStatement : IStatement
 {
-	ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression);
+	ExpressionStatement(const Token& token, const IExpression* expression);
 	virtual ~ExpressionStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 
-	static std::shared_ptr<ExpressionStatement> New(const Token& token, const std::shared_ptr<IExpression>& expression);
-
-	std::shared_ptr<IExpression> Expression;
+	const IExpression* Expression;
 };
 
 struct NullLiteral : IExpression
@@ -113,10 +108,8 @@ struct NullLiteral : IExpression
 	virtual ~NullLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-
-	static std::shared_ptr<NullLiteral> New(const Token& token);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 };
 
 struct IntegerLiteral : IExpression
@@ -125,10 +118,8 @@ struct IntegerLiteral : IExpression
 	virtual ~IntegerLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-
-	static std::shared_ptr<IntegerLiteral> New(const Token& token, const int value);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 
 	int Value;
 };
@@ -139,124 +130,116 @@ struct BooleanLiteral : IExpression
 	virtual ~BooleanLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<BooleanLiteral> New(const Token& token, const bool value);
-
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
 	bool Value;
 };
 
 struct HashLiteral : IExpression
 {
-	HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs);
+	HashLiteral(const Token& token, const std::map<IExpression*, IExpression*>& pairs);
 	virtual ~HashLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<HashLiteral> New(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs);
-
-	std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>> Elements;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	std::map<IExpression*, IExpression*> Elements;
 };
 
 struct PrefixExpression : IExpression
 {
-	PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right);
+	PrefixExpression(const Token& token, const std::string& op, const IExpression* right);
 	virtual ~PrefixExpression() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<PrefixExpression> New(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
 
 	std::string Operator;
-	std::shared_ptr<IExpression> Right;
+	const IExpression* Right;
 };
 
 struct InfixExpression : IExpression
 {
-	InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right);
+	InfixExpression(const Token& token, const IExpression* left, const std::string& op, const IExpression* right);
 	virtual ~InfixExpression() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<InfixExpression> New(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right);
-
-	std::shared_ptr<IExpression> Left;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	const IExpression* Left;
 	std::string Operator;
-	std::shared_ptr<IExpression> Right;
+	const IExpression* Right;
 };
 
 struct BlockStatement : IStatement
 {
-	BlockStatement(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements);
+	BlockStatement(const Token& token, const std::vector<IStatement*>& statements);
 	virtual ~BlockStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<BlockStatement> New(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements);
-
-	std::vector<std::shared_ptr<IStatement>> Statements;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	std::vector<IStatement*> Statements;
 };
 
 struct IfStatement : IStatement
 {
-	IfStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
+	IfStatement(const Token& token, const IExpression* condition, const IStatement* consequence, const IStatement* alternative);
 	virtual ~IfStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<IfStatement> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
-
-	std::shared_ptr<IExpression> Condition;
-	std::shared_ptr<IStatement> Consequence;
-	std::shared_ptr<IStatement> Alternative;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	const IExpression* Condition;
+	const IStatement* Consequence;
+	const IStatement* Alternative;
 };
 
 struct FunctionLiteral : IExpression
 {
-	FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
+	FunctionLiteral(const Token& token, const std::vector<IExpression*>& parameters, const IStatement* body);
 	virtual ~FunctionLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<FunctionLiteral> New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
-
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
 	std::string Name;
-	std::vector<std::shared_ptr<IExpression>> Parameters;
-	std::shared_ptr<IStatement> Body;
+	std::vector<IExpression*> Parameters;
+	const IStatement* Body;
 };
 
 struct CallExpression : IExpression
 {
-	CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments);
+	CallExpression(const Token& token, const IExpression* function, const std::vector<IExpression*>& arguments);
 	virtual ~CallExpression() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<CallExpression> New(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments);
-
-	std::shared_ptr<IExpression> Function;
-	std::vector<std::shared_ptr<IExpression>> Arguments;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	const IExpression* Function;
+	std::vector<IExpression*> Arguments;
 };
 
 struct WhileStatement : IStatement
 {
-	WhileStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
+	WhileStatement(const Token& token, const IExpression* condition, const IStatement* action);
 	virtual ~WhileStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<WhileStatement> New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
-
-	std::shared_ptr<IExpression> Condition;
-	std::shared_ptr<IStatement> Action;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	const IExpression* Condition;
+	const IStatement* Action;
 };
 
 struct BreakStatement : IStatement
@@ -265,9 +248,8 @@ struct BreakStatement : IStatement
 	virtual ~BreakStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<BreakStatement> New(const Token& token);
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 };
 
 struct ContinueStatement : IStatement
@@ -276,26 +258,23 @@ struct ContinueStatement : IStatement
 	virtual ~ContinueStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<ContinueStatement> New(const Token& token);
-
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
 };
 
 struct ForStatement : IStatement
 {
-	ForStatement(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
+	ForStatement(const Token& token, const IStatement* init, const IExpression* condition, const IStatement* post, const IStatement* action);
 	virtual ~ForStatement() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<ForStatement> New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
-
-	std::shared_ptr<IStatement> Init;
-	std::shared_ptr<IExpression> Condition;
-	std::shared_ptr<IStatement> Post;
-	std::shared_ptr<IStatement> Action;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	const IStatement* Init;
+	const IExpression* Condition;
+	const IStatement* Post;
+	const IStatement* Action;
 };
 
 struct StringLiteral : IExpression
@@ -304,10 +283,9 @@ struct StringLiteral : IExpression
 	virtual ~StringLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<StringLiteral> New(const Token& token, const std::string& value);
-
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
 	std::string Value;
 };
 
@@ -317,36 +295,33 @@ struct DecimalLiteral : IExpression
 	virtual ~DecimalLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<DecimalLiteral> New(const Token& token, const float value);
-
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
 	float Value;
 };
 
 struct ArrayLiteral : IExpression
 {
-	ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements);
+	ArrayLiteral(const Token& token, const std::vector<IExpression*>& elements);
 	virtual ~ArrayLiteral() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<ArrayLiteral> New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements);
-
-	std::vector<std::shared_ptr<IExpression>> Elements;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	std::vector<IExpression*> Elements;
 };
 
 struct IndexExpression : IExpression
 {
-	IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index);
+	IndexExpression(const Token& token, const IExpression* left, const IExpression* index);
 	virtual ~IndexExpression() = default;
 	std::string ToString() const override;
 
-	void Eval(Evaluator* evaluator);
-	void Compile(Compiler* compiler);
-	static std::shared_ptr<IndexExpression> New(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index);
-
-	std::shared_ptr<IExpression> Left;
-	std::shared_ptr<IExpression> Index;
+	void Eval(Evaluator* evaluator) const;
+	void Compile(Compiler* compiler) const;
+	
+	const IExpression* Left;
+	const IExpression* Index;
 };

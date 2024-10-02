@@ -5,37 +5,37 @@
 class RecursiveEvaluator : public Evaluator
 {
 public:
-	std::shared_ptr<IObject> Eval(const std::shared_ptr<INode>& node, const uint32_t env) override;
-	std::shared_ptr<IObject> Eval(INode* node);
+	std::shared_ptr<IObject> Eval(const INode* node, const uint32_t env) override;
+	std::shared_ptr<IObject> Eval(const INode* node);
 
-	void NodeEval(Program* program) override;
-	void NodeEval(BlockStatement* block) override;
-	void NodeEval(ExpressionStatement* expression) override;
-	void NodeEval(ReturnStatement* ret) override;
-	void NodeEval(LetStatement* let) override;
-	void NodeEval(Identifier* ident) override;
-	void NodeEval(IntegerLiteral* integer) override;
-	void NodeEval(BooleanLiteral* boolean) override;
-	void NodeEval(StringLiteral* string) override;
-	void NodeEval(DecimalLiteral* decimal) override;
-	void NodeEval(PrefixExpression* prefix) override;
-	void NodeEval(InfixExpression* infix) override;
-	void NodeEval(IfStatement* ifExpr) override;
-	void NodeEval(FunctionLiteral* function) override;
-	void NodeEval(CallExpression* call) override;
-	void NodeEval(ArrayLiteral* array) override;
-	void NodeEval(IndexExpression* index) override;
-	void NodeEval(HashLiteral* hash) override;
-	void NodeEval(NullLiteral* null) override;
-	void NodeEval(WhileStatement* whileExp) override;
-	void NodeEval(ForStatement* forExp) override;
-	void NodeEval(ContinueStatement* cont) override;
-	void NodeEval(BreakStatement* brk) override;
+	void NodeEval(const Program* program) override;
+	void NodeEval(const BlockStatement* block) override;
+	void NodeEval(const ExpressionStatement* expression) override;
+	void NodeEval(const ReturnStatement* ret) override;
+	void NodeEval(const LetStatement* let) override;
+	void NodeEval(const Identifier* ident) override;
+	void NodeEval(const IntegerLiteral* integer) override;
+	void NodeEval(const BooleanLiteral* boolean) override;
+	void NodeEval(const StringLiteral* string) override;
+	void NodeEval(const DecimalLiteral* decimal) override;
+	void NodeEval(const PrefixExpression* prefix) override;
+	void NodeEval(const InfixExpression* infix) override;
+	void NodeEval(const IfStatement* ifExpr) override;
+	void NodeEval(const FunctionLiteral* function) override;
+	void NodeEval(const CallExpression* call) override;
+	void NodeEval(const ArrayLiteral* array) override;
+	void NodeEval(const IndexExpression* index) override;
+	void NodeEval(const HashLiteral* hash) override;
+	void NodeEval(const NullLiteral* null) override;
+	void NodeEval(const WhileStatement* whileExp) override;
+	void NodeEval(const ForStatement* forExp) override;
+	void NodeEval(const ContinueStatement* cont) override;
+	void NodeEval(const BreakStatement* brk) override;
 
 	std::string Type() override { return "Recursive"; }
 
 private:
-	std::vector<std::shared_ptr<IObject>> EvalExpressions(const std::vector<std::shared_ptr<IExpression>>& expressions);
+	std::vector<std::shared_ptr<IObject>> EvalExpressions(const std::vector<IExpression*>& expressions);
 	std::shared_ptr<IObject> ApplyFunction(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args);
 
 	std::stack<std::shared_ptr<IObject>> _results;

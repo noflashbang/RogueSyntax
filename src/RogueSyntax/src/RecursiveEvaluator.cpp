@@ -3,10 +3,10 @@
 #include "RecursiveEvaluator.h"
 
 
-std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& node, const uint32_t env)
+std::shared_ptr<IObject> RecursiveEvaluator::Eval(const INode* node, const uint32_t env)
 {
 	_env = env; // set the environment
-	auto result = Eval(node.get());
+	auto result = Eval(node);
 
 	if (VoidObj::VOID_OBJ_REF == result)
 	{
@@ -16,7 +16,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const std::shared_ptr<INode>& 
 	return result;
 }
 
-std::shared_ptr<IObject> RecursiveEvaluator::Eval(INode* node)
+std::shared_ptr<IObject> RecursiveEvaluator::Eval(const INode* node)
 {
 	node->Eval(this);
 	
@@ -30,12 +30,12 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(INode* node)
 	return top;
 }
 
-void RecursiveEvaluator::NodeEval(Program* program)
+void RecursiveEvaluator::NodeEval(const Program* program)
 {
 	_results.push(Eval(program));
 }
 
-void RecursiveEvaluator::NodeEval(BlockStatement* block)
+void RecursiveEvaluator::NodeEval(const BlockStatement* block)
 {
 	for (const auto& stmt : block->Statements)
 	{
@@ -53,18 +53,18 @@ void RecursiveEvaluator::NodeEval(BlockStatement* block)
 	}
 }
 
-void RecursiveEvaluator::NodeEval(ExpressionStatement* expression)
+void RecursiveEvaluator::NodeEval(const ExpressionStatement* expression)
 {
 	_results.push(Eval(expression->Expression, _env));
 }
 
-void RecursiveEvaluator::NodeEval(ReturnStatement* ret)
+void RecursiveEvaluator::NodeEval(const ReturnStatement* ret)
 {
 	auto value = Eval(ret->ReturnValue, _env);
 	_results.push(ReturnObj::New(value));
 }
 
-void RecursiveEvaluator::NodeEval(LetStatement* let)
+void RecursiveEvaluator::NodeEval(const LetStatement* let)
 {
 	auto value = Eval(let->Value, _env);
 
@@ -77,7 +77,7 @@ void RecursiveEvaluator::NodeEval(LetStatement* let)
 		return;
 	}
 
-	if (typeid(*(let->Name.get())) == typeid(Identifier))
+	if (let->Name->IsThisA<Identifier>())
 	{
 		auto target = Eval(let->Name, _env);
 		if (target->IsThisA<ErrorObj>())
@@ -89,9 +89,9 @@ void RecursiveEvaluator::NodeEval(LetStatement* let)
 		ident->Set(nullptr, value);
 		EvalEnvironment->Set(_env, ident->Name, value);
 	}
-	else if (typeid(*(let->Name.get())) == typeid(IndexExpression))
+	else if (let->Name->IsThisA<IndexExpression>())
 	{
-		auto* index = dynamic_no_copy_cast<IndexExpression>(let->Name);
+		auto* index = dynamic_cast<const IndexExpression*>(let->Name);
 		auto left = Eval(index->Left, _env);
 		auto indexObj = Eval(index->Index, _env);
 
@@ -127,7 +127,7 @@ void RecursiveEvaluator::NodeEval(LetStatement* let)
 	}
 }
 
-void RecursiveEvaluator::NodeEval(Identifier* ident)
+void RecursiveEvaluator::NodeEval(const Identifier* ident)
 {
 	if (EvalBuiltIn->IsBuiltIn(ident->Value))
 	{
@@ -147,27 +147,27 @@ void RecursiveEvaluator::NodeEval(Identifier* ident)
 	}
 }
 
-void RecursiveEvaluator::NodeEval(IntegerLiteral* integer)
+void RecursiveEvaluator::NodeEval(const IntegerLiteral* integer)
 {
 	_results.push(IntegerObj::New(integer->Value));
 }
 
-void RecursiveEvaluator::NodeEval(BooleanLiteral* boolean)
+void RecursiveEvaluator::NodeEval(const BooleanLiteral* boolean)
 {
 	_results.push(boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF);
 }
 
-void RecursiveEvaluator::NodeEval(StringLiteral* string)
+void RecursiveEvaluator::NodeEval(const StringLiteral* string)
 {
 	_results.push(StringObj::New(string->Value));
 }
 
-void RecursiveEvaluator::NodeEval(DecimalLiteral* decimal)
+void RecursiveEvaluator::NodeEval(const DecimalLiteral* decimal)
 {
 	_results.push(DecimalObj::New(decimal->Value));
 }
 
-void RecursiveEvaluator::NodeEval(PrefixExpression* prefix)
+void RecursiveEvaluator::NodeEval(const PrefixExpression* prefix)
 {
 	auto right = Eval(prefix->Right, _env);
 
@@ -182,7 +182,7 @@ void RecursiveEvaluator::NodeEval(PrefixExpression* prefix)
 	_results.push(EvalPrefixExpression(prefix->BaseToken, right));
 }
 
-void RecursiveEvaluator::NodeEval(InfixExpression* infix)
+void RecursiveEvaluator::NodeEval(const InfixExpression* infix)
 {
 	auto left = Eval(infix->Left, _env);
 
@@ -207,7 +207,7 @@ void RecursiveEvaluator::NodeEval(InfixExpression* infix)
 	_results.push(EvalInfixExpression(infix->BaseToken, left, right));
 }
 
-void RecursiveEvaluator::NodeEval(IfStatement* ifExpr)
+void RecursiveEvaluator::NodeEval(const IfStatement* ifExpr)
 {
 	auto condition = Eval(ifExpr->Condition, _env);
 
@@ -242,12 +242,12 @@ void RecursiveEvaluator::NodeEval(IfStatement* ifExpr)
 	}
 }
 
-void RecursiveEvaluator::NodeEval(FunctionLiteral* function)
+void RecursiveEvaluator::NodeEval(const FunctionLiteral* function)
 {
 	_results.push(FunctionObj::New(function->Parameters, function->Body));
 }
 
-void RecursiveEvaluator::NodeEval(CallExpression* call)
+void RecursiveEvaluator::NodeEval(const CallExpression* call)
 {
 	auto function = Eval(call->Function, _env);
 	if (function->IsThisA<ErrorObj>())
@@ -302,7 +302,7 @@ void RecursiveEvaluator::NodeEval(CallExpression* call)
 	}
 }
 
-void RecursiveEvaluator::NodeEval(ArrayLiteral* array)
+void RecursiveEvaluator::NodeEval(const ArrayLiteral* array)
 {
 	std::vector<std::shared_ptr<IObject>> elements;
 	for (const auto& elem : array->Elements)
@@ -318,7 +318,7 @@ void RecursiveEvaluator::NodeEval(ArrayLiteral* array)
 	_results.push(ArrayObj::New(elements));
 }
 
-void RecursiveEvaluator::NodeEval(IndexExpression* index)
+void RecursiveEvaluator::NodeEval(const IndexExpression* index)
 {
 	auto left = Eval(index->Left, _env);
 	auto indexObj = Eval(index->Index, _env);
@@ -344,7 +344,7 @@ void RecursiveEvaluator::NodeEval(IndexExpression* index)
 	_results.push(EvalIndexExpression(index->BaseToken, left, indexObj));
 }
 
-void RecursiveEvaluator::NodeEval(HashLiteral* hash)
+void RecursiveEvaluator::NodeEval(const HashLiteral* hash)
 {
 	std::unordered_map<HashKey, HashEntry> elems;
 	for (const auto& [key, value] : hash->Elements)
@@ -367,7 +367,7 @@ void RecursiveEvaluator::NodeEval(HashLiteral* hash)
 	_results.push(HashObj::New(elems));
 }
 
-void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
+void RecursiveEvaluator::NodeEval(const WhileStatement* whileEx)
 {
 	auto condition = Eval(whileEx->Condition, _env);
 
@@ -436,7 +436,7 @@ void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 	_results.push(NullObj::NULL_OBJ_REF);
 }
 
-void RecursiveEvaluator::NodeEval(ForStatement* forEx)
+void RecursiveEvaluator::NodeEval(const ForStatement* forEx)
 {
 	auto init = Eval(forEx->Init, _env);
 
@@ -510,22 +510,22 @@ void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 	_results.push(NullObj::NULL_OBJ_REF);
 }
 
-void RecursiveEvaluator::NodeEval(BreakStatement* breakStmt)
+void RecursiveEvaluator::NodeEval(const BreakStatement* breakStmt)
 {
 	_results.push(ReturnObj::New(BreakObj::BREAK_OBJ_REF));
 }
 
-void RecursiveEvaluator::NodeEval(ContinueStatement* continueStmt)
+void RecursiveEvaluator::NodeEval(const ContinueStatement* continueStmt)
 {
 	_results.push(ReturnObj::New(ContinueObj::CONTINUE_OBJ_REF));
 }
 
-void RecursiveEvaluator::NodeEval(NullLiteral* null)
+void RecursiveEvaluator::NodeEval(const NullLiteral* null)
 {
 	_results.push(NullObj::NULL_OBJ_REF);
 }
 
-std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const std::vector<std::shared_ptr<IExpression>>& expressions)
+std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const std::vector<IExpression*>& expressions)
 {
 	std::vector<std::shared_ptr<IObject>> result;
 	for (const auto& expr : expressions)

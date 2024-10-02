@@ -211,10 +211,10 @@ int Compiler::Emit(OpCode::Constants opcode, std::vector<int> operands)
 	return _CompilationUnits.top().AddInstruction(instructions);
 }
 
-void Compiler::NodeCompile(Program* program)
+void Compiler::NodeCompile(const Program* program)
 {
 	EnterUnit(); // enter global unit
-	for (auto stmt : program->Statements)
+	for (auto& stmt : program->Statements)
 	{
 		stmt->Compile(this);
 		if (HasErrors())
@@ -224,9 +224,9 @@ void Compiler::NodeCompile(Program* program)
 	}
 }
 
-void Compiler::NodeCompile(BlockStatement* block)
+void Compiler::NodeCompile(const BlockStatement* block)
 {
-	for (auto stmt : block->Statements)
+	for (auto& stmt : block->Statements)
 	{
 		stmt->Compile(this);
 		if (HasErrors())
@@ -236,7 +236,7 @@ void Compiler::NodeCompile(BlockStatement* block)
 	}
 }
 
-void Compiler::NodeCompile(ExpressionStatement* expression)
+void Compiler::NodeCompile(const ExpressionStatement* expression)
 {
 
 	expression->Expression->Compile(this);
@@ -247,7 +247,7 @@ void Compiler::NodeCompile(ExpressionStatement* expression)
 	Emit(OpCode::Constants::OP_POP, {});
 }
 
-void Compiler::NodeCompile(ReturnStatement* ret)
+void Compiler::NodeCompile(const ReturnStatement* ret)
 {
 	ret->ReturnValue->Compile(this);
 	if (HasErrors())
@@ -257,11 +257,11 @@ void Compiler::NodeCompile(ReturnStatement* ret)
 	Emit(OpCode::Constants::OP_RETURN_VALUE, {});
 }
 
-void Compiler::NodeCompile(LetStatement* let)
+void Compiler::NodeCompile(const LetStatement* let)
 {
-	if (typeid(*(let->Name.get())) == typeid(Identifier))
+	if (let->Name->IsThisA<Identifier>())
 	{
-		auto ident = dynamic_cast<Identifier*>(let->Name.get());
+		auto* ident = dynamic_cast<const Identifier*>(let->Name);
 		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
 		let->Value->Compile(this);
 		if (HasErrors())
@@ -278,9 +278,9 @@ void Compiler::NodeCompile(LetStatement* let)
 			Emit(OpCode::Constants::OP_SET_GLOBAL, { symbol.Index });
 		}
 	}
-	else if (typeid(*(let->Name.get())) == typeid(IndexExpression))
+	else if (let->Name->IsThisA<IndexExpression>())
 	{
-		auto index = dynamic_cast<IndexExpression*>(let->Name.get());
+		auto* index = dynamic_cast<const IndexExpression*>(let->Name);
 
 		//get the lvalue
 		index->Compile(this);
@@ -304,7 +304,7 @@ void Compiler::NodeCompile(LetStatement* let)
 	}
 }
 
-void Compiler::NodeCompile(Identifier* ident)
+void Compiler::NodeCompile(const Identifier* ident)
 {
 	auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
 	if (sym.Scope == SCOPE_LOCAL)
@@ -329,33 +329,33 @@ void Compiler::NodeCompile(Identifier* ident)
 	}
 }
 
-void Compiler::NodeCompile(IntegerLiteral* integer)
+void Compiler::NodeCompile(const IntegerLiteral* integer)
 {
 	auto obj = IntegerObj::New(integer->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
-void Compiler::NodeCompile(BooleanLiteral* boolean)
+void Compiler::NodeCompile(const BooleanLiteral* boolean)
 {
 	boolean->Value ? Emit(OpCode::Constants::OP_TRUE, {}) : Emit(OpCode::Constants::OP_FALSE, {});
 }
 
-void Compiler::NodeCompile(StringLiteral* string)
+void Compiler::NodeCompile(const StringLiteral* string)
 {
 	auto obj = StringObj::New(string->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
-void Compiler::NodeCompile(DecimalLiteral* decimal)
+void Compiler::NodeCompile(const DecimalLiteral* decimal)
 {
 	auto obj = DecimalObj::New(decimal->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
-void Compiler::NodeCompile(PrefixExpression* prefix)
+void Compiler::NodeCompile(const PrefixExpression* prefix)
 {
 	prefix->Right->Compile(this);
 	if (HasErrors())
@@ -381,7 +381,7 @@ void Compiler::NodeCompile(PrefixExpression* prefix)
 	}
 }
 
-void Compiler::NodeCompile(InfixExpression* infix)
+void Compiler::NodeCompile(const InfixExpression* infix)
 {
 	infix->Left->Compile(this);
 	if (HasErrors())
@@ -473,7 +473,7 @@ void Compiler::NodeCompile(InfixExpression* infix)
 	}
 }
 
-void Compiler::NodeCompile(IfStatement* ifExpr)
+void Compiler::NodeCompile(const IfStatement* ifExpr)
 {
 	ifExpr->Condition->Compile(this);
 	if (HasErrors())
@@ -510,7 +510,7 @@ void Compiler::NodeCompile(IfStatement* ifExpr)
 	}
 }
 
-void Compiler::NodeCompile(FunctionLiteral* function)
+void Compiler::NodeCompile(const FunctionLiteral* function)
 {
 	EnterUnit();
 
@@ -519,9 +519,9 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 		auto fnSymbol = _CompilationUnits.top().SymbolTable->DefineFunctionName(function->Name);
 	}
 
-	for (auto param : function->Parameters)
+	for (auto* param : function->Parameters)
 	{
-		auto ident = dynamic_cast<Identifier*>(param.get());
+		auto* ident = dynamic_cast<Identifier*>(param);
 		if (ident == nullptr)
 		{
 			_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownError, "Expected identifier"));
@@ -539,7 +539,7 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 	auto unit = ExitUnit();
 
 	auto frees = unit.SymbolTable->FreeSymbols();
-	for (auto sym : frees)
+	for (auto& sym : frees)
 	{
 		if (sym.Scope == SCOPE_LOCAL)
 		{
@@ -578,7 +578,7 @@ void Compiler::NodeCompile(FunctionLiteral* function)
 	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<int>(frees.size())});
 }
 
-void Compiler::NodeCompile(CallExpression* call)
+void Compiler::NodeCompile(const CallExpression* call)
 {
 	call->Function->Compile(this);
 	if (HasErrors())
@@ -586,7 +586,7 @@ void Compiler::NodeCompile(CallExpression* call)
 		return;
 	}
 
-	for (auto arg : call->Arguments)
+	for (auto& arg : call->Arguments)
 	{
 		arg->Compile(this);
 		if (HasErrors())
@@ -598,9 +598,9 @@ void Compiler::NodeCompile(CallExpression* call)
 	Emit(OpCode::Constants::OP_CALL, { static_cast<int>(call->Arguments.size())});
 }
 
-void Compiler::NodeCompile(ArrayLiteral* array)
+void Compiler::NodeCompile(const ArrayLiteral* array)
 {
-	for(auto elem : array->Elements)
+	for(auto& elem : array->Elements)
 	{
 		elem->Compile(this);
 		if (HasErrors())
@@ -611,7 +611,7 @@ void Compiler::NodeCompile(ArrayLiteral* array)
 	Emit(OpCode::Constants::OP_ARRAY, { static_cast<int>(array->Elements.size()) });
 }
 
-void Compiler::NodeCompile(IndexExpression* index)
+void Compiler::NodeCompile(const IndexExpression* index)
 {
 	index->Left->Compile(this);
 	if (HasErrors())
@@ -626,9 +626,9 @@ void Compiler::NodeCompile(IndexExpression* index)
 	Emit(OpCode::Constants::OP_INDEX, {});
 }
 
-void Compiler::NodeCompile(HashLiteral* hash)
+void Compiler::NodeCompile(const HashLiteral* hash)
 {
-	for (auto pair : hash->Elements)
+	for (auto& pair : hash->Elements)
 	{
 		pair.first->Compile(this);
 		if (HasErrors())
@@ -644,12 +644,12 @@ void Compiler::NodeCompile(HashLiteral* hash)
 	Emit(OpCode::Constants::OP_HASH, { static_cast<int>(hash->Elements.size()) });
 }
 
-void Compiler::NodeCompile(NullLiteral* null)
+void Compiler::NodeCompile(const NullLiteral* null)
 {
 	Emit(OpCode::Constants::OP_NULL, {});
 }
 
-void Compiler::NodeCompile(WhileStatement* whileExp)
+void Compiler::NodeCompile(const WhileStatement* whileExp)
 {
 	auto conditionPos = _CompilationUnits.top().UnitInstructions.size();
 	whileExp->Condition->Compile(this);
@@ -687,7 +687,7 @@ void Compiler::NodeCompile(WhileStatement* whileExp)
 	}
 }
 
-void Compiler::NodeCompile(ForStatement* forExp)
+void Compiler::NodeCompile(const ForStatement* forExp)
 {
 	forExp->Init->Compile(this);
 	if (HasErrors())
@@ -739,13 +739,13 @@ void Compiler::NodeCompile(ForStatement* forExp)
 	}
 }
 
-void Compiler::NodeCompile(ContinueStatement* cont)
+void Compiler::NodeCompile(const ContinueStatement* cont)
 {
 	auto location = Emit(OpCode::Constants::OP_JUMP, { 9999 });
 	_CompilationUnits.top().LoopJumps.push({LoopJumpType::LOOP_JUMP_CONTINUE, location});
 }
 
-void Compiler::NodeCompile(BreakStatement* brk)
+void Compiler::NodeCompile(const BreakStatement* brk)
 {
 	auto location = Emit(OpCode::Constants::OP_JUMP, { 9999 });
 	_CompilationUnits.top().LoopJumps.push({ LoopJumpType::LOOP_JUMP_BREAK, location });

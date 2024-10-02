@@ -3,9 +3,9 @@
 #include "StackEvaluator.h"
 
 
-std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node, const uint32_t env)
+std::shared_ptr<IObject> StackEvaluator::Eval(const INode* node, const uint32_t env)
 {
-	Push_Eval(node.get(), 0, env);
+	Push_Eval(node, 0, env);
 
 	uint32_t useEnv = env;
 
@@ -34,7 +34,7 @@ std::shared_ptr<IObject> StackEvaluator::Eval(const std::shared_ptr<INode>& node
 }
 
 
-void StackEvaluator::Push_Eval(INode* node, const int32_t signal, const uint32_t env)
+void StackEvaluator::Push_Eval(const INode* node, const int32_t signal, const uint32_t env)
 {
 	_stack.emplace( node, signal, env );
 }
@@ -108,14 +108,14 @@ size_t StackEvaluator::ResultCount() const
 	return _results.size();
 }
 
-void StackEvaluator::NodeEval(Program* program)
+void StackEvaluator::NodeEval(const Program* program)
 {
 	for (const auto& iter : std::views::reverse(program->Statements))
 	{
-		Push_Eval(iter.get(), 0, _currentEnv);
+		Push_Eval(iter, 0, _currentEnv);
 	}
 }
-void StackEvaluator::NodeEval(BlockStatement* block)
+void StackEvaluator::NodeEval(const BlockStatement* block)
 {
 	if (ResultIsError() || ResultIsReturn())
 	{
@@ -127,19 +127,19 @@ void StackEvaluator::NodeEval(BlockStatement* block)
 		//get the statement for the current _currentSignal
 		auto& stmt = block->Statements[_currentSignal];
 		Push_Eval(block, _currentSignal + 1, _currentEnv);
-		Push_Eval(stmt.get(), 0, _currentEnv);
+		Push_Eval(stmt, 0, _currentEnv);
 	}
 }
-void StackEvaluator::NodeEval(ExpressionStatement* expression)
+void StackEvaluator::NodeEval(const ExpressionStatement* expression)
 {
-	Push_Eval(expression->Expression.get(), 0, _currentEnv);
+	Push_Eval(expression->Expression, 0, _currentEnv);
 }
-void StackEvaluator::NodeEval(ReturnStatement* ret)
+void StackEvaluator::NodeEval(const ReturnStatement* ret)
 {
 	if (_currentSignal == 0)
 	{
 		Push_Eval(ret, 1, _currentEnv);
-		Push_Eval(ret->ReturnValue.get(), 0, _currentEnv);
+		Push_Eval(ret->ReturnValue, 0, _currentEnv);
 	}
 	else
 	{
@@ -147,15 +147,15 @@ void StackEvaluator::NodeEval(ReturnStatement* ret)
 		Push_Result(ReturnObj::New(result));
 	}
 }
-void StackEvaluator::NodeEval(LetStatement* let)
+void StackEvaluator::NodeEval(const LetStatement* let)
 {
-	if(let->Name.get()->IsThisA<Identifier>())
+	if(let->Name->IsThisA<Identifier>())
 	{
 		if (_currentSignal == 0)
 		{
 			Push_Eval(let, 1, _currentEnv);
-			Push_Eval(let->Value.get(), 0, _currentEnv);
-			Push_Eval(let->Name.get(), 0, _currentEnv);
+			Push_Eval(let->Value, 0, _currentEnv);
+			Push_Eval(let->Name, 0, _currentEnv);
 		}
 		else
 		{
@@ -180,16 +180,16 @@ void StackEvaluator::NodeEval(LetStatement* let)
 			//results.push(result);
 		}
 	}
-	else if (typeid(*(let->Name.get())) == typeid(IndexExpression))
+	else if (typeid(*(let->Name)) == typeid(IndexExpression))
 	{
 		if (_currentSignal == 0)
 		{
-			auto* index = dynamic_no_copy_cast<IndexExpression>(let->Name);
+			auto* index = dynamic_cast<const IndexExpression*>(let->Name);
 
 			Push_Eval(let, 1, _currentEnv);
-			Push_Eval( let->Value.get(), 0, _currentEnv);
-			Push_Eval( index->Left.get(), 0, _currentEnv);
-			Push_Eval( index->Index.get(), 0, _currentEnv);
+			Push_Eval( let->Value, 0, _currentEnv);
+			Push_Eval( index->Left, 0, _currentEnv);
+			Push_Eval( index->Index, 0, _currentEnv);
 		}
 		else
 		{
@@ -221,7 +221,7 @@ void StackEvaluator::NodeEval(LetStatement* let)
 		Push_Result(MakeError("let target must be identifier or index expression", let->BaseToken));
 	}
 }
-void StackEvaluator::NodeEval(Identifier* ident)
+void StackEvaluator::NodeEval(const Identifier* ident)
 {
 	if (EvalBuiltIn->IsBuiltIn(ident->Value))
 	{
@@ -243,28 +243,28 @@ void StackEvaluator::NodeEval(Identifier* ident)
 		//result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
 	}
 }
-void StackEvaluator::NodeEval(IntegerLiteral* integer)
+void StackEvaluator::NodeEval(const IntegerLiteral* integer)
 {
 	Push_Result(IntegerObj::New(integer->Value));
 }
-void StackEvaluator::NodeEval(BooleanLiteral* boolean)
+void StackEvaluator::NodeEval(const BooleanLiteral* boolean)
 {
 	Push_Result(boolean->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF);
 }
-void StackEvaluator::NodeEval(StringLiteral* string)
+void StackEvaluator::NodeEval(const StringLiteral* string)
 {
 	Push_Result(StringObj::New(string->Value));
 }
-void StackEvaluator::NodeEval(DecimalLiteral* decimal)
+void StackEvaluator::NodeEval(const DecimalLiteral* decimal)
 {
 	Push_Result(DecimalObj::New(decimal->Value));
 }
-void StackEvaluator::NodeEval(PrefixExpression* prefix)
+void StackEvaluator::NodeEval(const PrefixExpression* prefix)
 {
 	if (_currentSignal == 0)
 	{
 		Push_Eval(prefix, 1, _currentEnv);
-		Push_Eval(prefix->Right.get(), 0, _currentEnv);
+		Push_Eval(prefix->Right, 0, _currentEnv);
 	}
 	else
 	{
@@ -272,17 +272,17 @@ void StackEvaluator::NodeEval(PrefixExpression* prefix)
 		Push_Result(EvalPrefixExpression(prefix->BaseToken, lastResult));
 	}
 }
-void StackEvaluator::NodeEval(InfixExpression* infix)
+void StackEvaluator::NodeEval(const InfixExpression* infix)
 {
 	if (_currentSignal == 0)
 	{
 		Push_Eval(infix, 1, _currentEnv);
-		Push_Eval(infix->Left.get(), 0, _currentEnv);
+		Push_Eval(infix->Left, 0, _currentEnv);
 	}
 	else if (_currentSignal == 1)
 	{
 		Push_Eval(infix, 2, _currentEnv);
-		Push_Eval(infix->Right.get(), 0, _currentEnv);
+		Push_Eval(infix->Right, 0, _currentEnv);
 	}
 	else
 	{
@@ -308,12 +308,12 @@ void StackEvaluator::NodeEval(InfixExpression* infix)
 		Push_Result(result);
 	}
 }
-void StackEvaluator::NodeEval(IfStatement* ifExpr)
+void StackEvaluator::NodeEval(const IfStatement* ifExpr)
 {
 	if (_currentSignal == 0)
 	{
 		Push_Eval(ifExpr,  1, _currentEnv);
-		Push_Eval(ifExpr->Condition.get(), 0, _currentEnv);
+		Push_Eval(ifExpr->Condition, 0, _currentEnv);
 	}
 	else
 	{
@@ -329,11 +329,11 @@ void StackEvaluator::NodeEval(IfStatement* ifExpr)
 
 		if (evalBool == BooleanObj::TRUE_OBJ_REF)
 		{
-			Push_Eval(ifExpr->Consequence.get(), 0, _currentEnv);
+			Push_Eval(ifExpr->Consequence, 0, _currentEnv);
 		}
 		else if (ifExpr->Alternative != nullptr)
 		{
-			Push_Eval(ifExpr->Alternative.get(), 0, _currentEnv);
+			Push_Eval(ifExpr->Alternative, 0, _currentEnv);
 		}
 		else
 		{
@@ -341,18 +341,18 @@ void StackEvaluator::NodeEval(IfStatement* ifExpr)
 		}
 	}
 }
-void StackEvaluator::NodeEval(FunctionLiteral* function)
+void StackEvaluator::NodeEval(const FunctionLiteral* function)
 {
 
 	Push_Result(FunctionObj::New(function->Parameters, function->Body));
 
 }
-void StackEvaluator::NodeEval(CallExpression* call)
+void StackEvaluator::NodeEval(const CallExpression* call)
 {
 	if (_currentSignal == 0)
 	{
 		Push_Eval(call, 1, _currentEnv);
-		Push_Eval(call->Function.get(), 0, _currentEnv);
+		Push_Eval(call->Function, 0, _currentEnv);
 	}
 	else if (_currentSignal == 1)
 	{
@@ -372,7 +372,7 @@ void StackEvaluator::NodeEval(CallExpression* call)
 		// Evaluate arguments
 		for (const auto& iter : call->Arguments)
 		{
-			Push_Eval(iter.get(), 0, _currentEnv);
+			Push_Eval(iter, 0, _currentEnv);
 		}
 	}
 	else if (_currentSignal == 2)
@@ -424,7 +424,7 @@ void StackEvaluator::NodeEval(CallExpression* call)
 			auto func = std::dynamic_pointer_cast<FunctionObj>(function);
 			auto extEnv = ExtendFunctionEnv(_currentEnv, func, evalArgs);
 			Push_Eval(call, 3, extEnv);
-			Push_Eval(func->Body.get(), 0, extEnv);
+			Push_Eval(func->Body, 0, extEnv);
 		}
 	}
 	else
@@ -433,7 +433,7 @@ void StackEvaluator::NodeEval(CallExpression* call)
 		EvalEnvironment->Release(_currentEnv);
 	}
 }
-void StackEvaluator::NodeEval(ArrayLiteral* array)
+void StackEvaluator::NodeEval(const ArrayLiteral* array)
 {
 	std::vector<std::shared_ptr<IObject>> elements;
 
@@ -443,7 +443,7 @@ void StackEvaluator::NodeEval(ArrayLiteral* array)
 
 		for (const auto& elem : array->Elements)
 		{
-			Push_Eval(elem.get(), 0, _currentEnv);
+			Push_Eval(elem, 0, _currentEnv);
 		}
 	}
 	else
@@ -467,13 +467,13 @@ void StackEvaluator::NodeEval(ArrayLiteral* array)
 		Push_Result(ArrayObj::New(evalArgs));
 	}
 }
-void StackEvaluator::NodeEval(IndexExpression* index)
+void StackEvaluator::NodeEval(const IndexExpression* index)
 {
 	if (_currentSignal == 0)
 	{
 		Push_Eval(index, 1, _currentEnv);
-		Push_Eval(index->Left.get(), 0, _currentEnv);
-		Push_Eval(index->Index.get(), 0, _currentEnv);
+		Push_Eval(index->Left, 0, _currentEnv);
+		Push_Eval(index->Index, 0, _currentEnv);
 
 	}
 	else
@@ -488,7 +488,7 @@ void StackEvaluator::NodeEval(IndexExpression* index)
 		Push_Result(result);
 	}
 }
-void StackEvaluator::NodeEval(HashLiteral* hash)
+void StackEvaluator::NodeEval(const HashLiteral* hash)
 {
 	std::vector<std::shared_ptr<IObject>> elements;
 
@@ -497,8 +497,8 @@ void StackEvaluator::NodeEval(HashLiteral* hash)
 		Push_Eval(hash, 1, _currentEnv);
 		for (const auto& [key, value] : hash->Elements)
 		{
-			Push_Eval(key.get(), 0, _currentEnv);
-			Push_Eval(value.get(), 0, _currentEnv);
+			Push_Eval(key, 0, _currentEnv);
+			Push_Eval(value, 0, _currentEnv);
 		}
 	}
 	else
@@ -531,11 +531,11 @@ void StackEvaluator::NodeEval(HashLiteral* hash)
 		Push_Result(HashObj::New(evalArgs));
 	}
 }
-void StackEvaluator::NodeEval(NullLiteral* null)
+void StackEvaluator::NodeEval(const NullLiteral* null)
 {
 	Push_Result(NullObj::NULL_OBJ_REF);
 }
-void StackEvaluator::NodeEval(WhileStatement* whileExp)
+void StackEvaluator::NodeEval(const WhileStatement* whileExp)
 {
 	if (_currentSignal == 0)
 	{
@@ -562,7 +562,7 @@ void StackEvaluator::NodeEval(WhileStatement* whileExp)
 		}
 
 		Push_Eval(whileExp, 1, _currentEnv);
-		Push_Eval(whileExp->Condition.get(), 0, _currentEnv);
+		Push_Eval(whileExp->Condition, 0, _currentEnv);
 	}
 	else
 	{
@@ -579,22 +579,22 @@ void StackEvaluator::NodeEval(WhileStatement* whileExp)
 		if (booleanObj == BooleanObj::TRUE_OBJ_REF)
 		{
 			Push_Eval(whileExp, 0, _currentEnv);
-			Push_Eval(whileExp->Action.get(), 0, _currentEnv);
+			Push_Eval(whileExp->Action, 0, _currentEnv);
 		}
 	}
 }
-void StackEvaluator::NodeEval(ForStatement* forExp)
+void StackEvaluator::NodeEval(const ForStatement* forExp)
 {
 	if (_currentSignal == 0)
 	{
 		Push_Eval(forExp, 1, _currentEnv);
-		Push_Eval(forExp->Init.get(), 0, _currentEnv);
+		Push_Eval(forExp->Init, 0, _currentEnv);
 	}
 	else if (_currentSignal == 1)
 	{
 		//condition
 		Push_Eval(forExp, 2, _currentEnv);
-		Push_Eval(forExp->Condition.get(), 0, _currentEnv);
+		Push_Eval(forExp->Condition, 0, _currentEnv);
 	}
 	else if (_currentSignal == 2)
 	{
@@ -611,7 +611,7 @@ void StackEvaluator::NodeEval(ForStatement* forExp)
 		if (booleanObj == BooleanObj::TRUE_OBJ_REF)
 		{
 			Push_Eval(forExp, 3, _currentEnv);
-			Push_Eval(forExp->Action.get(), 0, _currentEnv);
+			Push_Eval(forExp->Action, 0, _currentEnv);
 		}
 	}
 	else if (_currentSignal == 3)
@@ -638,14 +638,14 @@ void StackEvaluator::NodeEval(ForStatement* forExp)
 			return;
 		}
 		Push_Eval(forExp, 1, _currentEnv);
-		Push_Eval(forExp->Post.get(), 0, _currentEnv);
+		Push_Eval(forExp->Post, 0, _currentEnv);
 	}
 }
-void StackEvaluator::NodeEval(ContinueStatement* cont)
+void StackEvaluator::NodeEval(const ContinueStatement* cont)
 {
 	Push_Result(ReturnObj::New(ContinueObj::CONTINUE_OBJ_REF));
 }
-void StackEvaluator::NodeEval(BreakStatement* brk)
+void StackEvaluator::NodeEval(const BreakStatement* brk)
 {
 	Push_Result(ReturnObj::New(BreakObj::BREAK_OBJ_REF));
 }
