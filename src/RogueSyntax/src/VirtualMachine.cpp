@@ -132,7 +132,7 @@ void RogueVM::Run()
 			auto pos = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 			auto condition = Pop();
-			if (condition->Type() == ObjectType::BOOLEAN_OBJ)
+			if (condition->IsThisA<BooleanObj>())
 			{
 				if (condition == BooleanObj::FALSE_OBJ_REF)
 				{
@@ -194,37 +194,37 @@ void RogueVM::Run()
 
 			if (lvalue->Type() == rvalue->Type())
 			{
-				if (lvalue->Type() == ObjectType::INTEGER_OBJ)
+				if (lvalue->IsThisA<IntegerObj>())
 				{
 					auto l = std::dynamic_pointer_cast<IntegerObj>(lvalue);
 					auto r = std::dynamic_pointer_cast<IntegerObj>(rvalue);
 					l->Value = r->Value;
 				}
-				else if (lvalue->Type() == ObjectType::DECIMAL_OBJ)
+				else if (lvalue->IsThisA<DecimalObj>())
 				{
 					auto l = std::dynamic_pointer_cast<DecimalObj>(lvalue);
 					auto r = std::dynamic_pointer_cast<DecimalObj>(rvalue);
 					l->Value = r->Value;
 				}
-				else if (lvalue->Type() == ObjectType::STRING_OBJ)
+				else if (lvalue->IsThisA<StringObj>())
 				{
 					auto l = std::dynamic_pointer_cast<StringObj>(lvalue);
 					auto r = std::dynamic_pointer_cast<StringObj>(rvalue);
 					l->Value = r->Value;
 				}
-				else if (lvalue->Type() == ObjectType::BOOLEAN_OBJ)
+				else if (lvalue->IsThisA<BooleanObj>())
 				{
 					auto l = std::dynamic_pointer_cast<BooleanObj>(lvalue);
 					auto r = std::dynamic_pointer_cast<BooleanObj>(rvalue);
 					l->Value = r->Value;
 				}
-				else if (lvalue->Type() == ObjectType::NULL_OBJ)
+				else if (lvalue->IsThisA<NullObj>())
 				{
 					//do nothing
 				}
 				else
 				{
-					throw std::runtime_error(std::format("Unsupported type {}", lvalue->Type().Name));
+					throw std::runtime_error(std::format("Unsupported type {}", lvalue->TypeName()));
 				}
 			}
 			Push(lvalue);
@@ -261,7 +261,7 @@ void RogueVM::Run()
 
 			auto calleeIdx = _sp - 1 - numArgs;
 			auto callee = _stack[calleeIdx];
-			if (callee->Type() == ObjectType::CLOSURE_OBJ)
+			if (callee->IsThisA<ClosureObj>())
 			{
 				auto closure = std::dynamic_pointer_cast<ClosureObj>(callee);
 				auto fn = closure->Function;
@@ -275,7 +275,7 @@ void RogueVM::Run()
 				//make room for locals
 				_sp = frame.BasePointer() + fn->NumLocals;
 			}
-			else if (callee->Type() == ObjectType::BUILTIN_OBJ)
+			else if (callee->IsThisA<BuiltInObj>())
 			{
 				if (_externals == nullptr)
 				{
@@ -288,7 +288,7 @@ void RogueVM::Run()
 				auto result = fn(args);
 				_sp = calleeIdx;
 
-				if (result != nullptr && result->Type() != ObjectType::VOID_OBJ)
+				if (result != nullptr && !result->IsThisA<VoidObj>())
 				{
 					Push(result);
 				}
@@ -423,24 +423,24 @@ void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 		}
 		else
 		{
-			throw std::runtime_error(std::format("ExecuteArithmeticInfix: Unsupported types {} {}", left->Type().Name, right->Type().Name));
+			throw std::runtime_error(std::format("ExecuteArithmeticInfix: Unsupported types {} {}", left->TypeName(), right->TypeName()));
 		}
 	}
-	if (left->Type() == ObjectType::INTEGER_OBJ)
+	if (left->IsThisA<IntegerObj>())
 	{
 		ExecuteIntegerArithmeticInfix(opcode, *std::dynamic_pointer_cast<IntegerObj>(left), *std::dynamic_pointer_cast<IntegerObj>(right));
 	}
-	else if (left->Type() == ObjectType::DECIMAL_OBJ)
+	else if (left->IsThisA<DecimalObj>())
 	{
 		ExecuteDecimalArithmeticInfix(opcode, *std::dynamic_pointer_cast<DecimalObj>(left), *std::dynamic_pointer_cast<DecimalObj>(right));
 	}
-	else if (left->Type() == ObjectType::STRING_OBJ)
+	else if (left->IsThisA<StringObj>())
 	{
 		ExecuteStringArithmeticInfix(opcode, *std::dynamic_pointer_cast<StringObj>(left), *std::dynamic_pointer_cast<StringObj>(right));
 	}
 	else
 	{
-		throw std::runtime_error(std::format("ExecuteArithmeticInfix: Unsupported type {}", left->Type().Name));
+		throw std::runtime_error(std::format("ExecuteArithmeticInfix: Unsupported type {}", left->TypeName()));
 	}
 }
 
@@ -577,29 +577,29 @@ void RogueVM::ExecuteComparisonInfix(OpCode::Constants opcode)
 	{
 		throw std::runtime_error("Type mismatch");
 	}
-	if (left->Type() == ObjectType::INTEGER_OBJ)
+	if (left->IsThisA<IntegerObj>())
 	{
 		ExecuteIntegerComparisonInfix(opcode, *std::dynamic_pointer_cast<IntegerObj>(left), *std::dynamic_pointer_cast<IntegerObj>(right));
 	}
-	else if (left->Type() == ObjectType::DECIMAL_OBJ)
+	else if (left->IsThisA<DecimalObj>())
 	{
 		ExecuteDecimalComparisonInfix(opcode, *std::dynamic_pointer_cast<DecimalObj>(left), *std::dynamic_pointer_cast<DecimalObj>(right));
 	}
-	else if (left->Type() == ObjectType::STRING_OBJ)
+	else if (left->IsThisA<StringObj>())
 	{
 		ExecuteStringComparisonInfix(opcode, *std::dynamic_pointer_cast<StringObj>(left), *std::dynamic_pointer_cast<StringObj>(right));
 	}
-	else if (left->Type() == ObjectType::BOOLEAN_OBJ)
+	else if (left->IsThisA<BooleanObj>())
 	{
 		ExecuteBooleanComparisonInfix(opcode, *std::dynamic_pointer_cast<BooleanObj>(left), *std::dynamic_pointer_cast<BooleanObj>(right));
 	}
-	else if (left->Type() == ObjectType::NULL_OBJ)
+	else if (left->IsThisA<NullObj>())
 	{
 		ExecuteNullComparisonInfix(opcode, *std::dynamic_pointer_cast<NullObj>(left), *std::dynamic_pointer_cast<NullObj>(right));
 	}
 	else
 	{
-		throw std::runtime_error(std::format("ExecuteComparisonInfix: Unsupported type {}", left->Type().Name));
+		throw std::runtime_error(std::format("ExecuteComparisonInfix: Unsupported type {}", left->TypeName()));
 	}
 }
 
@@ -769,25 +769,25 @@ void RogueVM::ExecuteBooleanComparisonInfix(OpCode::Constants opcode, BooleanObj
 void RogueVM::ExecutePrefix(OpCode::Constants opcode)
 {
 	auto right = Pop();
-	if (right->Type() == ObjectType::INTEGER_OBJ)
+	if (right->IsThisA<IntegerObj>())
 	{
 		ExecuteIntegerPrefix(opcode, *std::dynamic_pointer_cast<IntegerObj>(right));
 	}
-	else if (right->Type() == ObjectType::DECIMAL_OBJ)
+	else if (right->IsThisA<DecimalObj>())
 	{
 		ExecuteDecimalPrefix(opcode, *std::dynamic_pointer_cast<DecimalObj>(right));
 	}
-	else if (right->Type() == ObjectType::BOOLEAN_OBJ)
+	else if (right->IsThisA<BooleanObj>())
 	{
 		ExecuteBooleanPrefix(opcode, *std::dynamic_pointer_cast<BooleanObj>(right));
 	}
-	else if (right->Type() == ObjectType::NULL_OBJ)
+	else if (right->IsThisA<NullObj>())
 	{
 		ExecuteNullPrefix(opcode, *std::dynamic_pointer_cast<NullObj>(right));
 	}
 	else
 	{
-		throw std::runtime_error(std::format("ExecutePrefix: Unsupported type {}", right->Type().Name));
+		throw std::runtime_error(std::format("ExecutePrefix: Unsupported type {}", right->TypeName()));
 	}
 }
 
@@ -870,7 +870,7 @@ void RogueVM::ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj)
 
 void RogueVM::ExecuteIndexOperation(IObject* left, IObject* index)
 {
-	if (left->Type() == ObjectType::ARRAY_OBJ)
+	if (left->IsThisA<ArrayObj>())
 	{
 		auto arr = dynamic_cast<ArrayObj*>(left);
 		auto idx = dynamic_cast<IntegerObj*>(index);
@@ -885,7 +885,7 @@ void RogueVM::ExecuteIndexOperation(IObject* left, IObject* index)
 		auto value = arr->Elements[idx->Value];
 		Push(value);
 	}
-	else if (left->Type() == ObjectType::HASH_OBJ)
+	else if (left->IsThisA<HashObj>())
 	{
 		auto hash = dynamic_cast<HashObj*>(left);
 		auto key = HashKey{ index->Type(), index->Inspect() };

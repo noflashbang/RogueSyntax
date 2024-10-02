@@ -1,29 +1,6 @@
 #include "IObject.h"
 #include "pch.h"
 
-unsigned int ObjectType::NextObjectType = 0;
-
-const ObjectType ObjectType::NULL_OBJ      = { NextObjectType++, "NULL" };
-const ObjectType ObjectType::VOID_OBJ      = { NextObjectType++, "VOID" };
-const ObjectType ObjectType::INTEGER_OBJ   = { NextObjectType++, "INTEGER" };
-const ObjectType ObjectType::DECIMAL_OBJ   = { NextObjectType++, "DECIMAL" };
-const ObjectType ObjectType::STRING_OBJ    = { NextObjectType++, "STRING" };
-const ObjectType ObjectType::BOOLEAN_OBJ   = { NextObjectType++, "BOOLEAN" };
-const ObjectType ObjectType::RETURN_OBJ    = { NextObjectType++, "RETURN" };
-const ObjectType ObjectType::ERROR_OBJ     = { NextObjectType++, "ERROR" };
-const ObjectType ObjectType::FUNCTION_OBJ  = { NextObjectType++, "FUNCTION" };
-const ObjectType ObjectType::BUILTIN_OBJ   = { NextObjectType++, "BUILTIN" };
-const ObjectType ObjectType::ARRAY_OBJ     = { NextObjectType++, "ARRAY" };
-const ObjectType ObjectType::HASH_OBJ      = { NextObjectType++, "HASH" };
-const ObjectType ObjectType::IDENT_OBJ     = { NextObjectType++, "IDENT" };
-
-const ObjectType ObjectType::FUNCTION_COMPILED_OBJ = { NextObjectType++, "FUNCTION_COMPILED" };
-const ObjectType ObjectType::CLOSURE_OBJ = { NextObjectType++, "CLOSURE" };
-
-const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
-const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
-
-
 std::shared_ptr<BooleanObj> BooleanObj::TRUE_OBJ_REF =  BooleanObj::New(true);
 std::shared_ptr<BooleanObj> BooleanObj::FALSE_OBJ_REF = BooleanObj::New(false);
 
@@ -83,7 +60,7 @@ std::shared_ptr<ArrayObj> ArrayObj::New(const std::vector<std::shared_ptr<IObjec
 
 std::shared_ptr<IObject> ArrayObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
 {
-	if (key->Type() != ObjectType::INTEGER_OBJ)
+	if (!key->IsThisA<IntegerObj>())
 	{
 		return ErrorObj::New("index must be an integer", ::Token::New(TokenType::TOKEN_ILLEGAL, ""));
 	}

@@ -21,7 +21,7 @@ public:
 	std::shared_ptr<IObject> EvalAsString(const IObject* const obj) const;
 
 private:
-	std::map<ObjectType, std::function<std::shared_ptr<IObject>(const IObject* const right)>> _coercionMap;
-	std::map<ObjectType, std::map<ObjectType, ObjectType>> _coercionTable;
+	std::unordered_map<std::size_t, std::function<std::shared_ptr<IObject>(const IObject* const right)>> _coercionMap;
+	std::unordered_map<std::size_t, std::map<std::size_t, std::size_t>> _coercionTable;
 };
 

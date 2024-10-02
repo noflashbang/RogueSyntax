@@ -3,15 +3,6 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
-namespace Catch {
-	template<>
-	struct StringMaker<ObjectType> {
-		static std::string convert(ObjectType const& value) {
-			return std::format("ObjType:{}",value.Name);
-		}
-	};
-}
-
 std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input)
 {
 	Lexer lexer(input);
@@ -34,14 +25,14 @@ std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const 
 
 bool TestIntegerObject(std::shared_ptr<IObject> obj, const int32_t expected)
 {
-	if (obj->Type() != ObjectType::INTEGER_OBJ)
+	if (!obj->IsThisA<IntegerObj>())
 	{
-		if (obj->Type() == ObjectType::ERROR_OBJ)
+		if (obj->IsThisA<ErrorObj>())
 		{
 			auto errorObj = std::dynamic_pointer_cast<ErrorObj>(obj);
 			UNSCOPED_INFO(errorObj->Message);
 		}
-		throw std::invalid_argument(std::format("Object is not an integer -> Expected {} GOT {}", ObjectType::INTEGER_OBJ.Name, obj->Type().Name));
+		throw std::invalid_argument(std::format("Object is not an integer -> Expected {} GOT {}", "IntegerObj", obj->TypeName()));
 		return false;
 	}
 
@@ -59,7 +50,7 @@ bool TestIntegerObject(std::shared_ptr<IObject> obj, const int32_t expected)
 bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& input, const int32_t expected)
 {
 	auto result = EvalTest(eval, input);
-	if (result->Type() == ObjectType::NULL_OBJ && expected == 0)
+	if (result->IsThisA<NullObj>() && expected == 0)
 	{
 		return true;
 	}
@@ -68,9 +59,9 @@ bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& 
 
 bool TestBooleanObject(std::shared_ptr<IObject> obj, const bool expected)
 {
-	if (obj->Type() != ObjectType::BOOLEAN_OBJ)
+	if (!obj->IsThisA<BooleanObj>())
 	{
-		throw std::invalid_argument(std::format("Object is not a boolean -> Expected {} GOT {}", ObjectType::BOOLEAN_OBJ.Name, obj->Type().Name));
+		throw std::invalid_argument(std::format("Object is not a boolean -> Expected {} GOT {}", "BooleanObj", obj->TypeName()));
 		return false;
 	}
 
@@ -219,10 +210,10 @@ TEST_CASE("Test Error Obj")
 	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
 	auto tests = std::vector<std::pair<std::string, std::string>>
 	{
-		{"-true", "unknown operator: -BOOLEAN"},
-		{"true + false;", "unknown operator: BOOLEAN + BOOLEAN"},
-		{"5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
-		{"if (10 > 1) { true + false; }", "unknown operator: BOOLEAN + BOOLEAN"},
+		{"-true", "unknown operator: -class BooleanObj"},
+		{"true + false;", "unknown operator: class BooleanObj + class BooleanObj"},
+		{"5; true + false; 5", "unknown operator: class BooleanObj + class BooleanObj"},
+		{"if (10 > 1) { true + false; }", "unknown operator: class BooleanObj + class BooleanObj"},
 		{
 			"if (10 > 1) {"
 			"if (10 > 1) {"
@@ -230,7 +221,7 @@ TEST_CASE("Test Error Obj")
 			"}"
 			"return 1;"
 			"}",
-			"unknown operator: BOOLEAN + BOOLEAN"
+			"unknown operator: class BooleanObj + class BooleanObj"
 		},
 		//{"foobar", "identifier not found: foobar"}
 	};
@@ -239,7 +230,7 @@ TEST_CASE("Test Error Obj")
 	{
 		auto result = EvalTest(eng, test.first);
 		CAPTURE(test.first);
-		REQUIRE(result->Type() == ObjectType::ERROR_OBJ);
+		REQUIRE(result->IsThisA<ErrorObj>());
 		auto errorObj = std::dynamic_pointer_cast<ErrorObj>(result);
 		REQUIRE(errorObj->Message == test.second);
 	}
@@ -267,7 +258,7 @@ TEST_CASE("Test Function Object")
 
 	
 	auto result = EvalTest(eng, input);
-	REQUIRE(result->Type() == ObjectType::FUNCTION_OBJ);
+	REQUIRE(result->IsThisA<FunctionObj>());
 	auto func = dynamic_pointer_cast<FunctionObj>(result);
 	REQUIRE(func->Parameters.size() == 1);
 	REQUIRE(func->Parameters[0].get()->ToString() == "x");
@@ -508,20 +499,20 @@ TEST_CASE("Built In method test")
 			{"len(\"\");", "0"},
 			{"len(\"four\");", "4"},
 			{"len(\"hello world\");", "11"},
-			{"len(1);", "ERROR: argument to `len` not supported, got INTEGER"},
+			{"len(1);", "ERROR: argument to `len` not supported, got class IntegerObj"},
 			{"len(\"one\", \"two\");", "ERROR: wrong number of arguments. got=2, wanted=1"},
 			{"len([1, 2, 3]);", "3"},
 			{"len([]);", "0"},
 			{"first([1, 2, 3]);", "1"},
 			{"first([]);", "null"},
-			{"first(1);", "ERROR: argument to `first` must be ARRAY, got INTEGER"},
+			{"first(1);", "ERROR: argument to `first` must be ARRAY, got class IntegerObj"},
 			{"last([1, 2, 3]);", "3"},
 			{"last([]);", "null"},
-			{"last(1);", "ERROR: argument to `last` must be ARRAY, got INTEGER"},
+			{"last(1);", "ERROR: argument to `last` must be ARRAY, got class IntegerObj"},
 			{"rest([1, 2, 3]);", "[2, 3]"},
 			{"rest([]);", "null"},
 			{"push([], 1);", "[1]"},
-			{"push(1, 1);", "ERROR: argument to `push` must be ARRAY, got INTEGER"},
+			{"push(1, 1);", "ERROR: argument to `push` must be ARRAY, got class IntegerObj"},
 			{"let acc = 0; let list = [1,2,3,4,5,6,7,8,9]; for(iter = 0; iter < len(list); iter++) { acc = acc + list[iter]; } acc;", "45"},
 		}));
 

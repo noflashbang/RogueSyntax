@@ -28,11 +28,11 @@ std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program
 			continue;
 		}
 
-		if (result->Type() == ObjectType::RETURN_OBJ)
+		if (result->IsThisA<ReturnObj>())
 		{
 			result = UnwrapIfReturnObj(result);
 
-			if (result->Type() == ObjectType::IDENT_OBJ)
+			if (result->IsThisA<IdentifierObj>())
 			{
 				result = UnwrapIfIdentObj(result);
 				break;
@@ -40,13 +40,13 @@ std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program
 			break;
 		}
 
-		if (result->Type() == ObjectType::IDENT_OBJ)
+		if (result->IsThisA<IdentifierObj>())
 		{
 			result = UnwrapIfIdentObj(result);
 			break;
 		}
 
-		if (result->Type() == ObjectType::ERROR_OBJ)
+		if (result->IsThisA<ErrorObj>())
 		{
 			break;
 		}
@@ -103,7 +103,7 @@ std::shared_ptr<IObject> Evaluator::EvalPrefixExpression(const Token& optor, con
 std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, const std::shared_ptr<IObject>& left, const std::shared_ptr<IObject>& right) const
 {
 	std::shared_ptr<IObject> result = nullptr;
-	if (left->Type() == ObjectType::NULL_OBJ || right->Type() == ObjectType::NULL_OBJ)
+	if (left->IsThisA<NullObj>() || right->IsThisA<NullObj>())
 	{
 		result = EvalNullInfixExpression(optor, left.get(), right.get());
 	}
@@ -117,28 +117,28 @@ std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, cons
 		}
 		else
 		{
-			result = MakeError(std::format("type mismatch: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+			result = MakeError(std::format("type mismatch: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 		}
 	}
-	else if (left->Type() == ObjectType::INTEGER_OBJ && right->Type() == ObjectType::INTEGER_OBJ)
+	else if (left->IsThisA<IntegerObj>())
 	{
 		result = EvalIntegerInfixExpression(optor, dynamic_cast<IntegerObj*>(left.get()), dynamic_cast<IntegerObj*>(right.get()));
 	}
-	else if (left->Type() == ObjectType::DECIMAL_OBJ && right->Type() == ObjectType::DECIMAL_OBJ)
+	else if (left->IsThisA<DecimalObj>())
 	{
 		result = EvalDecimalInfixExpression(optor, dynamic_cast<DecimalObj*>(left.get()), dynamic_cast<DecimalObj*>(right.get()));
 	}
-	else if (left->Type() == ObjectType::STRING_OBJ && right->Type() == ObjectType::STRING_OBJ)
+	else if (left->IsThisA<StringObj>())
 	{
 		result = EvalStringInfixExpression(optor, dynamic_cast<StringObj*>(left.get()), dynamic_cast<StringObj*>(right.get()));
 	}
-	else if (left->Type() == ObjectType::BOOLEAN_OBJ && right->Type() == ObjectType::BOOLEAN_OBJ)
+	else if (left->IsThisA<BooleanObj>())
 	{
 		result = EvalBooleanInfixExpression(optor, dynamic_cast<BooleanObj*>(left.get()), dynamic_cast<BooleanObj*>(right.get()));
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
@@ -146,7 +146,7 @@ std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, cons
 std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const std::shared_ptr<IObject>& operand, const std::shared_ptr<IObject>& index) const
 {
 	std::shared_ptr<IObject> result = nullptr;
-	if (operand->Type() == ObjectType::ARRAY_OBJ && index->Type() == ObjectType::INTEGER_OBJ)
+	if (operand->IsThisA<ArrayObj>() && index->IsThisA<IntegerObj>())
 	{
 		auto arr = std::dynamic_pointer_cast<ArrayObj>(operand);
 		auto idx = std::dynamic_pointer_cast<IntegerObj>(index);
@@ -159,7 +159,7 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 			result = arr->Elements[idx->Value];
 		}
 	}
-	else if (operand->Type() == ObjectType::STRING_OBJ && index->Type() == ObjectType::INTEGER_OBJ)
+	else if (operand->IsThisA<StringObj>() && index->IsThisA<IntegerObj>())
 	{
 		auto str = std::dynamic_pointer_cast<StringObj>(operand);
 		auto idx = std::dynamic_pointer_cast<IntegerObj>(index);
@@ -172,7 +172,7 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 			result = StringObj::New(std::string(1, str->Value[idx->Value]));
 		}
 	}
-	else if (operand->Type() == ObjectType::HASH_OBJ)
+	else if (operand->IsThisA<HashObj>())
 	{
 		auto hash = std::dynamic_pointer_cast<HashObj>(operand);
 		auto key = HashKey { index->Type(), index->Inspect() };
@@ -190,7 +190,7 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 	}
 	else
 	{
-		result = MakeError(std::format("index operator not supported: {}", operand->Type().Name), op);
+		result = MakeError(std::format("index operator not supported: {}", operand->TypeName()), op);
 	}
 	return result;
 
@@ -205,7 +205,7 @@ std::shared_ptr<IObject> Evaluator::EvalNullInfixExpression(const Token& op, con
 	const IObject* mightBeNullObj = nullptr;
 
 	bool nullOnLeft = false;
-	if (left->Type() == ObjectType::NULL_OBJ)
+	if (left->IsThisA<NullObj>())
 	{
 		nullObj = left;
 		mightBeNullObj = right;
@@ -218,7 +218,7 @@ std::shared_ptr<IObject> Evaluator::EvalNullInfixExpression(const Token& op, con
 		nullOnLeft = false;
 	}
 	
-	if (mightBeNullObj->Type() == ObjectType::NULL_OBJ)
+	if (mightBeNullObj->IsThisA<NullObj>())
 	{
 		if (op.Type == TokenType::TOKEN_EQ)
 		{
@@ -332,7 +332,7 @@ std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& opto
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
@@ -358,7 +358,7 @@ std::shared_ptr<IObject> Evaluator::EvalBooleanInfixExpression(const Token& opto
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
@@ -413,7 +413,7 @@ std::shared_ptr<IObject> Evaluator::EvalDecimalInfixExpression(const Token& opto
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
@@ -428,7 +428,7 @@ std::shared_ptr<IObject> Evaluator::EvalStringInfixExpression(const Token& optor
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->Type().Name, optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
@@ -478,7 +478,7 @@ std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token
 	{
 		result = BooleanObj::TRUE_OBJ_REF;
 	}
-	else if (right->Type() == ObjectType::INTEGER_OBJ)
+	else if (right->IsThisA<IntegerObj>())
 	{
 		auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
 		if (value == 0)
@@ -492,7 +492,7 @@ std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
@@ -500,9 +500,9 @@ std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token
 std::shared_ptr<IObject> Evaluator::EvalMinusPrefixOperatorExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
 {
 	std::shared_ptr<IObject> result = nullptr;
-	if (right->Type() != ObjectType::INTEGER_OBJ)
+	if (!right->IsThisA<IntegerObj>())
 	{
-		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
 	}
 	else
 	{
@@ -515,9 +515,9 @@ std::shared_ptr<IObject> Evaluator::EvalMinusPrefixOperatorExpression(const Toke
 std::shared_ptr<IObject> Evaluator::EvalBitwiseNotPrefixOperatorExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
 {
 	std::shared_ptr<IObject> result = nullptr;
-	if (right->Type() != ObjectType::INTEGER_OBJ)
+	if (!right->IsThisA<IntegerObj>())
 	{
-		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->Type().Name), optor);
+		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
 	}
 	else
 	{
@@ -552,7 +552,7 @@ uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_
 
 std::shared_ptr<IObject> Evaluator::UnwrapIfReturnObj(const std::shared_ptr<IObject>& input)
 {
-	if (input != nullptr && input->Type() == ObjectType::RETURN_OBJ)
+	if (input != nullptr && input->IsThisA<ReturnObj>())
 	{
 		return dynamic_cast<ReturnObj*>(input.get())->Value;
 	}
@@ -561,7 +561,7 @@ std::shared_ptr<IObject> Evaluator::UnwrapIfReturnObj(const std::shared_ptr<IObj
 
 std::shared_ptr<IObject> Evaluator::UnwrapIfIdentObj(const std::shared_ptr<IObject>& input)
 {
-	if (input != nullptr && input->Type() == ObjectType::IDENT_OBJ)
+	if (input != nullptr && input->IsThisA<IdentifierObj>())
 	{
 		return dynamic_cast<IdentifierObj*>(input.get())->Value;
 	}

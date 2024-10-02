@@ -54,7 +54,7 @@ void InteractiveCompiler::Run()
 	//auto top = vm->LastPoppped();
 	auto top = vm->Top();
 
-	if (top->Type() == ObjectType::ERROR_OBJ)
+	if (top->IsThisA<ErrorObj>())
 	{
 		auto error = std::dynamic_pointer_cast<ErrorObj>(top);
 		std::cout << "Error: " << error->Message << std::endl;

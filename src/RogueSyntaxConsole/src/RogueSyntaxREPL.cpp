@@ -45,7 +45,7 @@ void Repl::Start()
 		return;
 	}
 
-	if (result->Type() == ObjectType::ERROR_OBJ)
+	if (result->IsThisA<ErrorObj>())
 	{
 		auto error = std::dynamic_pointer_cast<ErrorObj>(result);
 		std::cout << "Error: " << error->Message << std::endl;

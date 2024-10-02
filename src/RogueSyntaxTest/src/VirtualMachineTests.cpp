@@ -237,7 +237,7 @@ TEST_CASE("Extern/Builtin Function tests")
 			{"len(\"\")", 0},
 			{"len(\"four\")", 4},
 			{"len(\"hello world\")", 11},
-			{"len(1)", "argument to `len` not supported, got INTEGER"},
+			{"len(1)", "argument to `len` not supported, got class IntegerObj"},
 			{"len(\"one\", \"two\")", "wrong number of arguments. got=2, wanted=1"},
 			{"len([1, 2, 3])", 3},
 			{"first([1, 2, 3])", 1},
@@ -245,7 +245,7 @@ TEST_CASE("Extern/Builtin Function tests")
 			{"rest([1, 2, 3])", ArrayObj::New({ IntegerObj::New(2), IntegerObj::New(3) })},
 			{"push([1, 2, 3], 4)", ArrayObj::New({ IntegerObj::New(1), IntegerObj::New(2), IntegerObj::New(3), IntegerObj::New(4) })},
 			{"push([1, 2, 3], 4, 5)", "wrong number of arguments. got=3, wanted=2"},
-			{"push(1, 2)", "argument to `push` must be ARRAY, got INTEGER"},
+			{"push(1, 2)", "argument to `push` must be ARRAY, got class IntegerObj"},
 		}));
 
 	CAPTURE(input);

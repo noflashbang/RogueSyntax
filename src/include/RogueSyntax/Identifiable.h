@@ -1,53 +1,40 @@
 #pragma once
 
+#include <typeinfo>
+#include <typeindex>
 #include <atomic>
 #include <limits>
+#include <array>
+#include <string>
 
 #define NO_ID UINT_MAX
-#define NO_TAG UINT_MAX
-
-
 
 class ITypeTag
 {
 public:
-	uint32_t Tag;
-
-	ITypeTag() : Tag(NO_TAG) {};
+	ITypeTag() : _typeInfo(typeid(ITypeTag)) {};
 	virtual ~ITypeTag() {};
+	const std::string Name() const noexcept { return _typeInfo.name(); };
+	const std::size_t Tag() const noexcept { return _typeInfo.hash_code(); };
 
-	template <typename T>
-	static uint32_t TypeToTag(T* thisType)
-	{
-		return GetTag(thisType);
-	};
+	const bool operator==(const ITypeTag& other) const noexcept { return _typeInfo == other._typeInfo; };
+	const bool operator!=(const ITypeTag& other) const noexcept { return _typeInfo != other._typeInfo; };
+
+	template<typename U>
+	const bool IsThisA() const noexcept { return _typeInfo == std::type_index(typeid(U)); };
+
+	const ITypeTag& TypeTag() const noexcept { return *this; };
 
 protected:
 
 	template <typename T>
-	void SetTag(T* thisObj)
+	void SetTypeInfo(T* thisObj) noexcept
 	{
-		Tag = GetTag(thisObj);
+		_typeInfo = std::type_index(typeid(T));
 	};
 
 private:
-
-	template <typename T>
-	static uint32_t GetTag(T* thisObj)
-	{
-		static uint32_t s_tag = NO_TAG;
-		if (s_tag == NO_TAG)
-		{
-			s_tag = GetNextTag();
-		}
-		return s_tag;
-	};
-
-	static int GetNextTag()
-	{
-		static std::atomic<int> s_nextTag = 0;
-		return s_nextTag++;
-	};
+	std::type_index _typeInfo;
 };
 
 class IDistinguishable
@@ -56,12 +43,12 @@ public:
 	IDistinguishable() : Id(NO_ID) {};
 	virtual ~IDistinguishable() {};
 
-	uint32_t Id;
+	std::size_t Id;
 
 protected:
 
-	template <typename T>
-	void SetId(T* thisObj)
+	template <typename T> 
+	void SetId(T* thisObj) noexcept
 	{
 		Id = GetNextId(thisObj);
 	};
@@ -69,9 +56,9 @@ protected:
 private:
 
 	template <typename T>
-	uint32_t GetNextId(T* thisObj)
+	std::size_t GetNextId(T* thisObj) noexcept
 	{
-		static std::atomic<uint32_t> s_nextId = 0;
+		static std::atomic<std::size_t> s_nextId = 0;
 		return s_nextId++;
 	};
 };
@@ -82,23 +69,30 @@ public:
 	IUnquielyIdentifiable() {};
 	virtual ~IUnquielyIdentifiable() {};
 
-	uint64_t UniqueId() const { return ((uint64_t)Tag() << 32) | Id(); };
-	uint32_t Id() const { return IDistinguishable::Id; };
-	uint32_t Tag() const { return ITypeTag::Tag; };
+	std::array<std::size_t, 2> UniqueId() const noexcept { return { Tag(), Id() }; };
+
+	std::size_t Id() const noexcept { return IDistinguishable::Id; };
+
+
+	std::size_t Tag() const noexcept { return ITypeTag::Tag(); };
+	const std::string TypeName() const noexcept { return ITypeTag::Name(); };
+
+	template<typename U>
+	const bool IsThisA() const noexcept { return ITypeTag::IsThisA<U>(); };
+
+	const bool operator==(const IUnquielyIdentifiable& other) const noexcept { return UniqueId() == other.UniqueId(); };
+	const bool operator!=(const IUnquielyIdentifiable& other) const noexcept { return UniqueId() != other.UniqueId(); };
+
+	const bool TypeEquals(const IUnquielyIdentifiable& other) const noexcept { return Tag() == other.Tag(); };
+
 
 protected:
 
 	template <typename T>
-	void SetUniqueId(T* thisObj)
+	void SetUniqueId(T* thisObj) noexcept
 	{
 		SetId(thisObj);
-		SetTag(thisObj);
+		SetTypeInfo(thisObj);
 	};
 };
 
-template <typename T>
-class MetaTypeTag
-{
-public:
-	inline static uint32_t TypeTag = ITypeTag::TypeToTag((T*)nullptr);
-};

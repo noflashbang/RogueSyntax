@@ -80,7 +80,7 @@ bool StackEvaluator::ResultIsError() const
 		return false;
 	}
 
-	return _results.top()->Type() == ObjectType::ERROR_OBJ;
+	return _results.top()->IsThisA<ErrorObj>();
 }
 
 bool StackEvaluator::ResultIsReturn() const
@@ -90,7 +90,7 @@ bool StackEvaluator::ResultIsReturn() const
 		return false;
 	}
 
-	return _results.top()->Type() == ObjectType::RETURN_OBJ;
+	return _results.top()->IsThisA<ReturnObj>();
 }
 
 bool StackEvaluator::ResultIsIdent() const
@@ -100,7 +100,7 @@ bool StackEvaluator::ResultIsIdent() const
 		return false;
 	}
 
-	return _results.top()->Type() == ObjectType::IDENT_OBJ;
+	return _results.top()->IsThisA<IdentifierObj>();
 }
 
 size_t StackEvaluator::ResultCount() const
@@ -149,7 +149,7 @@ void StackEvaluator::NodeEval(ReturnStatement* ret)
 }
 void StackEvaluator::NodeEval(LetStatement* let)
 {
-	if(let->Name.get()->Tag() == Identifier::TypeTag)
+	if(let->Name.get()->IsThisA<Identifier>())
 	{
 		if (_currentSignal == 0)
 		{
@@ -321,7 +321,7 @@ void StackEvaluator::NodeEval(IfStatement* ifExpr)
 
 		auto evalBool = EvalAsBoolean(ifExpr->BaseToken, lastResult.get());
 
-		if (evalBool->Type() == ObjectType::ERROR_OBJ)
+		if (evalBool->IsThisA<ErrorObj>())
 		{
 			Push_Result(evalBool);
 			return;
@@ -360,7 +360,7 @@ void StackEvaluator::NodeEval(CallExpression* call)
 
 		lastResult = UnwrapIfIdentObj(lastResult);
 
-		if (lastResult->Type() != ObjectType::FUNCTION_OBJ && lastResult->Type() != ObjectType::BUILTIN_OBJ)
+		if (!(lastResult->IsThisA<FunctionObj>() || lastResult->IsThisA<BuiltInObj>()))
 		{
 			Push_Result(MakeError(std::format("literal not a function: {}", lastResult->Inspect()), call->BaseToken));
 			return;
@@ -396,7 +396,7 @@ void StackEvaluator::NodeEval(CallExpression* call)
 		}
 		auto function = Pop_Result();
 
-		if (function->Type() == ObjectType::BUILTIN_OBJ)
+		if (function->IsThisA<BuiltInObj>())
 		{
 			auto func = std::dynamic_pointer_cast<BuiltInObj>(function);
 			auto builtInToCall = EvalBuiltIn->GetBuiltInFunction(func->Name);
@@ -570,7 +570,7 @@ void StackEvaluator::NodeEval(WhileStatement* whileExp)
 
 		auto booleanObj = EvalAsBoolean(whileExp->BaseToken, lastResult.get());
 
-		if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+		if (booleanObj->IsThisA<ErrorObj>())
 		{
 			Push_Result(booleanObj);
 			return;
@@ -602,7 +602,7 @@ void StackEvaluator::NodeEval(ForStatement* forExp)
 
 		auto booleanObj = EvalAsBoolean(forExp->BaseToken, lastResult.get());
 
-		if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+		if (booleanObj->IsThisA<ErrorObj>())
 		{
 			Push_Result(booleanObj);
 			return;

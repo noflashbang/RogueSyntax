@@ -47,25 +47,25 @@ std::shared_ptr<IObject> BuiltIn::Len(const std::vector<std::shared_ptr<IObject>
 		throw std::runtime_error(std::format("wrong number of arguments. got={}, wanted={}", args.size(), 1));
 	}
 
-	if (args[0]->Type() == ObjectType::STRING_OBJ)
+	if (args[0]->IsThisA<StringObj>())
 	{
 		auto str = dynamic_cast<StringObj*>(args[0].get());
 		return IntegerObj::New(str->Value.size());
 	}
 
-	if (args[0]->Type() == ObjectType::ARRAY_OBJ)
+	if (args[0]->IsThisA<ArrayObj>())
 	{
 		auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
 		return IntegerObj::New(arr->Elements.size());
 	}
 
-	if (args[0]->Type() == ObjectType::HASH_OBJ)
+	if (args[0]->IsThisA<HashObj>())
 	{
 		auto hash = std::dynamic_pointer_cast<HashObj>(args[0]);
 		return IntegerObj::New(hash->Elements.size());
 	}
 
-	throw std::runtime_error(std::format("argument to `len` not supported, got {}", args[0].get()->Type().Name));
+	throw std::runtime_error(std::format("argument to `len` not supported, got {}", args[0].get()->TypeName()));
 }
 
 std::shared_ptr<IObject> BuiltIn::First(const std::vector<std::shared_ptr<IObject>>& args)
@@ -75,9 +75,9 @@ std::shared_ptr<IObject> BuiltIn::First(const std::vector<std::shared_ptr<IObjec
 		throw std::runtime_error(std::format("wrong number of arguments. got={}, wanted={}", args.size(), 1));
 	}
 
-	if (args[0]->Type() != ObjectType::ARRAY_OBJ)
+	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `first` must be ARRAY, got {}", args[0].get()->Type().Name));
+		throw std::runtime_error(std::format("argument to `first` must be ARRAY, got {}", args[0].get()->TypeName()));
 	}
 
 	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
@@ -96,9 +96,9 @@ std::shared_ptr<IObject> BuiltIn::Last(const std::vector<std::shared_ptr<IObject
 		throw std::runtime_error(std::format("wrong number of arguments. got={}, wanted={}", args.size(), 1));
 	}
 
-	if (args[0]->Type() != ObjectType::ARRAY_OBJ)
+	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `last` must be ARRAY, got {}", args[0].get()->Type().Name));
+		throw std::runtime_error(std::format("argument to `last` must be ARRAY, got {}", args[0].get()->TypeName()));
 	}
 
 	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
@@ -118,9 +118,9 @@ std::shared_ptr<IObject> BuiltIn::Rest(const std::vector<std::shared_ptr<IObject
 		throw std::runtime_error(std::format("wrong number of arguments. got={}, wanted={}", args.size(), 1));
 	}
 
-	if (args[0]->Type() != ObjectType::ARRAY_OBJ)
+	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `rest` must be ARRAY, got {}", args[0].get()->Type().Name));
+		throw std::runtime_error(std::format("argument to `rest` must be ARRAY, got {}", args[0].get()->TypeName()));
 	}
 
 	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
@@ -145,9 +145,9 @@ std::shared_ptr<IObject> BuiltIn::Push(const std::vector<std::shared_ptr<IObject
 		throw std::runtime_error(std::format("wrong number of arguments. got={}, wanted={}", args.size(), 2));
 	}
 
-	if (args[0]->Type() != ObjectType::ARRAY_OBJ)
+	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `push` must be ARRAY, got {}", args[0].get()->Type().Name));
+		throw std::runtime_error(std::format("argument to `push` must be ARRAY, got {}", args[0].get()->TypeName()));
 	}
 
 	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);

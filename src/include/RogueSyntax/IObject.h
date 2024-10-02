@@ -8,84 +8,10 @@
 class BuiltIn;
 struct Environment;
 
-struct ObjectType
-{
-	const unsigned int Type;
-	const std::string Name;
-
-	std::string ToString() const
-	{
-		return Name;
-	}
-
-	constexpr bool operator==(const ObjectType& other) const
-	{
-		return Type == other.Type;
-	}
-
-	constexpr bool operator!=(const ObjectType& other) const
-	{
-		return Type != other.Type;
-	}
-
-	constexpr bool operator<(const ObjectType& other) const
-	{
-		return Type < other.Type;
-	}
-
-	constexpr bool operator>(const ObjectType& other) const
-	{
-		return Type > other.Type;
-	}
-
-	constexpr bool operator<=(const ObjectType& other) const
-	{
-		return Type <= other.Type;
-	}
-
-	constexpr bool operator>=(const ObjectType& other) const
-	{
-		return Type >= other.Type;
-	}
-
-	explicit constexpr operator const unsigned int() const
-	{
-		return Type;
-	}
-
-	explicit constexpr operator const std::string() const
-	{
-		return Name;
-	}
-
-	static unsigned int NextObjectType;
-	//TYPES
-	static const ObjectType NULL_OBJ;
-	static const ObjectType VOID_OBJ;
-	static const ObjectType INTEGER_OBJ;
-	static const ObjectType DECIMAL_OBJ;
-	static const ObjectType STRING_OBJ;
-	static const ObjectType BOOLEAN_OBJ;
-	static const ObjectType ARRAY_OBJ;
-	static const ObjectType HASH_OBJ;
-	static const ObjectType IDENT_OBJ;
-	static const ObjectType RETURN_OBJ;
-	static const ObjectType ERROR_OBJ;
-	static const ObjectType FUNCTION_OBJ;
-	static const ObjectType BUILTIN_OBJ;
-
-	static const ObjectType FUNCTION_COMPILED_OBJ;
-	static const ObjectType CLOSURE_OBJ;
-
-	//special flow control objects
-	static const ObjectType BREAK_OBJ;
-	static const ObjectType CONTINUE_OBJ;
-};
-
-class IObject : public IUnquielyIdentifiable
+class IObject: public IUnquielyIdentifiable
 {
 public:
-	virtual const ObjectType& Type() const = 0;
+	inline const std::size_t Type() const noexcept { return IUnquielyIdentifiable::Tag(); }
 	virtual std::string Inspect() const = 0;
 	virtual std::shared_ptr<IObject> Clone() const = 0;
 
@@ -106,11 +32,6 @@ class NullObj : public IObject
 public:
 	NullObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~NullObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::NULL_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -136,11 +57,6 @@ class VoidObj : public IObject
 public:
 	VoidObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~VoidObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::NULL_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -168,11 +84,6 @@ public:
 	BreakObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~BreakObj() = default;
 
-	const ObjectType& Type() const override
-	{
-		return ObjectType::BREAK_OBJ;
-	}
-
 	std::string Inspect() const override
 	{
 		return "break";
@@ -195,10 +106,6 @@ class ContinueObj : public IObject
 public:
 	ContinueObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~ContinueObj() = default;
-	const ObjectType& Type() const override
-	{
-		return ObjectType::CONTINUE_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -223,11 +130,6 @@ public:
 	IntegerObj(int value) : Value(value) { SetUniqueId(this); };
 	virtual ~IntegerObj() = default;
 
-	const ObjectType& Type() const override
-	{
-		return ObjectType::INTEGER_OBJ;
-	}
-
 	std::string Inspect() const override
 	{
 		return std::to_string(Value);
@@ -248,11 +150,6 @@ class DecimalObj : public IObject
 public:
 	DecimalObj(float value) : Value(value) { SetUniqueId(this); };
 	virtual ~DecimalObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::DECIMAL_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -275,11 +172,6 @@ public:
 	StringObj(const std::string& value) : Value(value) { SetUniqueId(this); }
 	virtual ~StringObj() = default;
 
-	const ObjectType& Type() const override
-	{
-		return ObjectType::STRING_OBJ;
-	}
-
 	std::string Inspect() const override
 	{
 		return Value;
@@ -300,11 +192,6 @@ class BooleanObj : public IObject
 public:
 	BooleanObj(bool value) : Value(value) { SetUniqueId(this); }
 	virtual ~BooleanObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::BOOLEAN_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -331,11 +218,6 @@ class ArrayObj : public IAssignableObject
 public:
 	ArrayObj(const std::vector<std::shared_ptr<IObject>>& elements) : Elements(elements) { SetUniqueId(this); }
 	virtual ~ArrayObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::ARRAY_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -373,7 +255,7 @@ public:
 
 struct HashKey
 {
-	HashKey(ObjectType type, const std::string& key) : Type(std::hash<std::string>{}(type.Name)), Key(std::hash<std::string>{}(key)) {}
+	HashKey(std::size_t type, const std::string& key) : Type(type), Key(std::hash<std::string>{}(key)) {}
 
 	bool operator==(const HashKey& other) const
 	{
@@ -412,11 +294,6 @@ class HashObj : public IAssignableObject
 public:
 	HashObj(const std::unordered_map<HashKey, HashEntry>& elements) : Elements(elements) { SetUniqueId(this); }
 	virtual ~HashObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::HASH_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -460,11 +337,6 @@ public:
 	IdentifierObj(const std::string& name, const std::shared_ptr<IObject>& value) : Name(name), Value(value) { SetUniqueId(this); }
 	virtual ~IdentifierObj() = default;
 
-	const ObjectType& Type() const override
-	{
-		return ObjectType::IDENT_OBJ;
-	}
-
 	std::string Inspect() const override
 	{
 		return Value->Inspect();
@@ -492,11 +364,6 @@ public:
 	ReturnObj(const std::shared_ptr<IObject>& value) : Value(value) { SetUniqueId(this); }
 	virtual ~ReturnObj() = default;
 
-	const ObjectType& Type() const override
-	{
-		return ObjectType::RETURN_OBJ;
-	}
-
 	std::string Inspect() const override
 	{
 		return Value->Inspect();
@@ -517,11 +384,6 @@ class ErrorObj : public IObject
 public:
 	ErrorObj(const std::string& message, const Token& token) : Message(message), Token(token) { SetUniqueId(this); }
 	virtual ~ErrorObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::ERROR_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -544,11 +406,6 @@ class FunctionObj : public IObject
 public:
 	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : Parameters(parameters), Body(body) { SetUniqueId(this); }
 	virtual ~FunctionObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::FUNCTION_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -592,11 +449,6 @@ public:
 	virtual ~BuiltInObj() = default;
 
 	std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> Resolve(std::shared_ptr<BuiltIn> externals) const;
-	
-	const ObjectType& Type() const override
-	{
-		return ObjectType::BUILTIN_OBJ;
-	}
 
 	std::string Inspect() const override
 	{
@@ -625,11 +477,6 @@ public:
 	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) { SetUniqueId(this); }
 	virtual ~FunctionCompiledObj() = default;
 
-	const ObjectType& Type() const override
-	{
-		return ObjectType::FUNCTION_COMPILED_OBJ;
-	}
-
 	std::string Inspect() const override
 	{
 		return OpCode::PrintInstructions(FuncInstructions);
@@ -652,11 +499,6 @@ class ClosureObj : public IObject
 public:
 	ClosureObj(const std::shared_ptr<FunctionCompiledObj>& fun, const std::vector<std::shared_ptr<IObject>>& free) : Function(fun), Frees(free) { SetUniqueId(this); }
 	virtual ~ClosureObj() = default;
-
-	const ObjectType& Type() const override
-	{
-		return ObjectType::CLOSURE_OBJ;
-	}
 
 	std::string Inspect() const override
 	{

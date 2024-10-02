@@ -46,7 +46,7 @@ void RecursiveEvaluator::NodeEval(BlockStatement* block)
 			continue;
 		}
 
-		if (result->Type() == ObjectType::RETURN_OBJ || result->Type() == ObjectType::ERROR_OBJ)
+		if (result->IsThisA<ReturnObj>() || result->IsThisA<ErrorObj>())
 		{
 			break;
 		}
@@ -71,7 +71,7 @@ void RecursiveEvaluator::NodeEval(LetStatement* let)
 	value = UnwrapIfReturnObj(value);
 	value = UnwrapIfIdentObj(value);
 
-	if (value->Type() == ObjectType::ERROR_OBJ)
+	if (value->IsThisA<ErrorObj>())
 	{
 		_results.push(value);
 		return;
@@ -80,7 +80,7 @@ void RecursiveEvaluator::NodeEval(LetStatement* let)
 	if (typeid(*(let->Name.get())) == typeid(Identifier))
 	{
 		auto target = Eval(let->Name, _env);
-		if (target->Type() == ObjectType::ERROR_OBJ)
+		if (target->IsThisA<ErrorObj>())
 		{
 			_results.push(target);
 			return;
@@ -98,7 +98,7 @@ void RecursiveEvaluator::NodeEval(LetStatement* let)
 		left = UnwrapIfReturnObj(left);
 		left = UnwrapIfIdentObj(left);
 
-		if (left->Type() == ObjectType::ERROR_OBJ)
+		if (left->IsThisA<ErrorObj>())
 		{
 			_results.push(left);
 			return;
@@ -107,7 +107,7 @@ void RecursiveEvaluator::NodeEval(LetStatement* let)
 		indexObj = UnwrapIfReturnObj(indexObj);
 		indexObj = UnwrapIfIdentObj(indexObj);
 
-		if (indexObj->Type() == ObjectType::ERROR_OBJ)
+		if (indexObj->IsThisA<ErrorObj>())
 		{
 			_results.push(indexObj);
 			return;
@@ -174,7 +174,7 @@ void RecursiveEvaluator::NodeEval(PrefixExpression* prefix)
 	right = UnwrapIfReturnObj(right);
 	right = UnwrapIfIdentObj(right);
 
-	if (right->Type() == ObjectType::ERROR_OBJ)
+	if (right->IsThisA<ErrorObj>())
 	{
 		_results.push(right);
 		return;
@@ -189,7 +189,7 @@ void RecursiveEvaluator::NodeEval(InfixExpression* infix)
 	left = UnwrapIfReturnObj(left);
 	left = UnwrapIfIdentObj(left);
 
-	if (left->Type() == ObjectType::ERROR_OBJ)
+	if (left->IsThisA<ErrorObj>())
 	{
 		_results.push(left);
 		return;
@@ -199,7 +199,7 @@ void RecursiveEvaluator::NodeEval(InfixExpression* infix)
 	right = UnwrapIfReturnObj(right);
 	right = UnwrapIfIdentObj(right);
 
-	if (right->Type() == ObjectType::ERROR_OBJ)
+	if (right->IsThisA<ErrorObj>())
 	{
 		_results.push(right);
 		return;
@@ -214,7 +214,7 @@ void RecursiveEvaluator::NodeEval(IfStatement* ifExpr)
 	condition = UnwrapIfReturnObj(condition);
 	condition = UnwrapIfIdentObj(condition);
 
-	if (condition->Type() == ObjectType::ERROR_OBJ)
+	if (condition->IsThisA<ErrorObj>())
 	{
 		_results.push(condition);
 		return;
@@ -222,7 +222,7 @@ void RecursiveEvaluator::NodeEval(IfStatement* ifExpr)
 
 	auto booleanObj = EvalAsBoolean(ifExpr->BaseToken, condition.get());
 
-	if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+	if (booleanObj->IsThisA<ErrorObj>())
 	{
 		_results.push(booleanObj);
 		return;
@@ -250,7 +250,7 @@ void RecursiveEvaluator::NodeEval(FunctionLiteral* function)
 void RecursiveEvaluator::NodeEval(CallExpression* call)
 {
 	auto function = Eval(call->Function, _env);
-	if (function->Type() == ObjectType::ERROR_OBJ)
+	if (function->IsThisA<ErrorObj>())
 	{
 		_results.push(function);
 		return;
@@ -258,20 +258,20 @@ void RecursiveEvaluator::NodeEval(CallExpression* call)
 
 	function = UnwrapIfIdentObj(function);
 
-	if (function->Type() != ObjectType::FUNCTION_OBJ && function->Type() != ObjectType::BUILTIN_OBJ)
+	if (!(function->IsThisA<FunctionObj>() || function->IsThisA<BuiltInObj>()))
 	{
 		_results.push(MakeError(std::format("literal not a function or builtin: {}", function->Inspect()), call->BaseToken));
 		return;
 	}
 
 	auto evalArgs = EvalExpressions(call->Arguments);
-	if (evalArgs.size() == 1 && evalArgs[0]->Type() == ObjectType::ERROR_OBJ)
+	if (evalArgs.size() == 1 && evalArgs[0]->IsThisA<ErrorObj>())
 	{
 		_results.push(evalArgs[0]);
 		return;
 	}
 
-	if (function->Type() == ObjectType::BUILTIN_OBJ)
+	if (function->IsThisA<BuiltInObj>())
 	{
 		auto* builtInObj = dynamic_no_copy_cast<BuiltInObj>(function);
 		auto builtInToCall = EvalBuiltIn->GetBuiltInFunction(builtInObj->Name);
@@ -308,7 +308,7 @@ void RecursiveEvaluator::NodeEval(ArrayLiteral* array)
 	for (const auto& elem : array->Elements)
 	{
 		auto eval = Eval(elem, _env);
-		if (eval->Type() == ObjectType::ERROR_OBJ)
+		if (eval->IsThisA<ErrorObj>())
 		{
 			_results.push(eval);
 			return;
@@ -326,7 +326,7 @@ void RecursiveEvaluator::NodeEval(IndexExpression* index)
 	left = UnwrapIfReturnObj(left);
 	left = UnwrapIfIdentObj(left);
 
-	if (left->Type() == ObjectType::ERROR_OBJ)
+	if (left->IsThisA<ErrorObj>())
 	{
 		_results.push(left);
 		return;
@@ -335,7 +335,7 @@ void RecursiveEvaluator::NodeEval(IndexExpression* index)
 	indexObj = UnwrapIfReturnObj(indexObj);
 	indexObj = UnwrapIfIdentObj(indexObj);
 
-	if (indexObj->Type() == ObjectType::ERROR_OBJ)
+	if (indexObj->IsThisA<ErrorObj>())
 	{
 		_results.push(indexObj);
 		return;
@@ -350,14 +350,14 @@ void RecursiveEvaluator::NodeEval(HashLiteral* hash)
 	for (const auto& [key, value] : hash->Elements)
 	{
 		auto keyObj = Eval(key, _env);
-		if (keyObj->Type() == ObjectType::ERROR_OBJ)
+		if (keyObj->IsThisA<ErrorObj>())
 		{
 			_results.push(keyObj);
 			return;
 		}
 
 		auto valueObj = Eval(value, _env);
-		if (valueObj->Type() == ObjectType::ERROR_OBJ)
+		if (valueObj->IsThisA<ErrorObj>())
 		{
 			_results.push(valueObj);
 			return;
@@ -374,7 +374,7 @@ void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 	condition = UnwrapIfReturnObj(condition);
 	condition = UnwrapIfIdentObj(condition);
 
-	if (condition->Type() == ObjectType::ERROR_OBJ)
+	if (condition->IsThisA<ErrorObj>())
 	{
 		_results.push(condition);
 		return;
@@ -382,7 +382,7 @@ void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 
 	auto booleanObj = EvalAsBoolean(whileEx->BaseToken, condition.get());
 
-	if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+	if (booleanObj->IsThisA<ErrorObj>())
 	{
 		_results.push(booleanObj);
 		return;
@@ -393,7 +393,7 @@ void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 		auto evaluated = Eval(whileEx->Action, _env);
 		if (evaluated != nullptr)
 		{
-			if (evaluated->Type() == ObjectType::RETURN_OBJ)
+			if (evaluated->IsThisA<ReturnObj>())
 			{
 				auto* ret = dynamic_no_copy_cast<ReturnObj>(evaluated);
 				if (ret->Value == BreakObj::BREAK_OBJ_REF)
@@ -408,7 +408,7 @@ void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 				}
 			}
 
-			if (evaluated->Type() == ObjectType::ERROR_OBJ)
+			if (evaluated->IsThisA<ErrorObj>())
 			{
 				_results.push(evaluated);
 				return;
@@ -419,7 +419,7 @@ void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 		condition = UnwrapIfReturnObj(condition);
 		condition = UnwrapIfIdentObj(condition);
 
-		if (condition->Type() == ObjectType::ERROR_OBJ)
+		if (condition->IsThisA<ErrorObj>())
 		{
 			_results.push(condition);
 			return;
@@ -427,7 +427,7 @@ void RecursiveEvaluator::NodeEval(WhileStatement* whileEx)
 
 		booleanObj = EvalAsBoolean(whileEx->BaseToken, condition.get());
 
-		if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+		if (booleanObj->IsThisA<ErrorObj>())
 		{
 			_results.push(booleanObj);
 			return;
@@ -445,7 +445,7 @@ void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 	condition = UnwrapIfReturnObj(condition);
 	condition = UnwrapIfIdentObj(condition);
 
-	if (condition->Type() == ObjectType::ERROR_OBJ)
+	if (condition->IsThisA<ErrorObj>())
 	{
 		_results.push(condition);
 		return;
@@ -453,7 +453,7 @@ void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 
 	auto booleanObj = EvalAsBoolean(forEx->BaseToken, condition.get());
 
-	if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+	if (booleanObj->IsThisA<ErrorObj>())
 	{
 		_results.push(booleanObj);
 		return;
@@ -464,7 +464,7 @@ void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 		auto evaluated = Eval(forEx->Action, _env);
 		if (evaluated != nullptr)
 		{
-			if (evaluated->Type() == ObjectType::RETURN_OBJ)
+			if (evaluated->IsThisA<ReturnObj>())
 			{
 				auto* ret = dynamic_no_copy_cast<ReturnObj>(evaluated);
 				if (ret->Value == BreakObj::BREAK_OBJ_REF)
@@ -479,7 +479,7 @@ void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 				}
 			}
 
-			if (evaluated->Type() == ObjectType::ERROR_OBJ)
+			if (evaluated->IsThisA<ErrorObj>())
 			{
 				_results.push(evaluated);
 				return;
@@ -493,7 +493,7 @@ void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 		condition = UnwrapIfReturnObj(condition);
 		condition = UnwrapIfIdentObj(condition);
 
-		if (condition->Type() == ObjectType::ERROR_OBJ)
+		if (condition->IsThisA<ErrorObj>())
 		{
 			_results.push(condition);
 			return;
@@ -501,7 +501,7 @@ void RecursiveEvaluator::NodeEval(ForStatement* forEx)
 
 		booleanObj = EvalAsBoolean(forEx->BaseToken, condition.get());
 
-		if (booleanObj->Type() == ObjectType::ERROR_OBJ)
+		if (booleanObj->IsThisA<ErrorObj>())
 		{
 			_results.push(booleanObj);
 			return;
@@ -531,12 +531,12 @@ std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const 
 	for (const auto& expr : expressions)
 	{
 		auto evaluated = Eval(expr, _env);
-		if (evaluated->Type() == ObjectType::ERROR_OBJ)
+		if (evaluated->IsThisA<ErrorObj>())
 		{
 			return { evaluated };
 		}
 
-		if (evaluated->Type() == ObjectType::RETURN_OBJ)
+		if (evaluated->IsThisA<ReturnObj>())
 		{
 			auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
 
@@ -545,7 +545,7 @@ std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const 
 
 			result.push_back(unwrapped);
 		}
-		else if (evaluated->Type() == ObjectType::IDENT_OBJ)
+		else if (evaluated->IsThisA<IdentifierObj>())
 		{
 			auto ident = std::dynamic_pointer_cast<IdentifierObj>(evaluated);
 			auto unwrapped = UnwrapIfIdentObj(ident);

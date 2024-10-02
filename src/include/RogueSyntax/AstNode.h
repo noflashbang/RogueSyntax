@@ -39,7 +39,7 @@ public:
 	virtual ~IStatement() = default;
 };
 
-struct Program : IStatement, MetaTypeTag<Program>
+struct Program : IStatement
 {
 	Program() : IStatement(Token::New(TokenType::TOKEN_ILLEGAL, "")) { SetUniqueId(this); };
 	std::vector<std::shared_ptr<IStatement>> Statements;
@@ -51,7 +51,7 @@ struct Program : IStatement, MetaTypeTag<Program>
 	static std::shared_ptr<Program> New();
 };
 
-struct Identifier : IExpression, MetaTypeTag<Identifier>
+struct Identifier : IExpression
 {
 	Identifier(const Token& token, const std::string& value);
 	virtual ~Identifier() = default;
@@ -65,7 +65,7 @@ struct Identifier : IExpression, MetaTypeTag<Identifier>
 	std::string Value;
 };
 
-struct LetStatement : IStatement, MetaTypeTag<LetStatement>
+struct LetStatement : IStatement
 {
 	LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value);
 	virtual ~LetStatement() = default;
@@ -79,7 +79,7 @@ struct LetStatement : IStatement, MetaTypeTag<LetStatement>
 	std::shared_ptr<IExpression> Value;
 };
 
-struct ReturnStatement : IStatement, MetaTypeTag<ReturnStatement>
+struct ReturnStatement : IStatement
 {
 	ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue);
 	virtual ~ReturnStatement() = default;
@@ -93,7 +93,7 @@ struct ReturnStatement : IStatement, MetaTypeTag<ReturnStatement>
 	std::shared_ptr<IExpression> ReturnValue;
 };
 
-struct ExpressionStatement : IStatement, MetaTypeTag<ExpressionStatement>
+struct ExpressionStatement : IStatement
 {
 	ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression);
 	virtual ~ExpressionStatement() = default;
@@ -107,7 +107,7 @@ struct ExpressionStatement : IStatement, MetaTypeTag<ExpressionStatement>
 	std::shared_ptr<IExpression> Expression;
 };
 
-struct NullLiteral : IExpression, MetaTypeTag<NullLiteral>
+struct NullLiteral : IExpression
 {
 	NullLiteral(const Token& token);
 	virtual ~NullLiteral() = default;
@@ -119,7 +119,7 @@ struct NullLiteral : IExpression, MetaTypeTag<NullLiteral>
 	static std::shared_ptr<NullLiteral> New(const Token& token);
 };
 
-struct IntegerLiteral : IExpression, MetaTypeTag<IntegerLiteral>
+struct IntegerLiteral : IExpression
 {
 	IntegerLiteral(const Token& token, const int value);
 	virtual ~IntegerLiteral() = default;
@@ -133,7 +133,7 @@ struct IntegerLiteral : IExpression, MetaTypeTag<IntegerLiteral>
 	int Value;
 };
 
-struct BooleanLiteral : IExpression, MetaTypeTag<BooleanLiteral>
+struct BooleanLiteral : IExpression
 {
 	BooleanLiteral(const Token& token, const bool value);
 	virtual ~BooleanLiteral() = default;
@@ -146,7 +146,7 @@ struct BooleanLiteral : IExpression, MetaTypeTag<BooleanLiteral>
 	bool Value;
 };
 
-struct HashLiteral : IExpression, MetaTypeTag<HashLiteral>
+struct HashLiteral : IExpression
 {
 	HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs);
 	virtual ~HashLiteral() = default;
@@ -159,7 +159,7 @@ struct HashLiteral : IExpression, MetaTypeTag<HashLiteral>
 	std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>> Elements;
 };
 
-struct PrefixExpression : IExpression, MetaTypeTag<PrefixExpression>
+struct PrefixExpression : IExpression
 {
 	PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right);
 	virtual ~PrefixExpression() = default;
@@ -173,7 +173,7 @@ struct PrefixExpression : IExpression, MetaTypeTag<PrefixExpression>
 	std::shared_ptr<IExpression> Right;
 };
 
-struct InfixExpression : IExpression, MetaTypeTag<InfixExpression>
+struct InfixExpression : IExpression
 {
 	InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right);
 	virtual ~InfixExpression() = default;
@@ -188,7 +188,7 @@ struct InfixExpression : IExpression, MetaTypeTag<InfixExpression>
 	std::shared_ptr<IExpression> Right;
 };
 
-struct BlockStatement : IStatement, MetaTypeTag<BlockStatement>
+struct BlockStatement : IStatement
 {
 	BlockStatement(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements);
 	virtual ~BlockStatement() = default;
@@ -201,7 +201,7 @@ struct BlockStatement : IStatement, MetaTypeTag<BlockStatement>
 	std::vector<std::shared_ptr<IStatement>> Statements;
 };
 
-struct IfStatement : IStatement, MetaTypeTag<IfStatement>
+struct IfStatement : IStatement
 {
 	IfStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative);
 	virtual ~IfStatement() = default;
@@ -216,7 +216,7 @@ struct IfStatement : IStatement, MetaTypeTag<IfStatement>
 	std::shared_ptr<IStatement> Alternative;
 };
 
-struct FunctionLiteral : IExpression, MetaTypeTag<FunctionLiteral>
+struct FunctionLiteral : IExpression
 {
 	FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body);
 	virtual ~FunctionLiteral() = default;
@@ -231,7 +231,7 @@ struct FunctionLiteral : IExpression, MetaTypeTag<FunctionLiteral>
 	std::shared_ptr<IStatement> Body;
 };
 
-struct CallExpression : IExpression, MetaTypeTag<CallExpression>
+struct CallExpression : IExpression
 {
 	CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments);
 	virtual ~CallExpression() = default;
@@ -245,7 +245,7 @@ struct CallExpression : IExpression, MetaTypeTag<CallExpression>
 	std::vector<std::shared_ptr<IExpression>> Arguments;
 };
 
-struct WhileStatement : IStatement, MetaTypeTag<WhileStatement>
+struct WhileStatement : IStatement
 {
 	WhileStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action);
 	virtual ~WhileStatement() = default;
@@ -259,7 +259,7 @@ struct WhileStatement : IStatement, MetaTypeTag<WhileStatement>
 	std::shared_ptr<IStatement> Action;
 };
 
-struct BreakStatement : IStatement, MetaTypeTag<BreakStatement>
+struct BreakStatement : IStatement
 {
 	BreakStatement(const Token& token);
 	virtual ~BreakStatement() = default;
@@ -270,7 +270,7 @@ struct BreakStatement : IStatement, MetaTypeTag<BreakStatement>
 	static std::shared_ptr<BreakStatement> New(const Token& token);
 };
 
-struct ContinueStatement : IStatement, MetaTypeTag<ContinueStatement>
+struct ContinueStatement : IStatement
 {
 	ContinueStatement(const Token& token);
 	virtual ~ContinueStatement() = default;
@@ -282,7 +282,7 @@ struct ContinueStatement : IStatement, MetaTypeTag<ContinueStatement>
 
 };
 
-struct ForStatement : IStatement, MetaTypeTag<ForStatement>
+struct ForStatement : IStatement
 {
 	ForStatement(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action);
 	virtual ~ForStatement() = default;
@@ -298,7 +298,7 @@ struct ForStatement : IStatement, MetaTypeTag<ForStatement>
 	std::shared_ptr<IStatement> Action;
 };
 
-struct StringLiteral : IExpression, MetaTypeTag<StringLiteral>
+struct StringLiteral : IExpression
 {
 	StringLiteral(const Token& token, const std::string& value);
 	virtual ~StringLiteral() = default;
@@ -311,7 +311,7 @@ struct StringLiteral : IExpression, MetaTypeTag<StringLiteral>
 	std::string Value;
 };
 
-struct DecimalLiteral : IExpression, MetaTypeTag<DecimalLiteral>
+struct DecimalLiteral : IExpression
 {
 	DecimalLiteral(const Token& token, const float value);
 	virtual ~DecimalLiteral() = default;
@@ -324,7 +324,7 @@ struct DecimalLiteral : IExpression, MetaTypeTag<DecimalLiteral>
 	float Value;
 };
 
-struct ArrayLiteral : IExpression, MetaTypeTag<ArrayLiteral>
+struct ArrayLiteral : IExpression
 {
 	ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements);
 	virtual ~ArrayLiteral() = default;
@@ -337,7 +337,7 @@ struct ArrayLiteral : IExpression, MetaTypeTag<ArrayLiteral>
 	std::vector<std::shared_ptr<IExpression>> Elements;
 };
 
-struct IndexExpression : IExpression, MetaTypeTag<IndexExpression>
+struct IndexExpression : IExpression
 {
 	IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index);
 	virtual ~IndexExpression() = default;
