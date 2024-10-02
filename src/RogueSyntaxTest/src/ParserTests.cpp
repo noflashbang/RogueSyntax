@@ -1088,6 +1088,7 @@ TEST_CASE("TEST ASSIGN OPERATORS")
 		auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0].get());
 		REQUIRE(stmt != nullptr);
 		auto assignStatement = dynamic_cast<LetStatement*>(stmt->Expression.get());
+
 		REQUIRE(assignStatement != nullptr);
 		REQUIRE(assignStatement->ToString() == test.expectedValue);
 	}

@@ -82,7 +82,7 @@ struct ObjectType
 	static const ObjectType CONTINUE_OBJ;
 };
 
-class IObject
+class IObject : public IUnquielyIdentifiable
 {
 public:
 	virtual const ObjectType& Type() const = 0;
@@ -104,7 +104,7 @@ public:
 class NullObj : public IObject
 {
 public:
-	NullObj() { _dummy = 0; }
+	NullObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~NullObj() = default;
 
 	const ObjectType& Type() const override
@@ -134,7 +134,7 @@ private:
 class VoidObj : public IObject
 {
 public:
-	VoidObj() { _dummy = 0; }
+	VoidObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~VoidObj() = default;
 
 	const ObjectType& Type() const override
@@ -165,7 +165,7 @@ private:
 class BreakObj : public IObject
 {
 public:
-	BreakObj() { _dummy = 0; }
+	BreakObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~BreakObj() = default;
 
 	const ObjectType& Type() const override
@@ -193,7 +193,7 @@ private:
 class ContinueObj : public IObject
 {
 public:
-	ContinueObj() { _dummy = 0; }
+	ContinueObj() { _dummy = 0; SetUniqueId(this); }
 	virtual ~ContinueObj() = default;
 	const ObjectType& Type() const override
 	{
@@ -220,7 +220,7 @@ private:
 class IntegerObj : public IObject
 {
 public:
-	IntegerObj(int value) : Value(value) {};
+	IntegerObj(int value) : Value(value) { SetUniqueId(this); };
 	virtual ~IntegerObj() = default;
 
 	const ObjectType& Type() const override
@@ -246,7 +246,7 @@ public:
 class DecimalObj : public IObject
 {
 public:
-	DecimalObj(float value) : Value(value) {};
+	DecimalObj(float value) : Value(value) { SetUniqueId(this); };
 	virtual ~DecimalObj() = default;
 
 	const ObjectType& Type() const override
@@ -272,7 +272,7 @@ public:
 class StringObj : public IObject
 {
 public:
-	StringObj(const std::string& value) : Value(value) {}
+	StringObj(const std::string& value) : Value(value) { SetUniqueId(this); }
 	virtual ~StringObj() = default;
 
 	const ObjectType& Type() const override
@@ -298,7 +298,7 @@ public:
 class BooleanObj : public IObject
 {
 public:
-	BooleanObj(bool value) : Value(value) {}
+	BooleanObj(bool value) : Value(value) { SetUniqueId(this); }
 	virtual ~BooleanObj() = default;
 
 	const ObjectType& Type() const override
@@ -329,7 +329,7 @@ public:
 class ArrayObj : public IAssignableObject
 {
 public:
-	ArrayObj(const std::vector<std::shared_ptr<IObject>>& elements) : Elements(elements) {}
+	ArrayObj(const std::vector<std::shared_ptr<IObject>>& elements) : Elements(elements) { SetUniqueId(this); }
 	virtual ~ArrayObj() = default;
 
 	const ObjectType& Type() const override
@@ -410,7 +410,7 @@ struct HashEntry
 class HashObj : public IAssignableObject
 {
 public:
-	HashObj(const std::unordered_map<HashKey, HashEntry>& elements) : Elements(elements) {}
+	HashObj(const std::unordered_map<HashKey, HashEntry>& elements) : Elements(elements) { SetUniqueId(this); }
 	virtual ~HashObj() = default;
 
 	const ObjectType& Type() const override
@@ -457,7 +457,7 @@ public:
 class IdentifierObj : public IAssignableObject
 {
 public:
-	IdentifierObj(const std::string& name, const std::shared_ptr<IObject>& value) : Name(name), Value(value) {}
+	IdentifierObj(const std::string& name, const std::shared_ptr<IObject>& value) : Name(name), Value(value) { SetUniqueId(this); }
 	virtual ~IdentifierObj() = default;
 
 	const ObjectType& Type() const override
@@ -489,7 +489,7 @@ private:
 class ReturnObj : public IObject
 {
 public:
-	ReturnObj(const std::shared_ptr<IObject>& value) : Value(value) {}
+	ReturnObj(const std::shared_ptr<IObject>& value) : Value(value) { SetUniqueId(this); }
 	virtual ~ReturnObj() = default;
 
 	const ObjectType& Type() const override
@@ -515,7 +515,7 @@ public:
 class ErrorObj : public IObject
 {
 public:
-	ErrorObj(const std::string& message, const Token& token) : Message(message), Token(token) {}
+	ErrorObj(const std::string& message, const Token& token) : Message(message), Token(token) { SetUniqueId(this); }
 	virtual ~ErrorObj() = default;
 
 	const ObjectType& Type() const override
@@ -542,7 +542,7 @@ public:
 class FunctionObj : public IObject
 {
 public:
-	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : Parameters(parameters), Body(body) {}
+	FunctionObj(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : Parameters(parameters), Body(body) { SetUniqueId(this); }
 	virtual ~FunctionObj() = default;
 
 	const ObjectType& Type() const override
@@ -587,8 +587,8 @@ public:
 class BuiltInObj : public IObject
 {
 public:
-	BuiltInObj(const std::string& name) : Name(name), Idx(-1) {}
-	BuiltInObj(const int idx) : Name(""), Idx(idx) {}
+	BuiltInObj(const std::string& name) : Name(name), Idx(-1) { SetUniqueId(this); }
+	BuiltInObj(const int idx) : Name(""), Idx(idx) { SetUniqueId(this); }
 	virtual ~BuiltInObj() = default;
 
 	std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> Resolve(std::shared_ptr<BuiltIn> externals) const;
@@ -622,7 +622,7 @@ public:
 class FunctionCompiledObj : public IObject
 {
 public:
-	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) {}
+	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) { SetUniqueId(this); }
 	virtual ~FunctionCompiledObj() = default;
 
 	const ObjectType& Type() const override
@@ -650,7 +650,7 @@ public:
 class ClosureObj : public IObject
 {
 public:
-	ClosureObj(const std::shared_ptr<FunctionCompiledObj>& fun, const std::vector<std::shared_ptr<IObject>>& free) : Function(fun), Frees(free) { }
+	ClosureObj(const std::shared_ptr<FunctionCompiledObj>& fun, const std::vector<std::shared_ptr<IObject>>& free) : Function(fun), Frees(free) { SetUniqueId(this); }
 	virtual ~ClosureObj() = default;
 
 	const ObjectType& Type() const override

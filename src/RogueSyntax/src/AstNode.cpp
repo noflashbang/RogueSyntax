@@ -29,6 +29,7 @@ void Program::Compile(Compiler* compiler)
 
 LetStatement::LetStatement(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value) : IStatement(token), Name(name), Value(value)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<LetStatement> LetStatement::New(const Token& token, const std::shared_ptr<IExpression>& name, const std::shared_ptr<IExpression>& value)
@@ -63,6 +64,7 @@ void LetStatement::Compile(Compiler* compiler)
 
 Identifier::Identifier(const ::Token& token, const std::string& value) : IExpression(token), Value(value)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<Identifier> Identifier::New(const Token& token, const std::string& value)
@@ -88,6 +90,7 @@ void Identifier::Compile(Compiler* compiler)
 
 ReturnStatement::ReturnStatement(const Token& token, const std::shared_ptr<IExpression>& returnValue) : IStatement(token), ReturnValue(returnValue)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<ReturnStatement> ReturnStatement::New(const Token& token, const std::shared_ptr<IExpression>& returnValue)
@@ -118,6 +121,7 @@ void ReturnStatement::Compile(Compiler* compiler)
 
 ExpressionStatement::ExpressionStatement(const Token& token, const std::shared_ptr<IExpression>& expression) : IStatement(token), Expression(expression)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<ExpressionStatement> ExpressionStatement::New(const Token& token, const std::shared_ptr<IExpression>& expression)
@@ -145,6 +149,7 @@ void ExpressionStatement::Compile(Compiler* compiler)
 
 NullLiteral::NullLiteral(const ::Token& token) : IExpression(token)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<NullLiteral> NullLiteral::New(const Token& token)
@@ -169,6 +174,7 @@ void NullLiteral::Compile(Compiler* compiler)
 
 IntegerLiteral::IntegerLiteral(const ::Token& token, int value) : IExpression(token), Value(value)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<IntegerLiteral> IntegerLiteral::New(const Token& token, const int value)
@@ -192,6 +198,7 @@ void IntegerLiteral::Compile(Compiler* compiler)
 
 BooleanLiteral::BooleanLiteral(const ::Token& token, bool value) : IExpression(token), Value(value)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<BooleanLiteral> BooleanLiteral::New(const Token& token, const bool value)
@@ -216,6 +223,7 @@ void BooleanLiteral::Compile(Compiler* compiler)
 
 HashLiteral::HashLiteral(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs) : IExpression(token), Elements(pairs)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<HashLiteral> HashLiteral::New(const Token& token, const std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>>& pairs)
@@ -257,6 +265,7 @@ void HashLiteral::Compile(Compiler* compiler)
 
 PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Right(right)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<PrefixExpression> PrefixExpression::New(const Token& token, const std::string& op, const std::shared_ptr<IExpression>& right)
@@ -285,6 +294,7 @@ void PrefixExpression::Compile(Compiler* compiler)
 
 InfixExpression::InfixExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right) : IExpression(token), Operator(op), Left(left), Right(right)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<InfixExpression> InfixExpression::New(const Token& token, const std::shared_ptr<IExpression>& left, const std::string& op, const std::shared_ptr<IExpression>& right)
@@ -315,6 +325,7 @@ void InfixExpression::Compile(Compiler* compiler)
 
 BlockStatement::BlockStatement(const ::Token& token, const std::vector<std::shared_ptr<IStatement>>& statements) : IStatement(token), Statements(statements)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<BlockStatement> BlockStatement::New(const Token& token, const std::vector<std::shared_ptr<IStatement>>& statements)
@@ -347,6 +358,7 @@ void BlockStatement::Compile(Compiler* compiler)
 
 IfStatement::IfStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative) : IStatement(token), Condition(condition), Consequence(consequence), Alternative(alternative)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<IfStatement> IfStatement::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& consequence, const std::shared_ptr<IStatement>& alternative)
@@ -381,6 +393,7 @@ void IfStatement::Compile(Compiler* compiler)
 
 FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body) : IExpression(token), Parameters(parameters), Body(body), Name("")
 {
+	SetUniqueId(this);
 }
 
 
@@ -421,6 +434,7 @@ void FunctionLiteral::Compile(Compiler* compiler)
 
 CallExpression::CallExpression(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments) : IExpression(token), Function(function), Arguments(arguments)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<CallExpression> CallExpression::New(const Token& token, const std::shared_ptr<IExpression>& function, const std::vector<std::shared_ptr<IExpression>>& arguments)
@@ -459,6 +473,7 @@ void CallExpression::Compile(Compiler* compiler)
 
 WhileStatement::WhileStatement(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action) : IStatement(token), Condition(condition), Action(action)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<WhileStatement> WhileStatement::New(const Token& token, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& action)
@@ -488,6 +503,7 @@ void WhileStatement::Compile(Compiler* compiler)
 
 BreakStatement::BreakStatement(const ::Token& token) : IStatement(token)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<BreakStatement> BreakStatement::New(const ::Token& token)
@@ -512,6 +528,7 @@ void BreakStatement::Compile(Compiler* compiler)
 
 ContinueStatement::ContinueStatement(const ::Token& token) : IStatement(token)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<ContinueStatement> ContinueStatement::New(const ::Token& token)
@@ -535,6 +552,7 @@ void ContinueStatement::Compile(Compiler* compiler)
 
 ForStatement::ForStatement(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action) : IStatement(token), Init(init), Condition(condition), Post(post), Action(action)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<ForStatement> ForStatement::New(const Token& token, const std::shared_ptr<IStatement>& init, const std::shared_ptr<IExpression>& condition, const std::shared_ptr<IStatement>& post, const std::shared_ptr<IStatement>& action)
@@ -571,6 +589,7 @@ void ForStatement::Compile(Compiler* compiler)
 
 StringLiteral::StringLiteral(const Token& token, const std::string& value) : IExpression(token), Value(value)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<StringLiteral> StringLiteral::New(const Token& token, const std::string& value)
@@ -596,6 +615,7 @@ void StringLiteral::Compile(Compiler* compiler)
 
 DecimalLiteral::DecimalLiteral(const Token& token, float value) : IExpression(token), Value(value)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<DecimalLiteral> DecimalLiteral::New(const Token& token, float value)
@@ -621,6 +641,7 @@ void DecimalLiteral::Compile(Compiler* compiler)
 
 ArrayLiteral::ArrayLiteral(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements) : IExpression(token), Elements(elements)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<ArrayLiteral> ArrayLiteral::New(const Token& token, const std::vector<std::shared_ptr<IExpression>>& elements)
@@ -658,6 +679,7 @@ void ArrayLiteral::Compile(Compiler* compiler)
 
 IndexExpression::IndexExpression(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index) : IExpression(token), Left(left), Index(index)
 {
+	SetUniqueId(this);
 }
 
 std::shared_ptr<IndexExpression> IndexExpression::New(const Token& token, const std::shared_ptr<IExpression>& left, const std::shared_ptr<IExpression>& index)

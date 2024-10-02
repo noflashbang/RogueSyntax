@@ -149,7 +149,7 @@ void StackEvaluator::NodeEval(ReturnStatement* ret)
 }
 void StackEvaluator::NodeEval(LetStatement* let)
 {
-	if (typeid(*(let->Name.get())) == typeid(Identifier))
+	if(let->Name.get()->Tag() == Identifier::TypeTag)
 	{
 		if (_currentSignal == 0)
 		{

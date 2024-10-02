@@ -5,6 +5,7 @@ cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
+    ${PARENT_DIR}/include/RogueSyntax/Identifiable.h
     ${PARENT_DIR}/include/RogueSyntax/Token.h
     ${PARENT_DIR}/include/RogueSyntax/Lexer.h
     ${PARENT_DIR}/include/RogueSyntax/AstNode.h
@@ -18,6 +19,7 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/OpCode.h
     ${PARENT_DIR}/include/RogueSyntax/Compiler.h
     ${PARENT_DIR}/include/RogueSyntax/VirtualMachine.h
+
 
 )
 
