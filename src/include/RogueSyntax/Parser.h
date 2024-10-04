@@ -57,10 +57,12 @@ class Parser
 {
 public:
 	Parser(const Lexer& lexer);
+	~Parser() = default;
+	std::shared_ptr<Program> ParseProgram();
+	std::vector<std::string> Errors() const;
+protected:
 
 	void NextToken();
-	std::shared_ptr<Program> ParseProgram();
-	
 	IStatement* ParseStatement();
 
 	IExpression* ParseExpression(const Precedence precedence);
@@ -99,7 +101,7 @@ public:
 	bool CurrentTokenIs(const TokenType& type) const;
 	bool PeekTokenIs(const TokenType& type) const;
 
-	std::vector<std::string> Errors() const;
+	
 	void AddError(const std::string& error);
 
 	void PeekError(const TokenType& type);

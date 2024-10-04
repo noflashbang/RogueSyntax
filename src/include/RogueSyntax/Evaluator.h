@@ -12,14 +12,11 @@ enum class EvaluatorType
 class Evaluator
 {
 public:
-	Evaluator();
-	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program);
-	const IObject* Eval(const std::shared_ptr<Program>& program, const uint32_t env);
-	virtual const IObject* Eval(const INode* node, const uint32_t env) = 0;
-
-	uint32_t MakeEnv();
-	void FreeEnv(const uint32_t env);
-
+	Evaluator(const std::shared_ptr<ObjectFactory> factory);
+	const IObject* Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs);
+	static std::shared_ptr<Evaluator> New(EvaluatorType type, const std::shared_ptr<ObjectFactory>& factory);
+	virtual std::string Type() = 0;
+	
 	virtual void NodeEval(const Program* program) = 0;
 	virtual void NodeEval(const BlockStatement* block) = 0;
 	virtual void NodeEval(const ExpressionStatement* expression) = 0;
@@ -42,11 +39,18 @@ public:
 	virtual void NodeEval(const WhileStatement* whileExp) = 0;
 	virtual void NodeEval(const ForStatement* forExp) = 0;
 	virtual void NodeEval(const ContinueStatement* cont) = 0;
-	virtual void NodeEval(const BreakStatement* brk)=0;
+	virtual void NodeEval(const BreakStatement* brk) = 0;
 
-	static std::shared_ptr<Evaluator> New(EvaluatorType type);
+protected:
 
-	virtual std::string Type() = 0;
+	const IObject* Eval(const std::shared_ptr<Program>& program, const uint32_t env);
+	virtual const IObject* Eval(const INode* node, const uint32_t env) = 0;
+
+	uint32_t MakeEnv();
+	void FreeEnv(const uint32_t env);
+
+
+
 
 protected:
 	const IObject* EvalPrefixExpression(const uint32_t env, const Token& op, const IObject* right) const;
@@ -69,7 +73,7 @@ protected:
 
 	std::shared_ptr<Environment> EvalEnvironment;
 	std::shared_ptr<BuiltIn> EvalBuiltIn;
-
+	std::shared_ptr<ObjectFactory> EvalFactory;
 
 	static const IObject* UnwrapIfReturnObj(const IObject* input);
 	static const IObject* UnwrapIfIdentObj(const IObject* input);
@@ -78,7 +82,7 @@ protected:
 
 	inline IObject* MakeError(const uint32_t env, const std::string& message, const Token& token) const
 	{
-		return EvalEnvironment->GetObjectStore(env).New_ErrorObj(message, token);
+		return EvalFactory->New<ErrorObj>(message, token);
 	};
 
 private:

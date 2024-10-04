@@ -35,8 +35,8 @@ private:
 class RogueVM
 {
 public:
-	RogueVM(const ByteCode& byteCode);
-	RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals);
+	RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory> factory);
+	RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals, const std::shared_ptr<ObjectFactory> factory);
 	~RogueVM();
 
 	void Run();
@@ -55,8 +55,6 @@ public:
 	const Frame& CurrentFrame() const;
 	void PushFrame(Frame frame);
 	Frame PopFrame();
-
-	static std::shared_ptr<RogueVM> New(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals) { return std::make_shared<RogueVM>(byteCode, externals); }
 
 protected:
 	void ExecuteArithmeticInfix(OpCode::Constants opcode);
@@ -86,14 +84,13 @@ protected:
 	GetSetType GetTypeFromIdx(int idx);
 
 private:
-	ObjectStore _store;
-	std::array<Frame, MAX_FRAMES> _frames;
 	int _frameIndex = 0;
-
+	uint16_t _sp = 0;
+	std::shared_ptr<ObjectFactory> _factory;
+	std::shared_ptr<BuiltIn> _externals;
 	TypeCoercer _coercer;
-	ByteCode _byteCode;
 	std::array<const IObject*, STACK_SIZE> _stack;
 	std::array<const IObject*, GLOBAL_SIZE> _globals;
-	uint16_t _sp = 0;
-	std::shared_ptr<BuiltIn> _externals;
+	std::array<Frame, MAX_FRAMES> _frames;
+	ByteCode _byteCode;
 };

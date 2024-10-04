@@ -3,19 +3,20 @@
 #include "RecursiveEvaluator.h"
 #include "StackEvaluator.h"
 
-Evaluator::Evaluator()
+Evaluator::Evaluator(const std::shared_ptr<ObjectFactory> factory) : _coercer(factory)
 {
-	EvalBuiltIn = std::make_shared<BuiltIn>();
+	EvalBuiltIn = nullptr;
 	EvalEnvironment = std::make_shared<Environment>();
+	EvalFactory = factory;
 }
 
-std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program)
+const IObject* Evaluator::Eval(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs)
 {
+	EvalBuiltIn = externs;
 	uint32_t env = EvalEnvironment->New();
 	auto result = Eval(program, env);
-	auto ret = std::shared_ptr<IObject>(result->Clone());
 	EvalEnvironment->Release(env);
-	return ret;
+	return result;
 }
 
 const IObject* Evaluator::Eval(const std::shared_ptr<Program>& program, const uint32_t env)
@@ -66,14 +67,14 @@ void Evaluator::FreeEnv(const uint32_t env)
 	EvalEnvironment->Release(env);
 }
 
-std::shared_ptr<Evaluator> Evaluator::New(EvaluatorType type)
+std::shared_ptr<Evaluator> Evaluator::New(EvaluatorType type, const std::shared_ptr<ObjectFactory>& factory)
 {
 	switch (type)
 	{
 	case EvaluatorType::Recursive:
-		return std::make_shared<RecursiveEvaluator>();
+		return std::make_shared<RecursiveEvaluator>(factory);
 	case EvaluatorType::Stack:
-		return std::make_shared<StackEvaluator>();
+		return std::make_shared<StackEvaluator>(factory);
 	default:
 		return nullptr;
 	}
@@ -104,7 +105,6 @@ const IObject* Evaluator::EvalPrefixExpression(const uint32_t env, const Token& 
 const IObject* Evaluator::EvalInfixExpression(const uint32_t env, const Token& optor, const IObject* left, const IObject* right) const
 {
 	const IObject* result = nullptr;
-	auto& store = EvalEnvironment->GetObjectStore(env);
 	if (left->IsThisA<NullObj>() || right->IsThisA<NullObj>())
 	{
 		result = EvalNullInfixExpression(env, optor, left, right);
@@ -113,7 +113,7 @@ const IObject* Evaluator::EvalInfixExpression(const uint32_t env, const Token& o
 	{
 		if (_coercer.CanCoerceTypes(left, right))
 		{
-			auto [left_c, right_c] = _coercer.CoerceTypes(store, left, right);
+			auto [left_c, right_c] = _coercer.CoerceTypes(left, right);
 			
 			result = EvalInfixExpression(env, optor, left_c, right_c);
 		}
@@ -171,8 +171,7 @@ const IObject* Evaluator::EvalIndexExpression(const uint32_t env, const Token& o
 		}
 		else
 		{
-			auto& store = EvalEnvironment->GetObjectStore(env);
-			result = store.New_StringObj(std::string(1, str->Value[idx->Value]));
+			result = EvalFactory->New<StringObj>(std::string(1, str->Value[idx->Value]));
 		}
 	}
 	else if (operand->IsThisA<HashObj>())
@@ -249,16 +248,15 @@ const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const Toke
 		}
 		else
 		{
-			auto& store = EvalEnvironment->GetObjectStore(env);
 			if (nullOnLeft)
 			{
 				//any other operator on a null and a non-null produces the same non null value
-				result = EvalInfixExpression(env, op, store.New_IntegerObj(0), mightBeNullObj->Clone());
+				result = EvalInfixExpression(env, op, EvalFactory->New<IntegerObj>(0), EvalFactory->Clone(mightBeNullObj));
 			}
 			else
 			{
 				//any other operator on a null and a non-null produces the same non null value
-				result = EvalInfixExpression(env, op, mightBeNullObj->Clone(), store.New_IntegerObj(0));
+				result = EvalInfixExpression(env, op, EvalFactory->Clone(mightBeNullObj), EvalFactory->New<IntegerObj>(0));
 			}
 		}
 	}
@@ -268,23 +266,22 @@ const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const Toke
 const IObject* Evaluator::EvalIntegerInfixExpression(const uint32_t env, const Token& optor, const IntegerObj* const left, const IntegerObj* const right) const
 {
 	const IObject* result = nullptr;
-	auto& store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
-		result = store.New_IntegerObj(left->Value + right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value + right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_MINUS)
 	{
-		result = store.New_IntegerObj(left->Value - right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value - right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_ASTERISK)
 	{
-		result = store.New_IntegerObj(left->Value * right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value * right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SLASH)
 	{
-		result = store.New_IntegerObj(left->Value / right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value / right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_LT)
 	{
@@ -312,27 +309,27 @@ const IObject* Evaluator::EvalIntegerInfixExpression(const uint32_t env, const T
 	}
 	else if (optor.Type == TokenType::TOKEN_BITWISE_AND)
 	{
-		result = store.New_IntegerObj(left->Value & right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value & right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_BITWISE_OR)
 	{
-		result = store.New_IntegerObj(left->Value | right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value | right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_BITWISE_XOR)
 	{
-		result = store.New_IntegerObj(left->Value ^ right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value ^ right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SHIFT_LEFT)
 	{
-		result = store.New_IntegerObj(left->Value << right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value << right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SHIFT_RIGHT)
 	{
-		result = store.New_IntegerObj(left->Value >> right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value >> right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_MODULO)
 	{
-		result = store.New_IntegerObj(left->Value % right->Value);
+		result = EvalFactory->New<IntegerObj>(left->Value % right->Value);
 	}
 	else
 	{
@@ -370,23 +367,22 @@ const IObject* Evaluator::EvalBooleanInfixExpression(const uint32_t env, const T
 const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const
 {
 	const IObject* result = nullptr;
-	auto& store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
-		result = store.New_DecimalObj(left->Value + right->Value);
+		result = EvalFactory->New<DecimalObj>(left->Value + right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_MINUS)
 	{
-		result = store.New_DecimalObj(left->Value - right->Value);
+		result = EvalFactory->New<DecimalObj>(left->Value - right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_ASTERISK)
 	{
-		result = store.New_DecimalObj(left->Value * right->Value);
+		result = EvalFactory->New<DecimalObj>(left->Value * right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SLASH)
 	{
-		result = store.New_DecimalObj(left->Value / right->Value);
+		result = EvalFactory->New<DecimalObj>(left->Value / right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_LT)
 	{
@@ -414,7 +410,7 @@ const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const T
 	}
 	else if (optor.Type == TokenType::TOKEN_MODULO)
 	{
-		result = store.New_DecimalObj(fmod(left->Value, right->Value));
+		result = EvalFactory->New<DecimalObj>(fmod(left->Value, right->Value));
 	}
 	else
 	{
@@ -426,11 +422,10 @@ const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const T
 const IObject* Evaluator::EvalStringInfixExpression(const uint32_t env, const Token& optor, const StringObj* const left, const StringObj* const right) const
 {
 	const IObject* result = nullptr;
-	auto& store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
-		result = store.New_StringObj(left->Value + right->Value);
+		result = EvalFactory->New<StringObj>(left->Value + right->Value);
 	}
 	else
 	{
@@ -443,8 +438,7 @@ const IObject* Evaluator::EvalAsBoolean(const uint32_t env, const Token& context
 {
 	try
 	{
-		auto& store = EvalEnvironment->GetObjectStore(env);
-		return _coercer.EvalAsBoolean(store, obj);
+		return _coercer.EvalAsBoolean(obj);
 	}
 	catch (const std::exception& e)
 	{
@@ -455,8 +449,7 @@ const IObject* Evaluator::EvalAsDecimal(const uint32_t env, const Token& context
 {
 	try
 	{
-		auto& store = EvalEnvironment->GetObjectStore(env);
-		return _coercer.EvalAsDecimal(store, obj);
+		return _coercer.EvalAsDecimal(obj);
 	}
 	catch (const std::exception& e)
 	{
@@ -467,8 +460,7 @@ const IObject* Evaluator::EvalAsInteger(const uint32_t env, const Token& context
 {
 	try
 	{
-		auto& store = EvalEnvironment->GetObjectStore(env);
-		return _coercer.EvalAsInteger(store, obj);
+		return _coercer.EvalAsInteger(obj);
 	}
 	catch (const std::exception& e)
 	{
@@ -509,7 +501,6 @@ const IObject* Evaluator::EvalBangPrefixOperatorExpression(const uint32_t env, c
 const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
-	auto& store = EvalEnvironment->GetObjectStore(env);
 	if (!right->IsThisA<IntegerObj>())
 	{
 		result = MakeError(env, std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
@@ -517,7 +508,7 @@ const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, 
 	else
 	{
 		auto value = dynamic_cast<const IntegerObj*>(right)->Value;
-		result = store.New_IntegerObj(-value);
+		result = EvalFactory->New<IntegerObj>(-value);
 	}
 	return result;
 }
@@ -525,7 +516,6 @@ const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, 
 const IObject* Evaluator::EvalBitwiseNotPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
-	auto& store = EvalEnvironment->GetObjectStore(env);
 	if (!right->IsThisA<IntegerObj>())
 	{
 		result = MakeError(env, std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
@@ -533,7 +523,7 @@ const IObject* Evaluator::EvalBitwiseNotPrefixOperatorExpression(const uint32_t 
 	else
 	{
 		auto value = dynamic_cast<const IntegerObj*>(right)->Value;
-		result = store.New_IntegerObj(~value);
+		result = EvalFactory->New<IntegerObj>(~value);
 	}
 	return result;
 }

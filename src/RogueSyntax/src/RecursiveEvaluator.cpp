@@ -60,14 +60,12 @@ void RecursiveEvaluator::NodeEval(const ExpressionStatement* expression)
 
 void RecursiveEvaluator::NodeEval(const ReturnStatement* ret)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
 	auto value = Eval(ret->ReturnValue, _env);
-	_results.push(store.New_ReturnObj(value));
+	_results.push(EvalFactory->New<ReturnObj>(value));
 }
 
 void RecursiveEvaluator::NodeEval(const LetStatement* let)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
 	auto value = Eval(let->Value, _env);
 
 	value = UnwrapIfReturnObj(value);
@@ -88,9 +86,7 @@ void RecursiveEvaluator::NodeEval(const LetStatement* let)
 			return;
 		}
 		
-		auto identClone = target->Clone();
-		store.Add(identClone);
-
+		auto identClone = EvalFactory->Clone(target);
 		auto* ident = dynamic_cast<IdentifierObj*>(identClone);
 		ident->Set(nullptr, value);
 		EvalEnvironment->Set(_env, ident->Name, value);
@@ -119,8 +115,7 @@ void RecursiveEvaluator::NodeEval(const LetStatement* let)
 			return;
 		}
 
-		auto assignableClone = left->Clone();
-		store.Add(assignableClone);
+		auto assignableClone = EvalFactory->Clone(left);
 		auto* assignable = dynamic_cast<IAssignableObject*>(assignableClone);
 		if (assignable == nullptr)
 		{
@@ -137,29 +132,27 @@ void RecursiveEvaluator::NodeEval(const LetStatement* let)
 
 void RecursiveEvaluator::NodeEval(const Identifier* ident)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
 	if (EvalBuiltIn->IsBuiltIn(ident->Value))
 	{
-		_results.push(store.New_BuiltInObj(ident->Value));
+		_results.push(EvalFactory->New<BuiltInObj>(ident->Value));
 	}
 	else
 	{
 		auto value = EvalEnvironment->Get(_env, ident->Value);
 		if (value != nullptr)
 		{
-			_results.push(store.New_IdentifierObj(ident->Value, value));
+			_results.push(EvalFactory->New<IdentifierObj>(ident->Value, value));
 		}
 		else
 		{
-			_results.push(store.New_IdentifierObj(ident->Value, NullObj::NULL_OBJ_REF));
+			_results.push(EvalFactory->New<IdentifierObj>(ident->Value, NullObj::NULL_OBJ_REF));
 		}
 	}
 }
 
 void RecursiveEvaluator::NodeEval(const IntegerLiteral* integer)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
-	_results.push(store.New_IntegerObj(integer->Value));
+	_results.push(EvalFactory->New<IntegerObj>(integer->Value));
 }
 
 void RecursiveEvaluator::NodeEval(const BooleanLiteral* boolean)
@@ -169,14 +162,12 @@ void RecursiveEvaluator::NodeEval(const BooleanLiteral* boolean)
 
 void RecursiveEvaluator::NodeEval(const StringLiteral* string)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
-	_results.push(store.New_StringObj(string->Value));
+	_results.push(EvalFactory->New<StringObj>(string->Value));
 }
 
 void RecursiveEvaluator::NodeEval(const DecimalLiteral* decimal)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
-	_results.push(store.New_DecimalObj(decimal->Value));
+	_results.push(EvalFactory->New<DecimalObj>(decimal->Value));
 }
 
 void RecursiveEvaluator::NodeEval(const PrefixExpression* prefix)
@@ -256,8 +247,7 @@ void RecursiveEvaluator::NodeEval(const IfStatement* ifExpr)
 
 void RecursiveEvaluator::NodeEval(const FunctionLiteral* function)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
-	_results.push(store.New_FunctionObj(function->Parameters, function->Body));
+	_results.push(EvalFactory->New<FunctionObj>(function->Parameters, function->Body));
 }
 
 void RecursiveEvaluator::NodeEval(const CallExpression* call)
@@ -317,7 +307,6 @@ void RecursiveEvaluator::NodeEval(const CallExpression* call)
 
 void RecursiveEvaluator::NodeEval(const ArrayLiteral* array)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
 	std::vector<const IObject*> elements;
 	for (const auto& elem : array->Elements)
 	{
@@ -329,7 +318,7 @@ void RecursiveEvaluator::NodeEval(const ArrayLiteral* array)
 		}
 		elements.push_back(eval);
 	}
-	_results.push(store.New_ArrayObj(elements));
+	_results.push(EvalFactory->New<ArrayObj>(elements));
 }
 
 void RecursiveEvaluator::NodeEval(const IndexExpression* index)
@@ -360,7 +349,6 @@ void RecursiveEvaluator::NodeEval(const IndexExpression* index)
 
 void RecursiveEvaluator::NodeEval(const HashLiteral* hash)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
 	std::unordered_map<HashKey, HashEntry> elems;
 	for (const auto& [key, value] : hash->Elements)
 	{
@@ -379,7 +367,7 @@ void RecursiveEvaluator::NodeEval(const HashLiteral* hash)
 		}
 		elems[HashKey{ keyObj->Type(), keyObj->Inspect() }] = HashEntry{ keyObj, valueObj };
 	}
-	_results.push(store.New_HashObj(elems));
+	_results.push(EvalFactory->New<HashObj>(elems));
 }
 
 void RecursiveEvaluator::NodeEval(const WhileStatement* whileEx)
@@ -527,14 +515,12 @@ void RecursiveEvaluator::NodeEval(const ForStatement* forEx)
 
 void RecursiveEvaluator::NodeEval(const BreakStatement* breakStmt)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
-	_results.push(store.New_ReturnObj(BreakObj::BREAK_OBJ_REF));
+	_results.push(EvalFactory->New<ReturnObj>(BreakObj::BREAK_OBJ_REF));
 }
 
 void RecursiveEvaluator::NodeEval(const ContinueStatement* continueStmt)
 {
-	auto& store = EvalEnvironment->GetObjectStore(_env);
-	_results.push(store.New_ReturnObj(ContinueObj::CONTINUE_OBJ_REF));
+	_results.push(EvalFactory->New<ReturnObj>(ContinueObj::CONTINUE_OBJ_REF));
 }
 
 void RecursiveEvaluator::NodeEval(const NullLiteral* null)

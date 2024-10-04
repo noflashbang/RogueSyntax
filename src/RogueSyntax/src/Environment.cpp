@@ -54,17 +54,6 @@ Environment::~Environment()
 {
 }
 
-ObjectStore& Environment::GetObjectStore(const uint32_t env)
-{
-	EnvironmentHandle envHandle(env);
-	auto envObj = _environments[envHandle._internal.Index];
-	if (envObj->Handle.Handle != envHandle.Handle)
-	{
-		throw std::runtime_error("Invalid environment");
-	}
-	return envObj->ObjectStore;
-}
-
 void Environment::Set(const uint32_t env, const std::string& name, const IObject* value)
 {
 	EnvironmentHandle envHandle(env);

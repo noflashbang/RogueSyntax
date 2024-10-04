@@ -4,6 +4,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
+#include <RogueSyntax.h>
 
 bool TestIObjects(const IObject* expected, const IObject* actual)
 {
@@ -106,7 +107,7 @@ bool TestInstructions(const Instructions& expected, const Instructions& actual)
 	return true;
 }
 
-bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<std::shared_ptr<IObject>>& actual)
+bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<const IObject*>& actual)
 {
 	if (expected.size() != actual.size())
 	{
@@ -115,7 +116,7 @@ bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector
 
 	for (size_t i = 0; i < expected.size(); i++)
 	{
-		TestConstant(expected[i], actual[i].get());
+		TestConstant(expected[i], actual[i]);
 	}
 	return true;
 }
@@ -138,74 +139,21 @@ bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std
 
 bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
 {
-	auto builtIn = BuiltIn::New();
-	Compiler compiler;
-	Lexer lexer(input);
-	Parser parser(lexer);
-
-	auto node = parser.ParseProgram();
-	auto errors = parser.Errors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-
-	compiler.Compile(node, builtIn);
-	errors = compiler.GetErrors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	auto byteCode = compiler.GetByteCode();
+	RogueSyntax syn;
+	auto byteCode = syn.Compile(input);
 	return TestByteCode(expectedConstants, expectedInstructions, byteCode);
 }
 
 bool VmTest(std::string input, ConstantValue expected)
 {
-	auto builtIn = BuiltIn::New();
-	Compiler compiler;
-	Lexer lexer(input);
-	Parser parser(lexer);
-
-	auto node = parser.ParseProgram();
-	auto errors = parser.Errors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	compiler.Compile(node, builtIn);
-	errors = compiler.GetErrors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	auto byteCode = compiler.GetByteCode();
-	RogueVM vm(byteCode, builtIn);
+	RogueSyntax syn;
+	auto byteCode = syn.Compile(input);
+	auto vm = syn.MakeVM(byteCode);
 
 	try
 	{
-		vm.Run();
-		auto actual = vm.LastPoppped();
+		vm->Run();
+		auto actual = vm->LastPoppped();
 		REQUIRE(actual != nullptr);
 		return TestConstant(expected, actual);
 	}

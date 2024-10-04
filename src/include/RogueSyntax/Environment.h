@@ -34,7 +34,6 @@ struct ScopedEnvironment
 	EnvironmentHandle Handle;
 	std::unordered_map<std::string, const IObject*> IdentifierStore;
 	std::shared_ptr<ScopedEnvironment> Parent;
-	ObjectStore ObjectStore;
 };
 
 class Environment
@@ -42,8 +41,6 @@ class Environment
 public:
 	Environment();
 	~Environment();
-
-	ObjectStore& GetObjectStore(const uint32_t env);
 
 	void Set(const uint32_t env, const std::string& name, const IObject* value);
 	const IObject* Get(const uint32_t env, const std::string& name) const;

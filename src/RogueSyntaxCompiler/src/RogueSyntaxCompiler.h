@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <RogueSyntaxCore.h>
+#include <RogueSyntax.h>
 
 class InteractiveCompiler
 {

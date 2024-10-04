@@ -4,6 +4,7 @@ add_compile_definitions(ROGUESYNTAX_EXPORTS)
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
+    ${PARENT_DIR}/include/RogueSyntax/RogueSyntax.h
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
     ${PARENT_DIR}/include/RogueSyntax/Identifiable.h
     ${PARENT_DIR}/include/RogueSyntax/Token.h
@@ -21,8 +22,6 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/OpCode.h
     ${PARENT_DIR}/include/RogueSyntax/Compiler.h
     ${PARENT_DIR}/include/RogueSyntax/VirtualMachine.h
-
-
 )
 
 set( libHeaders 
@@ -48,6 +47,7 @@ set( libSource
  "src/OpCode.cpp"
  "src/Compiler.cpp"
  "src/VirtualMachine.cpp"
+ "src/RogueSyntax.cpp"
 )
 
 if(CMAKE_TIDY_ENABLED)

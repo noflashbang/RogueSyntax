@@ -5,6 +5,7 @@
 class RecursiveEvaluator : public Evaluator
 {
 public:
+	RecursiveEvaluator(const std::shared_ptr<ObjectFactory> factory) : Evaluator(factory) {}
 	const IObject* Eval(const INode* node, const uint32_t env) override;
 	const IObject* Eval(const INode* node);
 

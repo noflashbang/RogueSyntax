@@ -1,32 +1,8 @@
 #include <RogueSyntaxCore.h>
+#include <RogueSyntax.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
-
-std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input, std::shared_ptr<Program>* progOut)
-{
-	Lexer lexer(input);
-	Parser parser(lexer);
-	
-	auto program = parser.ParseProgram();
-	if (progOut != nullptr)
-	{
-		*progOut = program;
-	}
-
-	auto errors = parser.Errors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	auto result = eval->Eval(program);
-	return result;
-}
 
 bool TestIntegerObject(const IObject* obj, const int32_t expected)
 {
@@ -52,14 +28,16 @@ bool TestIntegerObject(const IObject* obj, const int32_t expected)
 	return true;
 }
 
-bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& input, const int32_t expected, std::shared_ptr<Program>* progOut)
+bool TestEvalInteger(EvaluatorType type, const std::string& input, const int32_t expected)
 {
-	auto result = EvalTest(eval, input, progOut);
+	RogueSyntax syn;
+	auto result = syn.QuickEval(type, input);
+
 	if (result->IsThisA<NullObj>() && expected == 0)
 	{
 		return true;
 	}
-	return TestIntegerObject(result.get(), expected);
+	return TestIntegerObject(result, expected);
 }
 
 bool TestBooleanObject(const IObject* obj, const bool expected)
@@ -81,16 +59,23 @@ bool TestBooleanObject(const IObject* obj, const bool expected)
 	return true;
 }
 
-bool TestEvalBoolean(const std::shared_ptr<Evaluator>& eval, const std::string& input, const bool expected, std::shared_ptr<Program>* progOut)
+bool TestEvalBoolean(EvaluatorType type, const std::string& input, const bool expected)
 {
-	auto result = EvalTest(eval, input, progOut);
-	return TestBooleanObject(result.get(), expected);
+	RogueSyntax syn;
+	auto result = syn.QuickEval(type, input);
+	return TestBooleanObject(result, expected);
 }
 
+bool TestEvalInspect(EvaluatorType type, const std::string& input, const std::string& expected)
+{
+	RogueSyntax syn;
+	auto result = syn.QuickEval(type, input);
+	return result->Inspect() == expected;
+}
 	
 TEST_CASE("Simple Integer Type")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>( { Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>( { EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{ "5", 5 },
@@ -117,14 +102,14 @@ TEST_CASE("Simple Integer Type")
 		{"~2",-3}
 	}));
 
-	std::shared_ptr<Program> prog;
+	
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 
 TEST_CASE("Simple Boolean Type")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, bool>(
 	{
 		{"true", true},
@@ -148,14 +133,14 @@ TEST_CASE("Simple Boolean Type")
 		{"(1 > 2) == false", true}
 	}));
 
-	std::shared_ptr<Program> prog;
+	
 	CAPTURE(input);
-	REQUIRE(TestEvalBoolean(eng, input, expected, &prog));
+	REQUIRE(TestEvalBoolean(eng, input, expected));
 }
 
 TEST_CASE("Bang Operator")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, bool>(
 	{
 		{"!true", false},
@@ -166,14 +151,14 @@ TEST_CASE("Bang Operator")
 		{"!!5", true}
 	}));
 
-	std::shared_ptr<Program> prog;
+	
 	CAPTURE(input);
-	REQUIRE(TestEvalBoolean(eng, input, expected, &prog));
+	REQUIRE(TestEvalBoolean(eng, input, expected));
 }
 
 TEST_CASE("Test If Else Expressions")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"if (true) { 10 }", 10},
@@ -186,14 +171,14 @@ TEST_CASE("Test If Else Expressions")
 		{"if (1 < 2) { 10 } else { 20 }", 10}
 	}));
 
-	std::shared_ptr<Program> prog;
+
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 
 TEST_CASE("Test Return Expression")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"return 10;", 10},
@@ -211,14 +196,13 @@ TEST_CASE("Test Return Expression")
 		}
 		}));
 
-	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 TEST_CASE("Test Error Obj")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
-	auto tests = std::vector<std::pair<std::string, std::string>>
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
 	{
 		{"-true", "unknown operator: -class BooleanObj"},
 		{"true + false;", "unknown operator: class BooleanObj + class BooleanObj"},
@@ -234,22 +218,15 @@ TEST_CASE("Test Error Obj")
 			"unknown operator: class BooleanObj + class BooleanObj"
 		},
 		//{"foobar", "identifier not found: foobar"}
-	};
+	}));
 
-	for (auto& test : tests)
-	{
-		std::shared_ptr<Program> prog;
-		auto result = EvalTest(eng, test.first, &prog);
-		CAPTURE(test.first);
-		REQUIRE(result->IsThisA<ErrorObj>());
-		auto errorObj = dynamic_cast<const ErrorObj*>(result.get());
-		REQUIRE(errorObj->Message == test.second);
-	}
+	CAPTURE(input);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Test Let Statements")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let a = 5; a;", 5},
@@ -258,28 +235,14 @@ TEST_CASE("Test Let Statements")
 		{"let a = 5; let b = a; let c = a + b + 5; c;", 15}
 	}));
 
-	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 
-TEST_CASE("Test Function Object")
-{
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
-	auto input = "fn(x) { x + 2; };";
-
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->IsThisA<FunctionObj>());
-	auto func = dynamic_cast<const FunctionObj*>(result.get());
-	REQUIRE(func->Parameters.size() == 1);
-	REQUIRE(func->Parameters[0]->ToString() == "x");
-	REQUIRE(func->Body->ToString() == "{(x + 2)}");
-}
 
 TEST_CASE("Test Function Eval")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let identity = fn(x) { return x; }; identity(5);", 5},
@@ -292,15 +255,13 @@ TEST_CASE("Test Function Eval")
 		{"fn(x) { x; }(5)", 5}
 		}));
 
-	CAPTURE(eng->Type());
-	std::shared_ptr<Program> prog;
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 
 TEST_CASE("Test While Loop")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let i = 0; while (i < 10) { let i = i + 1; }; i;", 10},
@@ -309,15 +270,15 @@ TEST_CASE("Test While Loop")
 		{"let i = 0; while (i < 10) { let i = i + 1; if (i == 5) { continue; let i = 12; } }; i;", 10}
 		}));
 
-	CAPTURE(eng->Type());
-	std::shared_ptr<Program> prog;
+	
+	
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 
 TEST_CASE("Test assignment")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let a = 5; a = 10; a;", 10},
@@ -326,15 +287,15 @@ TEST_CASE("Test assignment")
 		{"a = 6; a;", 6}
 		}));
 
-	CAPTURE(eng->Type());
-	std::shared_ptr<Program> prog;
+	
+	
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 
 TEST_CASE("FOR tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, int32_t>(
 	{
 		{"let sum = 0; for (let i = 0; i < 10; i = i + 1) { sum = sum + i; }; sum;", 45},
@@ -345,15 +306,15 @@ TEST_CASE("FOR tests")
 		{"let xisltten = fn(x){return x<10;}; let sum = 0; for (let i = 0; xisltten(i); i = i + 1) { if (i == 5) { continue; } sum = sum + i; }; sum;", 40}
 	}));
 
-	CAPTURE(eng->Type());
-	std::shared_ptr<Program> prog;
+	
+	
 	CAPTURE(input);
-	REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+	REQUIRE(TestEvalInteger(eng, input, expected));
 }
 
 TEST_CASE("Decimal and String tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let a = 5.5; a;", "5.500000"},
@@ -379,16 +340,14 @@ TEST_CASE("Decimal and String tests")
 			{"a = \"Hello\"; a;", "Hello"}
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Array Literal Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"[]", "[]"},
@@ -396,16 +355,14 @@ TEST_CASE("Array Literal Tests")
 			{"[1 + 2, 3 * 4, 5 + 6]", "[3, 12, 11]"}
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Hash Literal Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"{}", "{}"},
@@ -413,16 +370,14 @@ TEST_CASE("Hash Literal Tests")
 			{"{1 + 1: 2 * 2, 3 + 3: 4 * 4}", "{2: 4, 6: 16}"}
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Index Array Expression Test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"[1, 2, 3][0]", "1"},
@@ -437,16 +392,14 @@ TEST_CASE("Index Array Expression Test")
 			{"[1, 2, 3][-1]", "null"}
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Index Hash Expression Test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"{1: 1, 2: 2}[1]", "1"},
@@ -459,16 +412,14 @@ TEST_CASE("Index Hash Expression Test")
 			{"{1: 1, 2: 2}[-1]", "null"}
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Index Assignment Test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let x = {1: 1, 2: 2}; x[1] = 2; x[1]", "2"},
@@ -481,16 +432,14 @@ TEST_CASE("Index Assignment Test")
 			{"let h = {1: 1, 2: 2}; let h[3] = 5; h[3]", "5"},
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Coerce Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"5 + 5.5;", "10.500000"},
@@ -507,16 +456,14 @@ TEST_CASE("Coerce Tests")
 			{"5 != true;", "false"}
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Built In method test")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"len(\"\");", "0"},
@@ -539,16 +486,14 @@ TEST_CASE("Built In method test")
 			{"let acc = 0; let list = [1,2,3,4,5,6,7,8,9]; for(iter = 0; iter < len(list); iter++) { acc = acc + list[iter]; } acc;", "45"},
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Null Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let a = null; a;", "null"},
@@ -573,16 +518,14 @@ TEST_CASE("Null Tests")
 			{"null != fn(x) { x; };", "true"}
 		}));
 
-	CAPTURE(eng->Type());
+	
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 TEST_CASE("Incrementer Tests")
 {
-	auto [eng] = GENERATE(table<std::shared_ptr<Evaluator>>({ Evaluator::New(EvaluatorType::Stack), Evaluator::New(EvaluatorType::Recursive) }));
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"let a = 1; a++; a;", "2"},
@@ -592,11 +535,8 @@ TEST_CASE("Incrementer Tests")
 			{"let a = {1:2,3:4}; a[1]++; a;", "{1: 3, 3: 4}"},
 		}));
 
-	CAPTURE(eng->Type());
 	CAPTURE(input);
-	std::shared_ptr<Program> prog;
-	auto result = EvalTest(eng, input, &prog);
-	REQUIRE(result->Inspect() == expected);
+	REQUIRE(TestEvalInspect(eng, input, expected));
 }
 
 #ifdef DO_BENCHMARK
@@ -609,16 +549,16 @@ TEST_CASE("BENCHMARK STACK EVALUATOR")
 	
 	SECTION("BENCHMARK STACK EVALUATOR - VERIFY")
 	{
-		std::shared_ptr<Program> prog;
-		REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+		
+		REQUIRE(TestEvalInteger(eng, input, expected));
 	}
 	
 	SECTION("BENCHMARK STACK EVALUATOR - TIME")
 	{
 		BENCHMARK("BENCHMARK STACK EVALUATOR")
 		{
-			std::shared_ptr<Program> prog;
-			return TestEvalInteger(eng, input, expected, &prog);
+			
+			return TestEvalInteger(eng, input, expected);
 		};
 	}
 }
@@ -631,16 +571,16 @@ TEST_CASE("BENCHMARK RECURSIVE EVALUATOR")
 
 	SECTION("BENCHMARK RECURSIVE EVALUATOR - VERIFY")
 	{
-		std::shared_ptr<Program> prog;
-		REQUIRE(TestEvalInteger(eng, input, expected, &prog));
+		
+		REQUIRE(TestEvalInteger(eng, input, expected));
 	}
 
 	SECTION("BENCHMARK RECURSIVE EVALUATOR - TIME")
 	{
 		BENCHMARK("BENCHMARK RECURSIVE EVALUATOR")
 		{
-			std::shared_ptr<Program> prog;
-			return TestEvalInteger(eng, input, expected, &prog);
+			
+			return TestEvalInteger(eng, input, expected);
 		};
 	}
 }

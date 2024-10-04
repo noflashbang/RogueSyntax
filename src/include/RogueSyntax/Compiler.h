@@ -10,8 +10,6 @@
 #define SCOPE_FREE "FREE"
 #define SCOPE_FUNCTION "FUNCTION"
 
-
-
 struct Symbol
 {
 	std::string Name;
@@ -121,7 +119,7 @@ struct CompilerErrorInfo
 struct ByteCode
 {
 	Instructions Instructions;
-	std::vector<std::shared_ptr<IObject>> Constants;
+	std::vector<const IObject*> Constants;
 };
 
 enum GetSetType
@@ -135,25 +133,12 @@ enum GetSetType
 class Compiler
 {
 public:
-	Compiler();
+	Compiler(const std::shared_ptr<ObjectFactory> factory);
 	~Compiler();
-	CompilerError Compile(std::shared_ptr<INode> node, const std::shared_ptr<BuiltIn>& externs);
-	CompilerError Compile(INode* node);
-
-	ByteCode GetByteCode() const;
-
-	int EnterUnit();
-	CompilationUnit ExitUnit();
-
-	uint32_t AddConstant(std::shared_ptr<IObject> obj);
-	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands);
-
-	int EmitGet(Symbol symbol);
-	int EmitSet(Symbol symbol);
-	uint32_t GetSymbolIdx(const Symbol& symbol);
-	
-	std::vector<std::string> GetErrors() const { return _errors; };
+	ByteCode Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs);
 	inline bool HasErrors() const { return !_errors.empty(); };
+	std::vector<std::string> GetErrors() const { return _errors; };
+
 
 	void NodeCompile(const Program* program);
 	void NodeCompile(const BlockStatement* block);
@@ -179,15 +164,29 @@ public:
 	void NodeCompile(const ContinueStatement* cont);
 	void NodeCompile(const BreakStatement* brk);
 
-	static std::shared_ptr<Compiler> New();
+protected:
+
+	CompilerError Compile(INode* node);
+	int EnterUnit();
+	CompilationUnit ExitUnit();
+
+	uint32_t AddConstant(const IObject* obj);
+	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands);
+	int EmitGet(Symbol symbol);
+	int EmitSet(Symbol symbol);
+	uint32_t GetSymbolIdx(const Symbol& symbol);
+
+	
+
 private:
 	std::stack<CompilationUnit> _CompilationUnits;
 	std::shared_ptr<BuiltIn> _externals;
 
-	std::vector<std::shared_ptr<IObject>> _constants;
+	std::vector<const IObject*> _constants;
 	
 	std::vector<std::string> _errors;
 	std::stack<CompilerErrorInfo> _errorStack;
+	std::shared_ptr<ObjectFactory> _factory;
 };
 
 

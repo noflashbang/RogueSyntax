@@ -1,6 +1,6 @@
 #include "pch.h"
 
-TypeCoercer::TypeCoercer()
+TypeCoercer::TypeCoercer(const std::shared_ptr<ObjectFactory>& factory) : _factory(factory)
 {
 	auto intType = typeid(IntegerObj).hash_code();
 	auto decType = typeid(DecimalObj).hash_code();
@@ -38,10 +38,10 @@ TypeCoercer::TypeCoercer()
 		{ strType, strType }
 	};
 
-	_coercionMap[intType] = std::bind(&TypeCoercer::EvalAsInteger, this, std::placeholders::_1, std::placeholders::_2);
-	_coercionMap[decType] = std::bind(&TypeCoercer::EvalAsDecimal, this, std::placeholders::_1, std::placeholders::_2);
-	_coercionMap[boolType] = std::bind(&TypeCoercer::EvalAsBoolean, this, std::placeholders::_1, std::placeholders::_2);
-	_coercionMap[strType] = std::bind(&TypeCoercer::EvalAsString, this, std::placeholders::_1, std::placeholders::_2);
+	_coercionMap[intType] = std::bind(&TypeCoercer::EvalAsInteger, this, std::placeholders::_1);
+	_coercionMap[decType] = std::bind(&TypeCoercer::EvalAsDecimal, this, std::placeholders::_1);
+	_coercionMap[boolType] = std::bind(&TypeCoercer::EvalAsBoolean, this, std::placeholders::_1);
+	_coercionMap[strType] = std::bind(&TypeCoercer::EvalAsString, this, std::placeholders::_1);
 }
 
 TypeCoercer::~TypeCoercer()
@@ -61,15 +61,15 @@ bool TypeCoercer::CanCoerceTypes(const IObject* const left, const IObject* const
 	}
 }
 
-std::tuple<IObject*, IObject*> TypeCoercer::CoerceTypes(ObjectStore& store, const IObject* const left, const IObject* const right) const
+std::tuple<IObject*, IObject*> TypeCoercer::CoerceTypes(const IObject* const left, const IObject* const right) const
 {
-	IObject* leftResult = CoerceThis(store, right, left);
-	IObject* rightResult = CoerceThis(store, left, right);
+	IObject* leftResult = CoerceThis(right, left);
+	IObject* rightResult = CoerceThis(left, right);
 
 	return std::make_tuple(leftResult, rightResult);
 }
 
-IObject* TypeCoercer::CoerceThis(ObjectStore& store, const IObject* const source, const IObject* const target) const
+IObject* TypeCoercer::CoerceThis(const IObject* const source, const IObject* const target) const
 {
 	IObject* result = nullptr;
 
@@ -83,7 +83,7 @@ IObject* TypeCoercer::CoerceThis(ObjectStore& store, const IObject* const source
 			auto coercion = _coercionMap.find(rightTT);
 			if (coercion != _coercionMap.end())
 			{
-				result = coercion->second(store, target);
+				result = coercion->second(target);
 			}
 		}
 	}
@@ -95,7 +95,7 @@ IObject* TypeCoercer::CoerceThis(ObjectStore& store, const IObject* const source
 	return result;
 }
 
-IObject* TypeCoercer::EvalAsBoolean(ObjectStore& store, const IObject* const obj) const
+IObject* TypeCoercer::EvalAsBoolean(const IObject* const obj) const
 {
 	IObject* result = nullptr;
 	if (obj == NullObj::NULL_OBJ_REF)
@@ -133,7 +133,7 @@ IObject* TypeCoercer::EvalAsBoolean(ObjectStore& store, const IObject* const obj
 	return result;
 }
 
-IObject* TypeCoercer::EvalAsDecimal(ObjectStore& store, const IObject* const obj) const
+IObject* TypeCoercer::EvalAsDecimal(const IObject* const obj) const
 {
 	IObject* result = nullptr;
 	if (!obj->IsThisA<DecimalObj>())
@@ -141,19 +141,19 @@ IObject* TypeCoercer::EvalAsDecimal(ObjectStore& store, const IObject* const obj
 		if (obj->IsThisA<IntegerObj>())
 		{
 			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-			result = store.New_DecimalObj(static_cast<float>(value));
+			result = _factory->New<DecimalObj>(static_cast<float>(value));
 		}
 
 		if (obj->IsThisA<BooleanObj>())
 		{
 			auto value = dynamic_cast<const BooleanObj const *>(obj)->Value;
-			result = store.New_DecimalObj(value ? 1.0f : 0.0f);
+			result = _factory->New<DecimalObj>(value ? 1.0f : 0.0f);
 		}
 	}
 	else
 	{
 		auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-		result = store.New_DecimalObj(value);
+		result = _factory->New<DecimalObj>(value);
 	}
 
 	if (result == nullptr)
@@ -164,7 +164,7 @@ IObject* TypeCoercer::EvalAsDecimal(ObjectStore& store, const IObject* const obj
 	return result;
 }
 
-IObject* TypeCoercer::EvalAsInteger(ObjectStore& store, const IObject* const obj) const
+IObject* TypeCoercer::EvalAsInteger(const IObject* const obj) const
 {
 	IObject* result = nullptr;
 	if (!obj->IsThisA<IntegerObj>())
@@ -172,19 +172,19 @@ IObject* TypeCoercer::EvalAsInteger(ObjectStore& store, const IObject* const obj
 		if (obj->IsThisA<DecimalObj>())
 		{
 			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-			result = store.New_IntegerObj(static_cast<int>(value));
+			result = _factory->New<IntegerObj>(static_cast<int>(value));
 		}
 
 		if (obj->IsThisA<BooleanObj>())
 		{
 			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
-			result = store.New_IntegerObj(value ? 1 : 0);
+			result = _factory->New<IntegerObj>(value ? 1 : 0);
 		}
 	}
 	else
 	{
 		auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-		result = store.New_IntegerObj(value);
+		result = _factory->New<IntegerObj>(value);
 	}
 
 	if (result == nullptr)
@@ -195,7 +195,7 @@ IObject* TypeCoercer::EvalAsInteger(ObjectStore& store, const IObject* const obj
 	return result;
 }
 
-IObject* TypeCoercer::EvalAsString(ObjectStore& store, const IObject* const obj) const
+IObject* TypeCoercer::EvalAsString(const IObject* const obj) const
 {
 	IObject* result = nullptr;
 	if (!obj->IsThisA<StringObj>())
@@ -203,28 +203,28 @@ IObject* TypeCoercer::EvalAsString(ObjectStore& store, const IObject* const obj)
 		if (obj->IsThisA<IntegerObj>())
 		{
 			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-			result = store.New_StringObj(std::to_string(value));
+			result = _factory->New<StringObj>(std::to_string(value));
 		}
 		else if (obj->IsThisA<DecimalObj>())
 		{
 			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-			result = store.New_StringObj(std::to_string(value));
+			result = _factory->New<StringObj>(std::to_string(value));
 		}
 		else if (obj->IsThisA<BooleanObj>())
 		{
 			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
-			result = store.New_StringObj(value ? "true" : "false");
+			result = _factory->New<StringObj>(value ? "true" : "false");
 		}
 		else if (obj->IsThisA<ArrayObj>())
 		{
 			auto value = dynamic_cast<const ArrayObj const*>(obj)->Inspect();
-			result = store.New_StringObj(value);
+			result = _factory->New<StringObj>(value);
 		}
 	}
 	else
 	{
 		auto value = dynamic_cast<const StringObj const*>(obj)->Value;
-		result = store.New_StringObj(value);
+		result = _factory->New<StringObj>(value);
 	}
 
 	if (result == nullptr)

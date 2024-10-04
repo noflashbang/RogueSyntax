@@ -3,17 +3,14 @@
 
 void Repl::Start()
 {
+	RogueSyntax syntax;
 	std::string input;
-	std::shared_ptr<Evaluator> eval = Evaluator::New(EvaluatorType::Stack);
-	auto env = eval->MakeEnv();
 
 	while (true)
 	{
 		std::string current;
 		std::cout << _prompt;
 		std::getline(std::cin, current);
-
-		
 
 		if (current.empty())
 		{
@@ -25,20 +22,7 @@ void Repl::Start()
 		}
 	}
 
-	Lexer lexer(input);
-	Parser parser(lexer);
-
-	auto program = parser.ParseProgram();
-	if (!parser.Errors().empty())
-	{
-		for (const auto& error : parser.Errors())
-		{
-			std::cout << "Parser error: " << error << std::endl;
-		}
-		return;
-	}
-
-	auto result = eval->Eval(program, env);
+	auto result = syntax.QuickEval(EvaluatorType::Stack, input);
 
 	if (result == nullptr)
 	{
@@ -64,7 +48,5 @@ void Repl::Start()
 	{
 		std::cout << result->Inspect() << std::endl;
 	}
-
-	eval->FreeEnv(env);
 }
 

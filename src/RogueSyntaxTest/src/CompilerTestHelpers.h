@@ -33,7 +33,7 @@ bool TestConstant(const ConstantValue& expected, const IObject* actual);
 
 bool TestInstructions(const Instructions& expected, const Instructions& actual);
 
-bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<std::shared_ptr<IObject>>& actual);
+bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<const IObject*>& actual);
 
 Instructions ConcatInstructions(const std::vector<Instructions>& instructions);
 

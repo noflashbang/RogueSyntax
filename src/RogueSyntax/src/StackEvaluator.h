@@ -6,6 +6,8 @@
 class StackEvaluator : public Evaluator
 {
 public:
+	StackEvaluator(const std::shared_ptr<ObjectFactory> factory) : Evaluator(factory) { };
+
 	const IObject* Eval(const INode* node, const uint32_t env) override;
 
 	void NodeEval(const Program* program) override;

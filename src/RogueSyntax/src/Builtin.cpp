@@ -1,14 +1,14 @@
 #include "pch.h"
 #include <iostream>
 
-BuiltIn::BuiltIn()
+BuiltIn::BuiltIn(const std::shared_ptr<ObjectFactory> factory) : _factory(factory)
 {
-	RegisterBuiltIn("len", std::bind(&BuiltIn::Len, this, std::placeholders::_1));
-	RegisterBuiltIn("first", std::bind(&BuiltIn::First, this, std::placeholders::_1));
-	RegisterBuiltIn("last", std::bind(&BuiltIn::Last, this, std::placeholders::_1));
-	RegisterBuiltIn("rest", std::bind(&BuiltIn::Rest, this, std::placeholders::_1));
-	RegisterBuiltIn("push", std::bind(&BuiltIn::Push, this, std::placeholders::_1));
-	RegisterBuiltIn("printLine", std::bind(&BuiltIn::PrintLine, this, std::placeholders::_1));
+	RegisterBuiltIn("len", std::bind(&BuiltIn::Len, this, std::placeholders::_1, std::placeholders::_2));
+	RegisterBuiltIn("first", std::bind(&BuiltIn::First, this, std::placeholders::_1, std::placeholders::_2));
+	RegisterBuiltIn("last", std::bind(&BuiltIn::Last, this, std::placeholders::_1, std::placeholders::_2));
+	RegisterBuiltIn("rest", std::bind(&BuiltIn::Rest, this, std::placeholders::_1, std::placeholders::_2));
+	RegisterBuiltIn("push", std::bind(&BuiltIn::Push, this, std::placeholders::_1, std::placeholders::_2));
+	RegisterBuiltIn("printLine", std::bind(&BuiltIn::PrintLine, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::GetBuiltInFunction(const std::string& name)
@@ -17,7 +17,8 @@ std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::GetBu
 	if (it != _builtinNames.end())
 	{
 		auto idx = std::distance(_builtinNames.begin(), it);
-		return _builtins[idx];
+		auto function = _builtins[idx];
+		return Caller(function);
 	}
 	return nullptr;
 }
@@ -28,10 +29,17 @@ std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::GetBu
 	{
 		return nullptr;
 	}
-	return _builtins[idx];
+	auto function = _builtins[idx];
+	return Caller(function);
 }
 
-void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (const std::vector<const IObject*>& args)> func)
+std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::Caller(std::function<IObject* (const ObjectFactory* factory, const std::vector<const IObject*>& args)> func)
+{
+	//curry the object factory into the function
+	return std::bind(func, _factory.get(), std::placeholders::_1);
+}
+
+void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (const ObjectFactory* factory, const std::vector<const IObject*>& args)> func)
 {
 	_builtinNames.push_back(name);
 	_builtins.push_back(func);
@@ -40,7 +48,7 @@ void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (c
 	_ASSERT(_builtinNames.size() == _builtins.size());
 }
 
-IObject* BuiltIn::Len(const std::vector<const IObject*>& args)
+IObject* BuiltIn::Len(const ObjectFactory* factory, const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -50,25 +58,25 @@ IObject* BuiltIn::Len(const std::vector<const IObject*>& args)
 	if (args[0]->IsThisA<StringObj>())
 	{
 		auto str = dynamic_cast<const StringObj*>(args[0]);
-		return _objectStore.New_IntegerObj(str->Value.size());
+		return factory->New<IntegerObj>(str->Value.size());
 	}
 
 	if (args[0]->IsThisA<ArrayObj>())
 	{
 		auto arr = dynamic_cast<const ArrayObj*>(args[0]);
-		return _objectStore.New_IntegerObj(arr->Elements.size());
+		return factory->New<IntegerObj>(arr->Elements.size());
 	}
 
 	if (args[0]->IsThisA<HashObj>())
 	{
 		auto hash = dynamic_cast<const HashObj*>(args[0]);
-		return _objectStore.New_IntegerObj(hash->Elements.size());
+		return factory->New<IntegerObj>(hash->Elements.size());
 	}
 
 	throw std::runtime_error(std::format("argument to `len` not supported, got {}", args[0]->TypeName()));
 }
 
-IObject* BuiltIn::First(const std::vector<const IObject*>& args)
+IObject* BuiltIn::First(const ObjectFactory* factory, const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -83,15 +91,13 @@ IObject* BuiltIn::First(const std::vector<const IObject*>& args)
 	auto arr = dynamic_cast<const ArrayObj*>(args[0]);
 	if (arr->Elements.size() > 0)
 	{
-		auto cloned = arr->Elements[0]->Clone();
-		_objectStore.Add(cloned);
-		return cloned;
+		return factory->Clone(arr->Elements[0]);
 	}
 
 	return NullObj::NULL_OBJ_REF;
 }
 
-IObject* BuiltIn::Last(const std::vector<const IObject*>& args)
+IObject* BuiltIn::Last(const ObjectFactory* factory, const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -107,15 +113,13 @@ IObject* BuiltIn::Last(const std::vector<const IObject*>& args)
 	auto length = arr->Elements.size();
 	if (length > 0)
 	{
-		auto cloned = arr->Elements[length - 1]->Clone();
-		_objectStore.Add(cloned);
-		return cloned;
+		return factory->Clone(arr->Elements[length - 1]);
 	}
 
 	return NullObj::NULL_OBJ_REF;
 }
 
-IObject* BuiltIn::Rest(const std::vector<const IObject*>& args)
+IObject* BuiltIn::Rest(const ObjectFactory* factory, const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -134,15 +138,15 @@ IObject* BuiltIn::Rest(const std::vector<const IObject*>& args)
 		std::vector<const IObject*> newElements;
 		for (size_t i = 1; i < length; i++)
 		{
-			newElements.push_back(arr->Elements[i]);
+			newElements.push_back(factory->Clone(arr->Elements[i]));
 		}
-		return _objectStore.New_ArrayObj(newElements);
+		return factory->New<ArrayObj>(newElements);
 	}
 
 	return NullObj::NULL_OBJ_REF;
 }
 
-IObject* BuiltIn::Push(const std::vector<const IObject*>& args)
+IObject* BuiltIn::Push(const ObjectFactory* factory, const std::vector<const IObject*>& args)
 {
 	if (args.size() != 2)
 	{
@@ -157,10 +161,10 @@ IObject* BuiltIn::Push(const std::vector<const IObject*>& args)
 	auto arr = dynamic_cast<const ArrayObj*>(args[0]);
 	auto newElements = arr->Elements;
 	newElements.push_back(args[1]);
-	return _objectStore.New_ArrayObj(newElements);
+	return factory->New<ArrayObj>(newElements);
 }
 
-IObject* BuiltIn::PrintLine(const std::vector<const IObject*>& args)
+IObject* BuiltIn::PrintLine(const ObjectFactory* factory, const std::vector<const IObject*>& args)
 {
 	for (const auto& arg : args)
 	{

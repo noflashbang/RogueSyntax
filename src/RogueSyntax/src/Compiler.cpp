@@ -150,7 +150,7 @@ void CompilationUnit::SetLastInstruction(const Instructions& instruction)
 	LastInstruction = instruction;
 }
 
-Compiler::Compiler()
+Compiler::Compiler(const std::shared_ptr<ObjectFactory> factory) : _factory(factory)
 {
 }
 
@@ -158,10 +158,14 @@ Compiler::~Compiler()
 {
 }
 
-CompilerError Compiler::Compile(std::shared_ptr<INode> node, const std::shared_ptr<BuiltIn>& externs)
+ByteCode Compiler::Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs)
 {
+	_constants.clear();
+	_constants.reserve(128);
 	_externals = externs;
-	return Compile(node.get());
+
+	Compile(program.get());
+	return ByteCode{ _CompilationUnits.top().UnitInstructions, _constants };
 }
 
 CompilerError Compiler::Compile(INode* node)
@@ -171,15 +175,6 @@ CompilerError Compiler::Compile(INode* node)
 	{
 		return _errorStack.top().Error;
 	}
-}
-
-ByteCode Compiler::GetByteCode() const
-{
-	if (_CompilationUnits.empty())
-	{
-		throw std::runtime_error("No compilation units");
-	}
-	return ByteCode{ _CompilationUnits.top().UnitInstructions, _constants };
 }
 
 int Compiler::EnterUnit()
@@ -203,7 +198,7 @@ CompilationUnit Compiler::ExitUnit()
 	return unit;
 }
 
-uint32_t Compiler::AddConstant(std::shared_ptr<IObject> obj)
+uint32_t Compiler::AddConstant(const IObject* obj)
 {
 	_constants.push_back(obj);
 	return _constants.size() - 1;
@@ -367,7 +362,7 @@ void Compiler::NodeCompile(const Identifier* ident)
 
 void Compiler::NodeCompile(const IntegerLiteral* integer)
 {
-	auto obj = std::make_shared<IntegerObj>(integer->Value);
+	auto obj = _factory->New<IntegerObj>(integer->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
@@ -379,14 +374,14 @@ void Compiler::NodeCompile(const BooleanLiteral* boolean)
 
 void Compiler::NodeCompile(const StringLiteral* string)
 {
-	auto obj = std::make_shared<StringObj>(string->Value);
+	auto obj = _factory->New<StringObj>(string->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
 void Compiler::NodeCompile(const DecimalLiteral* decimal)
 {
-	auto obj = std::make_shared<DecimalObj>(decimal->Value);
+	auto obj = _factory->New<DecimalObj>(decimal->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
@@ -590,7 +585,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	{
 		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN, {}));
 	}
-	auto obj = std::make_shared<FunctionCompiledObj>(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), static_cast<int>(function->Parameters.size()));
+	auto obj = _factory->New<FunctionCompiledObj>(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), static_cast<int>(function->Parameters.size()));
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<uint32_t>(frees.size())});
 }
@@ -767,10 +762,3 @@ void Compiler::NodeCompile(const BreakStatement* brk)
 	auto location = Emit(OpCode::Constants::OP_JUMP, { 9999 });
 	_CompilationUnits.top().LoopJumps.push({ LoopJumpType::LOOP_JUMP_BREAK, location });
 }
-
-std::shared_ptr<Compiler> Compiler::New()
-{
-	return std::make_shared<Compiler>();
-}
-
-

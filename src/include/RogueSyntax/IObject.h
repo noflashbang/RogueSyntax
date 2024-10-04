@@ -6,14 +6,16 @@
 #include "OpCode.h"
 
 class BuiltIn;
-struct Environment;
+class Environment;
+class ObjectFactory;
 
 class IObject: public IUnquielyIdentifiable
 {
 public:
 	inline const std::size_t Type() const noexcept { return IUnquielyIdentifiable::Tag(); }
 	virtual std::string Inspect() const = 0;
-	virtual IObject* Clone() const = 0;
+
+	virtual IObject* Clone(ObjectFactory* factory) const = 0;
 
 	virtual ~IObject() = default;
 };
@@ -35,12 +37,8 @@ public:
 	{
 		return "null";
 	}
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 
-	IObject* Clone() const override
-	{
-		return NULL_OBJ_REF;
-	}
-	static NullObj NULL_OBJ;
 	static NullObj* NULL_OBJ_REF;
 
 private:
@@ -57,13 +55,7 @@ public:
 	{
 		return "null";
 	}
-
-	IObject* Clone() const override
-	{
-		return VOID_OBJ_REF;
-	}
-
-	static VoidObj VOID_OBJ;
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	static VoidObj* VOID_OBJ_REF;
 
 protected:
@@ -84,13 +76,7 @@ public:
 	{
 		return "break";
 	}
-
-	IObject* Clone() const override
-	{
-		return BREAK_OBJ_REF;
-	}
-
-	static BreakObj BREAK_OBJ;
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	static BreakObj* BREAK_OBJ_REF;
 
 
@@ -108,13 +94,7 @@ public:
 	{
 		return "continue";
 	}
-
-	IObject* Clone() const override
-	{
-		return CONTINUE_OBJ_REF;
-	}
-
-	static ContinueObj CONTINUE_OBJ;
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	static ContinueObj* CONTINUE_OBJ_REF;
 
 private:
@@ -132,11 +112,7 @@ public:
 		return std::to_string(Value);
 	}
 
-	IObject* Clone() const override
-	{
-		return new IntegerObj(Value);
-	}
-
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	int32_t Value;
 };
 
@@ -150,12 +126,7 @@ public:
 	{
 		return std::to_string(Value);
 	}
-
-	IObject* Clone() const override
-	{
-		return new DecimalObj(Value);
-	}
-
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	float Value;
 };
 
@@ -169,12 +140,7 @@ public:
 	{
 		return Value;
 	}
-
-	IObject* Clone() const override
-	{
-		return new StringObj(Value);
-	}
-
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	std::string Value;
 };
 
@@ -188,20 +154,11 @@ public:
 	{
 		return Value ? "true" : "false";
 	}
-
-	IObject* Clone() const override
-	{
-		return Value ? TRUE_OBJ_REF : FALSE_OBJ_REF;
-	}
-
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	bool Value;
 
 	//Native object references
-
-	static BooleanObj TRUE_OBJ;
 	static BooleanObj* TRUE_OBJ_REF;
-
-	static BooleanObj FALSE_OBJ;
 	static BooleanObj* FALSE_OBJ_REF;
 };
 
@@ -231,14 +188,7 @@ public:
 		out += "]";
 		return out;
 	}
-
-	IObject* Clone() const override
-	{
-		std::vector<const IObject*> clonedElements;
-		std::transform(Elements.begin(), Elements.end(), std::back_inserter(clonedElements), [](const auto& elem) { return elem->Clone(); });
-		return new ArrayObj(clonedElements);
-	}
-
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	const IObject* Set(const IObject* key, const IObject* value) override;
 	std::vector<const IObject*> Elements;
 };
@@ -308,18 +258,7 @@ public:
 		out += "}";
 		return out;
 	}
-
-	IObject* Clone() const override
-	{
-		std::unordered_map<HashKey, HashEntry> clonedElements;
-		std::transform(Elements.begin(), Elements.end(), std::inserter(clonedElements, clonedElements.end()), [](const auto& elem)
-			{
-				auto [key, value] = elem;
-				return std::make_pair(key, HashEntry{ value.Key->Clone(), value.Value->Clone() });
-			});
-		return new HashObj(clonedElements);
-	}
-
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	const IObject* Set(const IObject* key, const IObject* value) override;
 	std::unordered_map<HashKey, HashEntry> Elements;
 };
@@ -335,10 +274,7 @@ public:
 		return Value->Inspect();
 	}
 
-	IObject* Clone() const override
-	{
-		return new IdentifierObj(Name, Value->Clone());
-	}
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 
 	const IObject* Set(const IObject* key, const IObject* value) override;
 
@@ -357,11 +293,7 @@ public:
 		return Value->Inspect();
 	}
 
-	IObject* Clone() const override
-	{
-		return new ReturnObj(Value->Clone());
-	}
-
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	const IObject* Value;
 };
 
@@ -376,10 +308,7 @@ public:
 		return "ERROR: " + Message;
 	}
 
-	IObject* Clone() const override
-	{
-		return new ErrorObj(Message, Token);
-	}
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 
 	std::string Message;
 	Token Token;
@@ -414,10 +343,7 @@ public:
 		return out;
 	}
 
-	IObject* Clone() const override
-	{
-		return new FunctionObj(Parameters, Body); //shallow copy is fine
-	}
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 
 	std::vector<IExpression*> Parameters;
 	const IStatement* Body;
@@ -437,10 +363,7 @@ public:
 		return "builtin function";
 	}
 
-	IObject* Clone() const override
-	{
-		return Idx != -1 ? new BuiltInObj(Idx) : new BuiltInObj(Name);
-	}
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 
 	std::string Name;
 	int Idx;
@@ -457,10 +380,7 @@ public:
 		return OpCode::PrintInstructions(FuncInstructions);
 	}
 
-	IObject* Clone() const override
-	{
-		return new FunctionCompiledObj(FuncInstructions, NumLocals, NumParameters);
-	}
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 	
 	Instructions FuncInstructions;
 	int NumLocals;
@@ -478,12 +398,7 @@ public:
 		return Function->Inspect();
 	}
 
-	IObject* Clone() const override
-	{
-		std::vector<const IObject*> clonedFrees;
-		std::transform(Frees.begin(), Frees.end(), std::back_inserter(clonedFrees), [](const auto& free) { return free->Clone(); });
-		return new ClosureObj(Function, clonedFrees);
-	}
+	virtual IObject* Clone(ObjectFactory* factory) const override;
 
 	const FunctionCompiledObj* Function;
 	std::vector<const IObject*> Frees;

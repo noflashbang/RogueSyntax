@@ -1,24 +1,20 @@
-#include "VirtualMachine.h"
-#include "VirtualMachine.h"
-#include "VirtualMachine.h"
-#include "VirtualMachine.h"
 #include "pch.h"
 
-RogueVM::RogueVM(const ByteCode& byteCode)
-	: _byteCode(byteCode)
+RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory> factory)
+	: _byteCode(byteCode), _externals(nullptr), _factory(factory), _coercer(factory)
 {
 	//main frame
-	auto function = _store.New_FunctionCompiledObj(_byteCode.Instructions, 0, 0);
-	auto closure = _store.New_ClosureObj(function, {});
+	auto function = _factory->New<FunctionCompiledObj>(_byteCode.Instructions, 0, 0);
+	auto closure = _factory->New<ClosureObj>(function, std::vector<const IObject*>{});
 	PushFrame(Frame(closure, 0));
 	_externals = nullptr;
 }
 
-RogueVM::RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals) : _byteCode(byteCode), _externals(externals)
+RogueVM::RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals, const std::shared_ptr<ObjectFactory> factory) : _byteCode(byteCode), _externals(externals), _factory(factory), _coercer(factory)
 {
 	//main frame
-	auto function = _store.New_FunctionCompiledObj(_byteCode.Instructions, 0, 0);
-	auto closure = _store.New_ClosureObj(function, {});
+	auto function = _factory->New<FunctionCompiledObj>(_byteCode.Instructions, 0, 0);
+	auto closure = _factory->New<ClosureObj>(function, std::vector<const IObject*>{});
 	PushFrame(Frame(closure, 0));
 }
 
@@ -34,9 +30,8 @@ void RogueVM::Run()
 	constants.reserve(pgrmConstants.size());
 	for (auto& c : pgrmConstants)
 	{
-		auto copy = c->Clone();
+		auto copy = _factory->Clone(c);
 		constants.push_back(copy);
-		_store.Add(copy);
 	}
 
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
@@ -69,7 +64,7 @@ void RogueVM::Run()
 				elements.push_back(Pop());
 			}
 			std::reverse(elements.begin(), elements.end());
-			auto array = _store.New_ArrayObj(elements);
+			auto array = _factory->New<ArrayObj>(elements);
 			Push(array);
 			break;
 		}
@@ -87,7 +82,7 @@ void RogueVM::Run()
 				pairs[HashKey{ key->Type(), key->Inspect() }] = HashEntry{ key, value };
 			}
 
-			auto hash = _store.New_HashObj(pairs);
+			auto hash = _factory->New<HashObj>(pairs);
 			Push(hash);
 			break;
 		}
@@ -159,7 +154,7 @@ void RogueVM::Run()
 			}
 			else
 			{
-				auto coerced = _coercer.EvalAsBoolean(_store, condition);
+				auto coerced = _coercer.EvalAsBoolean(condition);
 				if (coerced == BooleanObj::FALSE_OBJ_REF)
 				{
 					SetFrameIp(pos);
@@ -200,11 +195,9 @@ void RogueVM::Run()
 					auto index = dynamic_cast<const IntegerObj*>(indexValue);
 					if (index->Value >= 0 && index->Value < arr->Elements.size())
 					{
-						auto arrayClone = arr->Clone();
-						_store.Add(arrayClone);
+						auto arrayClone = _factory->Clone(arr);
 						auto arrayObj = dynamic_cast<ArrayObj*>(arrayClone);
-						auto rValueClone = rValue->Clone();
-						_store.Add(rValueClone);
+						auto rValueClone = _factory->Clone(rValue);
 						arrayObj->Elements[index->Value] = rValueClone;
 						
 						Push(arrayObj);
@@ -223,15 +216,14 @@ void RogueVM::Run()
 			}
 			else if (arrValue->IsThisA<HashObj>())
 			{
-				auto hashClone = arrValue->Clone();
-				_store.Add(hashClone);
+				auto hashClone = _factory->Clone(arrValue);
 				auto hash = dynamic_cast<HashObj*>(hashClone);
 				auto key = HashKey{ indexValue->Type(), indexValue->Inspect() };
 
-				auto rValueClone = rValue->Clone();
-				_store.Add(rValueClone);
-				auto keyClone = indexValue->Clone();
-				_store.Add(keyClone);
+				auto rValueClone = _factory->Clone(rValue);
+				
+				auto keyClone = _factory->Clone(indexValue);
+				
 				auto entry = HashEntry{ keyClone, rValueClone };
 				hash->Elements[key] = entry;
 
@@ -317,7 +309,7 @@ void RogueVM::Run()
 			}
 			_sp = _sp - numFree;
 
-			auto closure = _store.New_ClosureObj(fn, free);
+			auto closure = _factory->New<ClosureObj>(fn, free);
 			Push(closure);
 			break;
 		}
@@ -418,7 +410,7 @@ void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 	{
 		if (_coercer.CanCoerceTypes(left, right))
 		{
-			auto [left_c, right_c] = _coercer.CoerceTypes(_store, left, right);
+			auto [left_c, right_c] = _coercer.CoerceTypes(left, right);
 			Push(left_c);
 			Push(right_c);
 			ExecuteArithmeticInfix(opcode);
@@ -453,61 +445,61 @@ void RogueVM::ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, const Inte
 	{
 	case OpCode::Constants::OP_ADD:
 	{
-		auto result = _store.New_IntegerObj(left->Value + right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value + right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_SUB:
 	{
-		auto result = _store.New_IntegerObj(left->Value - right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value - right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MUL:
 	{
-		auto result = _store.New_IntegerObj(left->Value * right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value * right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_DIV:
 	{
-		auto result = _store.New_IntegerObj(left->Value / right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value / right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MOD:
 	{
-		auto result = _store.New_IntegerObj(left->Value % right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value % right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BOR:
 	{
-		auto result = _store.New_IntegerObj(left->Value | right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value | right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BAND:
 	{
-		auto result = _store.New_IntegerObj(left->Value & right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value & right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BXOR:
 	{
-		auto result = _store.New_IntegerObj(left->Value ^ right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value ^ right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BLSHIFT:
 	{
-		auto result = _store.New_IntegerObj(left->Value << right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value << right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BRSHIFT:
 	{
-		auto result = _store.New_IntegerObj(left->Value >> right->Value);
+		auto result = _factory->New<IntegerObj>(left->Value >> right->Value);
 		Push(result);
 		break;
 	}
@@ -524,31 +516,31 @@ void RogueVM::ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, const Deci
 	{
 	case OpCode::Constants::OP_ADD:
 	{
-		auto result = _store.New_DecimalObj(left->Value + right->Value);
+		auto result = _factory->New<DecimalObj>(left->Value + right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_SUB:
 	{
-		auto result = _store.New_DecimalObj(left->Value - right->Value);
+		auto result = _factory->New<DecimalObj>(left->Value - right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MUL:
 	{
-		auto result = _store.New_DecimalObj(left->Value * right->Value);
+		auto result = _factory->New<DecimalObj>(left->Value * right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_DIV:
 	{
-		auto result = _store.New_DecimalObj(left->Value / right->Value);
+		auto result = _factory->New<DecimalObj>(left->Value / right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MOD:
 	{
-		auto result = _store.New_DecimalObj(std::fmod(left->Value, right->Value));
+		auto result = _factory->New<DecimalObj>(std::fmod(left->Value, right->Value));
 		Push(result);
 		break;
 	}
@@ -563,7 +555,7 @@ void RogueVM::ExecuteStringArithmeticInfix(OpCode::Constants opcode, const Strin
 	{
 	case OpCode::Constants::OP_ADD:
 	{
-		auto result = _store.New_StringObj(left->Value + right->Value);
+		auto result = _factory->New<StringObj>(left->Value + right->Value);
 		Push(result);
 		break;
 	}
@@ -800,7 +792,7 @@ void RogueVM::ExecuteIntegerPrefix(OpCode::Constants opcode, const IntegerObj* o
 	{
 	case OpCode::Constants::OP_NEGATE:
 	{
-		auto result = _store.New_IntegerObj(-obj->Value);
+		auto result = _factory->New<IntegerObj>(-obj->Value);
 		Push(result);
 		break;
 	}
@@ -812,7 +804,7 @@ void RogueVM::ExecuteIntegerPrefix(OpCode::Constants opcode, const IntegerObj* o
 	}
 	case OpCode::Constants::OP_BNOT:
 	{
-		auto result = _store.New_IntegerObj(~obj->Value);
+		auto result = _factory->New<IntegerObj>(~obj->Value);
 		Push(result);
 		break;
 	}
@@ -827,7 +819,7 @@ void RogueVM::ExecuteDecimalPrefix(OpCode::Constants opcode, const DecimalObj* o
 	{
 	case OpCode::Constants::OP_NEGATE:
 	{
-		auto result = _store.New_DecimalObj(-obj->Value);
+		auto result = _factory->New<DecimalObj>(-obj->Value);
 		Push(result);
 		break;
 	}
@@ -943,7 +935,7 @@ void RogueVM::ExecuteGetInstruction(int idx)
 		case GetSetType::EXTERN:
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
-			Push(_store.New_BuiltInObj(adjustedIdx));
+			Push(_factory->New<BuiltInObj>(adjustedIdx));
 			break;
 		}
 		case GetSetType::FREE:
@@ -965,8 +957,7 @@ void RogueVM::ExecuteSetInstruction(int idx)
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto global = Pop();
-			auto cloned = global->Clone();
-			_store.Add(cloned);
+			auto cloned = _factory->Clone(global);
 			_globals[adjustedIdx] = cloned;
 			break;
 		}
@@ -975,8 +966,7 @@ void RogueVM::ExecuteSetInstruction(int idx)
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto local = Pop();
 			auto localIdx = CurrentFrame().BasePointer() + idx;
-			auto cloned = local->Clone();
-			_store.Add(cloned);
+			auto cloned =  _factory->Clone(local);
 			_stack[adjustedIdx] = cloned;
 			break;
 		}
