@@ -143,7 +143,7 @@ void StackEvaluator::NodeEval(const ReturnStatement* ret)
 	}
 	else
 	{
-		auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+		auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 		auto result = Pop_Result();
 		Push_Result(store.New_ReturnObj(result));
 	}
@@ -175,7 +175,7 @@ void StackEvaluator::NodeEval(const LetStatement* let)
 			auto identResult = Pop_Result();
 			identResult = UnwrapIfReturnObj(identResult);
 
-			auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+			auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 			auto identClone = identResult->Clone();
 			store.Add(identClone);
 
@@ -215,7 +215,7 @@ void StackEvaluator::NodeEval(const LetStatement* let)
 			}
 			auto index = Pop_ResultAndUnwrap();
 
-			auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+			auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 			auto assignableClone = left->Clone();
 			store.Add(assignableClone);
 
@@ -231,7 +231,7 @@ void StackEvaluator::NodeEval(const LetStatement* let)
 }
 void StackEvaluator::NodeEval(const Identifier* ident)
 {
-	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 	if (EvalBuiltIn->IsBuiltIn(ident->Value))
 	{
 		Push_Result(store.New_BuiltInObj(ident->Value));
@@ -254,7 +254,7 @@ void StackEvaluator::NodeEval(const Identifier* ident)
 }
 void StackEvaluator::NodeEval(const IntegerLiteral* integer)
 {
-	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 	Push_Result(store.New_IntegerObj(integer->Value));
 }
 void StackEvaluator::NodeEval(const BooleanLiteral* boolean)
@@ -263,12 +263,12 @@ void StackEvaluator::NodeEval(const BooleanLiteral* boolean)
 }
 void StackEvaluator::NodeEval(const StringLiteral* string)
 {
-	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 	Push_Result(store.New_StringObj(string->Value));
 }
 void StackEvaluator::NodeEval(const DecimalLiteral* decimal)
 {
-	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 	Push_Result(store.New_DecimalObj(decimal->Value));
 }
 void StackEvaluator::NodeEval(const PrefixExpression* prefix)
@@ -349,7 +349,7 @@ void StackEvaluator::NodeEval(const IfStatement* ifExpr)
 }
 void StackEvaluator::NodeEval(const FunctionLiteral* function)
 {
-	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 	Push_Result(store.New_FunctionObj(function->Parameters, function->Body));
 
 }
@@ -470,7 +470,7 @@ void StackEvaluator::NodeEval(const ArrayLiteral* array)
 			auto arg = Pop_ResultAndUnwrap();
 			evalArgs.push_back(arg);
 		}
-		auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+		auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 		Push_Result(store.New_ArrayObj(evalArgs));
 	}
 }
@@ -535,7 +535,7 @@ void StackEvaluator::NodeEval(const HashLiteral* hash)
 
 			evalArgs[HashKey{ key->Type(), key->Inspect() }] = HashEntry{ key, value };
 		}
-		auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+		auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 		Push_Result(store.New_HashObj(evalArgs));
 	}
 }
@@ -651,11 +651,11 @@ void StackEvaluator::NodeEval(const ForStatement* forExp)
 }
 void StackEvaluator::NodeEval(const ContinueStatement* cont)
 {
-	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 	Push_Result(store.New_ReturnObj(ContinueObj::CONTINUE_OBJ_REF));
 }
 void StackEvaluator::NodeEval(const BreakStatement* brk)
 {
-	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	auto& store = EvalEnvironment->GetObjectStore(_currentEnv);
 	Push_Result(store.New_ReturnObj(BreakObj::BREAK_OBJ_REF));
 }

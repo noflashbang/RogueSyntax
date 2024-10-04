@@ -291,7 +291,7 @@ public:
 
 		std::for_each(Elements.begin(), Elements.end(), [&out](const auto& elem)
 			{
-				auto [key, value] = elem;
+				auto& [key, value] = elem;
 				out.append(value.Key->Inspect());
 				out.append(": ");
 				out.append(value.Value->Inspect());

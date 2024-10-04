@@ -13,7 +13,7 @@ class Evaluator
 {
 public:
 	Evaluator();
-	const IObject* Eval(const std::shared_ptr<Program>& program);
+	std::shared_ptr<IObject> Eval(const std::shared_ptr<Program>& program);
 	const IObject* Eval(const std::shared_ptr<Program>& program, const uint32_t env);
 	virtual const IObject* Eval(const INode* node, const uint32_t env) = 0;
 

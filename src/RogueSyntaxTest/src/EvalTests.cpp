@@ -3,7 +3,7 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
-const IObject* EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input, std::shared_ptr<Program>* progOut)
+std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input, std::shared_ptr<Program>* progOut)
 {
 	Lexer lexer(input);
 	Parser parser(lexer);
@@ -59,7 +59,7 @@ bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& 
 	{
 		return true;
 	}
-	return TestIntegerObject(result, expected);
+	return TestIntegerObject(result.get(), expected);
 }
 
 bool TestBooleanObject(const IObject* obj, const bool expected)
@@ -84,7 +84,7 @@ bool TestBooleanObject(const IObject* obj, const bool expected)
 bool TestEvalBoolean(const std::shared_ptr<Evaluator>& eval, const std::string& input, const bool expected, std::shared_ptr<Program>* progOut)
 {
 	auto result = EvalTest(eval, input, progOut);
-	return TestBooleanObject(result, expected);
+	return TestBooleanObject(result.get(), expected);
 }
 
 	
@@ -242,7 +242,7 @@ TEST_CASE("Test Error Obj")
 		auto result = EvalTest(eng, test.first, &prog);
 		CAPTURE(test.first);
 		REQUIRE(result->IsThisA<ErrorObj>());
-		auto errorObj = dynamic_cast<const ErrorObj*>(result);
+		auto errorObj = dynamic_cast<const ErrorObj*>(result.get());
 		REQUIRE(errorObj->Message == test.second);
 	}
 }
@@ -271,7 +271,7 @@ TEST_CASE("Test Function Object")
 	std::shared_ptr<Program> prog;
 	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->IsThisA<FunctionObj>());
-	auto func = dynamic_cast<const FunctionObj*>(result);
+	auto func = dynamic_cast<const FunctionObj*>(result.get());
 	REQUIRE(func->Parameters.size() == 1);
 	REQUIRE(func->Parameters[0]->ToString() == "x");
 	REQUIRE(func->Body->ToString() == "{(x + 2)}");

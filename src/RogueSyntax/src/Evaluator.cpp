@@ -9,12 +9,13 @@ Evaluator::Evaluator()
 	EvalEnvironment = std::make_shared<Environment>();
 }
 
-const IObject* Evaluator::Eval(const std::shared_ptr<Program>& program)
+std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program)
 {
 	uint32_t env = EvalEnvironment->New();
 	auto result = Eval(program, env);
+	auto ret = std::shared_ptr<IObject>(result->Clone());
 	EvalEnvironment->Release(env);
-	return result;
+	return ret;
 }
 
 const IObject* Evaluator::Eval(const std::shared_ptr<Program>& program, const uint32_t env)
@@ -103,7 +104,7 @@ const IObject* Evaluator::EvalPrefixExpression(const uint32_t env, const Token& 
 const IObject* Evaluator::EvalInfixExpression(const uint32_t env, const Token& optor, const IObject* left, const IObject* right) const
 {
 	const IObject* result = nullptr;
-	auto store = EvalEnvironment->GetObjectStore(env);
+	auto& store = EvalEnvironment->GetObjectStore(env);
 	if (left->IsThisA<NullObj>() || right->IsThisA<NullObj>())
 	{
 		result = EvalNullInfixExpression(env, optor, left, right);
@@ -170,7 +171,7 @@ const IObject* Evaluator::EvalIndexExpression(const uint32_t env, const Token& o
 		}
 		else
 		{
-			auto store = EvalEnvironment->GetObjectStore(env);
+			auto& store = EvalEnvironment->GetObjectStore(env);
 			result = store.New_StringObj(std::string(1, str->Value[idx->Value]));
 		}
 	}
@@ -248,7 +249,7 @@ const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const Toke
 		}
 		else
 		{
-			auto store = EvalEnvironment->GetObjectStore(env);
+			auto& store = EvalEnvironment->GetObjectStore(env);
 			if (nullOnLeft)
 			{
 				//any other operator on a null and a non-null produces the same non null value
@@ -267,7 +268,7 @@ const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const Toke
 const IObject* Evaluator::EvalIntegerInfixExpression(const uint32_t env, const Token& optor, const IntegerObj* const left, const IntegerObj* const right) const
 {
 	const IObject* result = nullptr;
-	auto store = EvalEnvironment->GetObjectStore(env);
+	auto& store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
@@ -369,7 +370,7 @@ const IObject* Evaluator::EvalBooleanInfixExpression(const uint32_t env, const T
 const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const
 {
 	const IObject* result = nullptr;
-	auto store = EvalEnvironment->GetObjectStore(env);
+	auto& store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
@@ -425,7 +426,7 @@ const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const T
 const IObject* Evaluator::EvalStringInfixExpression(const uint32_t env, const Token& optor, const StringObj* const left, const StringObj* const right) const
 {
 	const IObject* result = nullptr;
-	auto store = EvalEnvironment->GetObjectStore(env);
+	auto& store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
@@ -442,7 +443,7 @@ const IObject* Evaluator::EvalAsBoolean(const uint32_t env, const Token& context
 {
 	try
 	{
-		auto store = EvalEnvironment->GetObjectStore(env);
+		auto& store = EvalEnvironment->GetObjectStore(env);
 		return _coercer.EvalAsBoolean(store, obj);
 	}
 	catch (const std::exception& e)
@@ -454,7 +455,7 @@ const IObject* Evaluator::EvalAsDecimal(const uint32_t env, const Token& context
 {
 	try
 	{
-		auto store = EvalEnvironment->GetObjectStore(env);
+		auto& store = EvalEnvironment->GetObjectStore(env);
 		return _coercer.EvalAsDecimal(store, obj);
 	}
 	catch (const std::exception& e)
@@ -466,7 +467,7 @@ const IObject* Evaluator::EvalAsInteger(const uint32_t env, const Token& context
 {
 	try
 	{
-		auto store = EvalEnvironment->GetObjectStore(env);
+		auto& store = EvalEnvironment->GetObjectStore(env);
 		return _coercer.EvalAsInteger(store, obj);
 	}
 	catch (const std::exception& e)
@@ -508,7 +509,7 @@ const IObject* Evaluator::EvalBangPrefixOperatorExpression(const uint32_t env, c
 const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
-	auto store = EvalEnvironment->GetObjectStore(env);
+	auto& store = EvalEnvironment->GetObjectStore(env);
 	if (!right->IsThisA<IntegerObj>())
 	{
 		result = MakeError(env, std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
@@ -524,7 +525,7 @@ const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, 
 const IObject* Evaluator::EvalBitwiseNotPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
-	auto store = EvalEnvironment->GetObjectStore(env);
+	auto& store = EvalEnvironment->GetObjectStore(env);
 	if (!right->IsThisA<IntegerObj>())
 	{
 		result = MakeError(env, std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
