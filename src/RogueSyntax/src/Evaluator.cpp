@@ -9,7 +9,7 @@ Evaluator::Evaluator()
 	EvalEnvironment = std::make_shared<Environment>();
 }
 
-std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program)
+const IObject* Evaluator::Eval(const std::shared_ptr<Program>& program)
 {
 	uint32_t env = EvalEnvironment->New();
 	auto result = Eval(program, env);
@@ -17,9 +17,9 @@ std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::Eval(const std::shared_ptr<Program>& program, const uint32_t env)
+const IObject* Evaluator::Eval(const std::shared_ptr<Program>& program, const uint32_t env)
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
 	for (const auto& stmt : program->Statements)
 	{
 		result = Eval(stmt, env);
@@ -78,78 +78,79 @@ std::shared_ptr<Evaluator> Evaluator::New(EvaluatorType type)
 	}
 }
 
-std::shared_ptr<IObject> Evaluator::EvalPrefixExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
+const IObject* Evaluator::EvalPrefixExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
 	if (optor.Type == TokenType::TOKEN_BANG)
 	{
-		result = EvalBangPrefixOperatorExpression(optor, right);
+		result = EvalBangPrefixOperatorExpression(env, optor, right);
 	}
 	else if (optor.Type == TokenType::TOKEN_MINUS)
 	{
-		result = EvalMinusPrefixOperatorExpression(optor, right);
+		result = EvalMinusPrefixOperatorExpression(env, optor, right);
 	}
 	else if (optor.Type == TokenType::TOKEN_BITWISE_NOT)
 	{
-		result = EvalBitwiseNotPrefixOperatorExpression(optor, right);
+		result = EvalBitwiseNotPrefixOperatorExpression(env, optor, right);
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {}", optor.Literal), optor);
+		result = MakeError(env, std::format("unknown operator: {}", optor.Literal), optor);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalInfixExpression(const Token& optor, const std::shared_ptr<IObject>& left, const std::shared_ptr<IObject>& right) const
+const IObject* Evaluator::EvalInfixExpression(const uint32_t env, const Token& optor, const IObject* left, const IObject* right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
+	auto store = EvalEnvironment->GetObjectStore(env);
 	if (left->IsThisA<NullObj>() || right->IsThisA<NullObj>())
 	{
-		result = EvalNullInfixExpression(optor, left.get(), right.get());
+		result = EvalNullInfixExpression(env, optor, left, right);
 	}
 	else if (left->Type() != right->Type())
 	{
-		if (_coercer.CanCoerceTypes(left.get(), right.get()))
+		if (_coercer.CanCoerceTypes(left, right))
 		{
-			auto [left_c, right_c] = _coercer.CoerceTypes(left.get(), right.get());
+			auto [left_c, right_c] = _coercer.CoerceTypes(store, left, right);
 			
-			result = EvalInfixExpression(optor, left_c, right_c);
+			result = EvalInfixExpression(env, optor, left_c, right_c);
 		}
 		else
 		{
-			result = MakeError(std::format("type mismatch: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
+			result = MakeError(env, std::format("type mismatch: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 		}
 	}
 	else if (left->IsThisA<IntegerObj>())
 	{
-		result = EvalIntegerInfixExpression(optor, dynamic_cast<IntegerObj*>(left.get()), dynamic_cast<IntegerObj*>(right.get()));
+		result = EvalIntegerInfixExpression(env, optor, dynamic_cast<const IntegerObj*>(left), dynamic_cast<const IntegerObj*>(right));
 	}
 	else if (left->IsThisA<DecimalObj>())
 	{
-		result = EvalDecimalInfixExpression(optor, dynamic_cast<DecimalObj*>(left.get()), dynamic_cast<DecimalObj*>(right.get()));
+		result = EvalDecimalInfixExpression(env, optor, dynamic_cast<const DecimalObj*>(left), dynamic_cast<const DecimalObj*>(right));
 	}
 	else if (left->IsThisA<StringObj>())
 	{
-		result = EvalStringInfixExpression(optor, dynamic_cast<StringObj*>(left.get()), dynamic_cast<StringObj*>(right.get()));
+		result = EvalStringInfixExpression(env, optor, dynamic_cast<const StringObj*>(left), dynamic_cast<const StringObj*>(right));
 	}
 	else if (left->IsThisA<BooleanObj>())
 	{
-		result = EvalBooleanInfixExpression(optor, dynamic_cast<BooleanObj*>(left.get()), dynamic_cast<BooleanObj*>(right.get()));
+		result = EvalBooleanInfixExpression(env, optor, dynamic_cast<const BooleanObj*>(left), dynamic_cast<const BooleanObj*>(right));
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const std::shared_ptr<IObject>& operand, const std::shared_ptr<IObject>& index) const
+const IObject* Evaluator::EvalIndexExpression(const uint32_t env, const Token& op, const IObject* operand, const IObject* index) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
 	if (operand->IsThisA<ArrayObj>() && index->IsThisA<IntegerObj>())
 	{
-		auto arr = std::dynamic_pointer_cast<ArrayObj>(operand);
-		auto idx = std::dynamic_pointer_cast<IntegerObj>(index);
+		auto arr = dynamic_cast<const ArrayObj*>(operand);
+		auto idx = dynamic_cast<const IntegerObj*>(index);
 		if (idx->Value < 0 || idx->Value >= arr->Elements.size())
 		{
 			result = NullObj::NULL_OBJ_REF;
@@ -161,20 +162,21 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 	}
 	else if (operand->IsThisA<StringObj>() && index->IsThisA<IntegerObj>())
 	{
-		auto str = std::dynamic_pointer_cast<StringObj>(operand);
-		auto idx = std::dynamic_pointer_cast<IntegerObj>(index);
+		auto str = dynamic_cast<const StringObj*>(operand);
+		auto idx = dynamic_cast<const IntegerObj*>(index);
 		if (idx->Value < 0 || idx->Value >= str->Value.size())
 		{
 			result = NullObj::NULL_OBJ_REF;
 		}
 		else
 		{
-			result = StringObj::New(std::string(1, str->Value[idx->Value]));
+			auto store = EvalEnvironment->GetObjectStore(env);
+			result = store.New_StringObj(std::string(1, str->Value[idx->Value]));
 		}
 	}
 	else if (operand->IsThisA<HashObj>())
 	{
-		auto hash = std::dynamic_pointer_cast<HashObj>(operand);
+		auto hash = dynamic_cast<const HashObj*>(operand);
 		auto key = HashKey { index->Type(), index->Inspect() };
 
 		auto entry = hash->Elements.find(key);
@@ -190,16 +192,15 @@ std::shared_ptr<IObject> Evaluator::EvalIndexExpression(const Token& op, const s
 	}
 	else
 	{
-		result = MakeError(std::format("index operator not supported: {}", operand->TypeName()), op);
+		result = MakeError(env, std::format("index operator not supported: {}", operand->TypeName()), op);
 	}
 	return result;
-
 }
 
-std::shared_ptr<IObject> Evaluator::EvalNullInfixExpression(const Token& op, const IObject* const left, const IObject* const right) const
+const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const Token& op, const IObject* const left, const IObject* const right) const
 {
 	//check what side the null is on
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
 
 	const IObject* nullObj = nullptr;
 	const IObject* mightBeNullObj = nullptr;
@@ -247,40 +248,42 @@ std::shared_ptr<IObject> Evaluator::EvalNullInfixExpression(const Token& op, con
 		}
 		else
 		{
+			auto store = EvalEnvironment->GetObjectStore(env);
 			if (nullOnLeft)
 			{
 				//any other operator on a null and a non-null produces the same non null value
-				result = EvalInfixExpression(op, IntegerObj::New(0), mightBeNullObj->Clone());
+				result = EvalInfixExpression(env, op, store.New_IntegerObj(0), mightBeNullObj->Clone());
 			}
 			else
 			{
 				//any other operator on a null and a non-null produces the same non null value
-				result = EvalInfixExpression(op, mightBeNullObj->Clone(), IntegerObj::New(0));
+				result = EvalInfixExpression(env, op, mightBeNullObj->Clone(), store.New_IntegerObj(0));
 			}
 		}
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& optor, const IntegerObj* const left, const IntegerObj* const right) const
+const IObject* Evaluator::EvalIntegerInfixExpression(const uint32_t env, const Token& optor, const IntegerObj* const left, const IntegerObj* const right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
+	auto store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
-		result = IntegerObj::New(left->Value + right->Value);
+		result = store.New_IntegerObj(left->Value + right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_MINUS)
 	{
-		result = IntegerObj::New(left->Value - right->Value);
+		result = store.New_IntegerObj(left->Value - right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_ASTERISK)
 	{
-		result = IntegerObj::New(left->Value * right->Value);
+		result = store.New_IntegerObj(left->Value * right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SLASH)
 	{
-		result = IntegerObj::New(left->Value / right->Value);
+		result = store.New_IntegerObj(left->Value / right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_LT)
 	{
@@ -308,38 +311,38 @@ std::shared_ptr<IObject> Evaluator::EvalIntegerInfixExpression(const Token& opto
 	}
 	else if (optor.Type == TokenType::TOKEN_BITWISE_AND)
 	{
-		result = IntegerObj::New(left->Value & right->Value);
+		result = store.New_IntegerObj(left->Value & right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_BITWISE_OR)
 	{
-		result = IntegerObj::New(left->Value | right->Value);
+		result = store.New_IntegerObj(left->Value | right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_BITWISE_XOR)
 	{
-		result = IntegerObj::New(left->Value ^ right->Value);
+		result = store.New_IntegerObj(left->Value ^ right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SHIFT_LEFT)
 	{
-		result = IntegerObj::New(left->Value << right->Value);
+		result = store.New_IntegerObj(left->Value << right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SHIFT_RIGHT)
 	{
-		result = IntegerObj::New(left->Value >> right->Value);
+		result = store.New_IntegerObj(left->Value >> right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_MODULO)
 	{
-		result = IntegerObj::New(left->Value % right->Value);
+		result = store.New_IntegerObj(left->Value % right->Value);
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalBooleanInfixExpression(const Token& optor, const BooleanObj* const left, const BooleanObj* const right) const
+const IObject* Evaluator::EvalBooleanInfixExpression(const uint32_t env, const Token& optor, const BooleanObj* const left, const BooleanObj* const right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
 	if (optor.Type == TokenType::TOKEN_EQ)
 	{
 		result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
@@ -358,30 +361,31 @@ std::shared_ptr<IObject> Evaluator::EvalBooleanInfixExpression(const Token& opto
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalDecimalInfixExpression(const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const
+const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
+	auto store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
-		result = DecimalObj::New(left->Value + right->Value);
+		result = store.New_DecimalObj(left->Value + right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_MINUS)
 	{
-		result = DecimalObj::New(left->Value - right->Value);
+		result = store.New_DecimalObj(left->Value - right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_ASTERISK)
 	{
-		result = DecimalObj::New(left->Value * right->Value);
+		result = store.New_DecimalObj(left->Value * right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_SLASH)
 	{
-		result = DecimalObj::New(left->Value / right->Value);
+		result = store.New_DecimalObj(left->Value / right->Value);
 	}
 	else if (optor.Type == TokenType::TOKEN_LT)
 	{
@@ -409,67 +413,71 @@ std::shared_ptr<IObject> Evaluator::EvalDecimalInfixExpression(const Token& opto
 	}
 	else if (optor.Type == TokenType::TOKEN_MODULO)
 	{
-		result = DecimalObj::New(fmod(left->Value, right->Value));
+		result = store.New_DecimalObj(fmod(left->Value, right->Value));
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalStringInfixExpression(const Token& optor, const StringObj* const left, const StringObj* const right) const
+const IObject* Evaluator::EvalStringInfixExpression(const uint32_t env, const Token& optor, const StringObj* const left, const StringObj* const right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
+	auto store = EvalEnvironment->GetObjectStore(env);
 
 	if (optor.Type == TokenType::TOKEN_PLUS)
 	{
-		result = StringObj::New(left->Value + right->Value);
+		result = store.New_StringObj(left->Value + right->Value);
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {} {} {}", left->TypeName(), optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalAsBoolean(const Token& context, const IObject* const obj) const
+const IObject* Evaluator::EvalAsBoolean(const uint32_t env, const Token& context, const IObject* const obj) const
 {
 	try
 	{
-		return _coercer.EvalAsBoolean(obj);
+		auto store = EvalEnvironment->GetObjectStore(env);
+		return _coercer.EvalAsBoolean(store, obj);
 	}
 	catch (const std::exception& e)
 	{
-		return MakeError(e.what(), context);
+		return MakeError(env, e.what(), context);
 	}
 }
-std::shared_ptr<IObject> Evaluator::EvalAsDecimal(const Token& context, const IObject* const obj) const
+const IObject* Evaluator::EvalAsDecimal(const uint32_t env, const Token& context, const IObject* const obj) const
 {
 	try
 	{
-		return _coercer.EvalAsDecimal(obj);
+		auto store = EvalEnvironment->GetObjectStore(env);
+		return _coercer.EvalAsDecimal(store, obj);
 	}
 	catch (const std::exception& e)
 	{
-		return MakeError(e.what(), context);
+		return MakeError(env, e.what(), context);
 	}
 }
-std::shared_ptr<IObject> Evaluator::EvalAsInteger(const Token& context, const IObject* const obj) const
+const IObject* Evaluator::EvalAsInteger(const uint32_t env, const Token& context, const IObject* const obj) const
 {
 	try
 	{
-		return _coercer.EvalAsInteger(obj);
+		auto store = EvalEnvironment->GetObjectStore(env);
+		return _coercer.EvalAsInteger(store, obj);
 	}
 	catch (const std::exception& e)
 	{
-		return MakeError(e.what(), context);
+		return MakeError(env, e.what(), context);
 	}
 }
 
-std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
+const IObject* Evaluator::EvalBangPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
 	if (right == BooleanObj::TRUE_OBJ_REF)
 	{
 		result = BooleanObj::FALSE_OBJ_REF;
@@ -480,7 +488,7 @@ std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token
 	}
 	else if (right->IsThisA<IntegerObj>())
 	{
-		auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
+		auto value = dynamic_cast<const IntegerObj*>(right)->Value;
 		if (value == 0)
 		{
 			result = BooleanObj::TRUE_OBJ_REF;
@@ -492,44 +500,46 @@ std::shared_ptr<IObject> Evaluator::EvalBangPrefixOperatorExpression(const Token
 	}
 	else
 	{
-		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalMinusPrefixOperatorExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
+const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
+	auto store = EvalEnvironment->GetObjectStore(env);
 	if (!right->IsThisA<IntegerObj>())
 	{
-		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
 	}
 	else
 	{
-		auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
-		result = IntegerObj::New(-value);
+		auto value = dynamic_cast<const IntegerObj*>(right)->Value;
+		result = store.New_IntegerObj(-value);
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> Evaluator::EvalBitwiseNotPrefixOperatorExpression(const Token& optor, const std::shared_ptr<IObject>& right) const
+const IObject* Evaluator::EvalBitwiseNotPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	const IObject* result = nullptr;
+	auto store = EvalEnvironment->GetObjectStore(env);
 	if (!right->IsThisA<IntegerObj>())
 	{
-		result = MakeError(std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
+		result = MakeError(env, std::format("unknown operator: {}{}", optor.Literal, right->TypeName()), optor);
 	}
 	else
 	{
-		auto value = dynamic_cast<IntegerObj*>(right.get())->Value;
-		result = IntegerObj::New(~value);
+		auto value = dynamic_cast<const IntegerObj*>(right)->Value;
+		result = store.New_IntegerObj(~value);
 	}
 	return result;
 }
 
 
 
-uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args)
+uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const FunctionObj* func, const std::vector<const IObject*>& args)
 {
 	auto env = EvalEnvironment->NewEnclosed(rootEnv);
 	for (size_t i = 0; i < func->Parameters.size(); i++)
@@ -550,20 +560,20 @@ uint32_t Evaluator::ExtendFunctionEnv(const uint32_t rootEnv, const std::shared_
 	return env;
 }
 
-std::shared_ptr<IObject> Evaluator::UnwrapIfReturnObj(const std::shared_ptr<IObject>& input)
+const IObject* Evaluator::UnwrapIfReturnObj(const IObject* input)
 {
 	if (input != nullptr && input->IsThisA<ReturnObj>())
 	{
-		return dynamic_cast<ReturnObj*>(input.get())->Value;
+		return dynamic_cast<const ReturnObj*>(input)->Value;
 	}
 	return input;
 }
 
-std::shared_ptr<IObject> Evaluator::UnwrapIfIdentObj(const std::shared_ptr<IObject>& input)
+const IObject* Evaluator::UnwrapIfIdentObj(const IObject* input)
 {
 	if (input != nullptr && input->IsThisA<IdentifierObj>())
 	{
-		return dynamic_cast<IdentifierObj*>(input.get())->Value;
+		return dynamic_cast<const IdentifierObj*>(input)->Value;
 	}
 	return input;
 }

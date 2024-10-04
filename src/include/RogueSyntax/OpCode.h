@@ -53,12 +53,12 @@ struct OpCode
 		OP_JUMP,
 		OP_JUMP_IF_FALSE,
 		//mem
-		OP_GET_LOCAL,
-		OP_SET_LOCAL,
-		OP_GET_GLOBAL,
-		OP_SET_GLOBAL,
-		OP_GET_EXTRN,
-		OP_GET_FREE,
+		OP_GET,
+		OP_SET,
+		//OP_GET_GLOBAL,
+		//OP_SET_GLOBAL,
+		//OP_GET_EXTRN,
+		//OP_GET_FREE,
 		OP_SET_ASSIGN,
 		//op
 		OP_INDEX,
@@ -71,8 +71,8 @@ struct OpCode
 
 	static const std::unordered_map<Constants, Definition> Definitions;
 	static std::variant<Definition, std::string> Lookup(const Constants opcode);
-	static Instructions Make(Constants opcode, std::vector<int> operands);
-	static std::tuple<Constants, std::vector<int>, size_t> ReadOperand(const Instructions& instructions, size_t offset);
+	static Instructions Make(Constants opcode, std::vector<uint32_t> operands);
+	static std::tuple<Constants, std::vector<uint32_t>, size_t> ReadOperand(const Instructions& instructions, size_t offset);
 	static Constants GetOpcode(const Instructions& instructions, size_t offset);
 	static std::string PrintInstructions(const Instructions& instructions);
 

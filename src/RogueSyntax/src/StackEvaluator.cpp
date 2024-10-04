@@ -3,7 +3,7 @@
 #include "StackEvaluator.h"
 
 
-std::shared_ptr<IObject> StackEvaluator::Eval(const INode* node, const uint32_t env)
+const IObject* StackEvaluator::Eval(const INode* node, const uint32_t env)
 {
 	Push_Eval(node, 0, env);
 
@@ -42,11 +42,11 @@ void StackEvaluator::Pop_Eval()
 {
 	_stack.pop();
 }
-void StackEvaluator::Push_Result(std::shared_ptr<IObject> result)
+void StackEvaluator::Push_Result(const IObject* result)
 {
 	_results.emplace(result);
 }
-std::shared_ptr<IObject> StackEvaluator::Pop_Result()
+const IObject* StackEvaluator::Pop_Result()
 {
 	if (_results.empty())
 	{
@@ -57,7 +57,7 @@ std::shared_ptr<IObject> StackEvaluator::Pop_Result()
 	return result;
 }
 
-std::shared_ptr<IObject> StackEvaluator::Pop_ResultAndUnwrap()
+const IObject* StackEvaluator::Pop_ResultAndUnwrap()
 {
 	auto result = _results.top();
 	_results.pop();
@@ -143,8 +143,9 @@ void StackEvaluator::NodeEval(const ReturnStatement* ret)
 	}
 	else
 	{
+		auto store = EvalEnvironment->GetObjectStore(_currentEnv);
 		auto result = Pop_Result();
-		Push_Result(ReturnObj::New(result));
+		Push_Result(store.New_ReturnObj(result));
 	}
 }
 void StackEvaluator::NodeEval(const LetStatement* let)
@@ -174,10 +175,13 @@ void StackEvaluator::NodeEval(const LetStatement* let)
 			auto identResult = Pop_Result();
 			identResult = UnwrapIfReturnObj(identResult);
 
-			auto* ident = dynamic_no_copy_cast<IdentifierObj>(identResult);
+			auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+			auto identClone = identResult->Clone();
+			store.Add(identClone);
+
+			auto* ident = dynamic_cast<IdentifierObj*>(identClone);
 			auto result = ident->Set(nullptr, value);
 			EvalEnvironment->Set(_currentEnv, ident->Name, value);
-			//results.push(result);
 		}
 	}
 	else if (typeid(*(let->Name)) == typeid(IndexExpression))
@@ -211,33 +215,38 @@ void StackEvaluator::NodeEval(const LetStatement* let)
 			}
 			auto index = Pop_ResultAndUnwrap();
 
-			auto* assignable = dynamic_no_copy_cast<IAssignableObject>(left);
+			auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+			auto assignableClone = left->Clone();
+			store.Add(assignableClone);
+
+			auto* assignable = dynamic_cast<IAssignableObject*>(assignableClone);
 			auto result = assignable->Set(index, value);
 			//results.push(result);
 		}
 	}
 	else
 	{
-		Push_Result(MakeError("let target must be identifier or index expression", let->BaseToken));
+		Push_Result(MakeError(_currentEnv, "let target must be identifier or index expression", let->BaseToken));
 	}
 }
 void StackEvaluator::NodeEval(const Identifier* ident)
 {
+	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
 	if (EvalBuiltIn->IsBuiltIn(ident->Value))
 	{
-		Push_Result(BuiltInObj::New(ident->Value));
+		Push_Result(store.New_BuiltInObj(ident->Value));
 	}
 	else
 	{
 		auto value = EvalEnvironment->Get(_currentEnv, ident->Value);
 		if (value != nullptr)
 		{
-			Push_Result(IdentifierObj::New(ident->Value, value));
+			Push_Result(store.New_IdentifierObj(ident->Value, value));
 			//EvalEnvironment->Set(env, ident->Value, value);
 		}
 		else
 		{
-			Push_Result(IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF));
+			Push_Result(store.New_IdentifierObj(ident->Value, NullObj::NULL_OBJ_REF));
 			EvalEnvironment->Set(_currentEnv, ident->Value, NullObj::NULL_OBJ_REF);
 		}
 		//result = MakeError(std::format("identifier not found: {}", ident->Value), ident->BaseToken);
@@ -245,7 +254,8 @@ void StackEvaluator::NodeEval(const Identifier* ident)
 }
 void StackEvaluator::NodeEval(const IntegerLiteral* integer)
 {
-	Push_Result(IntegerObj::New(integer->Value));
+	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	Push_Result(store.New_IntegerObj(integer->Value));
 }
 void StackEvaluator::NodeEval(const BooleanLiteral* boolean)
 {
@@ -253,11 +263,13 @@ void StackEvaluator::NodeEval(const BooleanLiteral* boolean)
 }
 void StackEvaluator::NodeEval(const StringLiteral* string)
 {
-	Push_Result(StringObj::New(string->Value));
+	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	Push_Result(store.New_StringObj(string->Value));
 }
 void StackEvaluator::NodeEval(const DecimalLiteral* decimal)
 {
-	Push_Result(DecimalObj::New(decimal->Value));
+	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	Push_Result(store.New_DecimalObj(decimal->Value));
 }
 void StackEvaluator::NodeEval(const PrefixExpression* prefix)
 {
@@ -269,7 +281,7 @@ void StackEvaluator::NodeEval(const PrefixExpression* prefix)
 	else
 	{
 		auto lastResult = Pop_ResultAndUnwrap();
-		Push_Result(EvalPrefixExpression(prefix->BaseToken, lastResult));
+		Push_Result(EvalPrefixExpression(_currentEnv, prefix->BaseToken, lastResult));
 	}
 }
 void StackEvaluator::NodeEval(const InfixExpression* infix)
@@ -286,12 +298,6 @@ void StackEvaluator::NodeEval(const InfixExpression* infix)
 	}
 	else
 	{
-		//if (results.size() < 2)
-		//{
-		//	results.push(MakeError("infix expression requires two operands", infix->BaseToken));
-		//	break;
-		//}
-
 		if (ResultIsError())
 		{
 			return;
@@ -304,7 +310,7 @@ void StackEvaluator::NodeEval(const InfixExpression* infix)
 		}
 		auto left = Pop_ResultAndUnwrap();
 
-		auto result = EvalInfixExpression(infix->BaseToken, left, right);
+		auto result = EvalInfixExpression(_currentEnv, infix->BaseToken, left, right);
 		Push_Result(result);
 	}
 }
@@ -319,7 +325,7 @@ void StackEvaluator::NodeEval(const IfStatement* ifExpr)
 	{
 		auto lastResult = Pop_ResultAndUnwrap();
 
-		auto evalBool = EvalAsBoolean(ifExpr->BaseToken, lastResult.get());
+		auto evalBool = EvalAsBoolean(_currentEnv, ifExpr->BaseToken, lastResult);
 
 		if (evalBool->IsThisA<ErrorObj>())
 		{
@@ -343,8 +349,8 @@ void StackEvaluator::NodeEval(const IfStatement* ifExpr)
 }
 void StackEvaluator::NodeEval(const FunctionLiteral* function)
 {
-
-	Push_Result(FunctionObj::New(function->Parameters, function->Body));
+	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	Push_Result(store.New_FunctionObj(function->Parameters, function->Body));
 
 }
 void StackEvaluator::NodeEval(const CallExpression* call)
@@ -362,7 +368,7 @@ void StackEvaluator::NodeEval(const CallExpression* call)
 
 		if (!(lastResult->IsThisA<FunctionObj>() || lastResult->IsThisA<BuiltInObj>()))
 		{
-			Push_Result(MakeError(std::format("literal not a function: {}", lastResult->Inspect()), call->BaseToken));
+			Push_Result(MakeError(_currentEnv, std::format("literal not a function: {}", lastResult->Inspect()), call->BaseToken));
 			return;
 		}
 		auto function = lastResult;
@@ -377,10 +383,10 @@ void StackEvaluator::NodeEval(const CallExpression* call)
 	}
 	else if (_currentSignal == 2)
 	{
-		std::vector<std::shared_ptr<IObject>> evalArgs;
+		std::vector<const IObject*> evalArgs;
 		if (ResultCount() < call->Arguments.size())
 		{
-			Push_Result(MakeError("not enough arguments", call->BaseToken));
+			Push_Result(MakeError(_currentEnv, "not enough arguments", call->BaseToken));
 			return;
 		}
 
@@ -398,11 +404,11 @@ void StackEvaluator::NodeEval(const CallExpression* call)
 
 		if (function->IsThisA<BuiltInObj>())
 		{
-			auto func = std::dynamic_pointer_cast<BuiltInObj>(function);
+			auto func = dynamic_cast<const BuiltInObj*>(function);
 			auto builtInToCall = EvalBuiltIn->GetBuiltInFunction(func->Name);
 			if (builtInToCall == nullptr)
 			{
-				Push_Result(MakeError(std::format("unknown function: {}", func->Name), call->BaseToken));
+				Push_Result(MakeError(_currentEnv, std::format("unknown function: {}", func->Name), call->BaseToken));
 				return;
 			}
 
@@ -416,12 +422,12 @@ void StackEvaluator::NodeEval(const CallExpression* call)
 			}
 			catch (const std::exception& e)
 			{
-				_results.push(MakeError(e.what(), call->BaseToken));
+				_results.push(MakeError(_currentEnv, e.what(), call->BaseToken));
 			}
 		}
 		else
 		{
-			auto func = std::dynamic_pointer_cast<FunctionObj>(function);
+			auto func = dynamic_cast<const FunctionObj*>(function);
 			auto extEnv = ExtendFunctionEnv(_currentEnv, func, evalArgs);
 			Push_Eval(call, 3, extEnv);
 			Push_Eval(func->Body, 0, extEnv);
@@ -435,7 +441,7 @@ void StackEvaluator::NodeEval(const CallExpression* call)
 }
 void StackEvaluator::NodeEval(const ArrayLiteral* array)
 {
-	std::vector<std::shared_ptr<IObject>> elements;
+	std::vector<const IObject*> elements;
 
 	if (_currentSignal == 0)
 	{
@@ -448,10 +454,10 @@ void StackEvaluator::NodeEval(const ArrayLiteral* array)
 	}
 	else
 	{
-		std::vector<std::shared_ptr<IObject>> evalArgs;
+		std::vector<const IObject*> evalArgs;
 		if (ResultCount() < array->Elements.size())
 		{
-			Push_Result(MakeError("failed to evaluate all array elements", array->BaseToken));
+			Push_Result(MakeError(_currentEnv, "failed to evaluate all array elements", array->BaseToken));
 			return;
 		}
 
@@ -464,7 +470,8 @@ void StackEvaluator::NodeEval(const ArrayLiteral* array)
 			auto arg = Pop_ResultAndUnwrap();
 			evalArgs.push_back(arg);
 		}
-		Push_Result(ArrayObj::New(evalArgs));
+		auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+		Push_Result(store.New_ArrayObj(evalArgs));
 	}
 }
 void StackEvaluator::NodeEval(const IndexExpression* index)
@@ -484,13 +491,13 @@ void StackEvaluator::NodeEval(const IndexExpression* index)
 		left = UnwrapIfIdentObj(left);
 		indexObj = UnwrapIfIdentObj(indexObj);
 
-		auto result = EvalIndexExpression(index->BaseToken, left, indexObj);
+		auto result = EvalIndexExpression(_currentEnv, index->BaseToken, left, indexObj);
 		Push_Result(result);
 	}
 }
 void StackEvaluator::NodeEval(const HashLiteral* hash)
 {
-	std::vector<std::shared_ptr<IObject>> elements;
+	std::vector<const IObject*> elements;
 
 	if (_currentSignal == 0)
 	{
@@ -506,7 +513,7 @@ void StackEvaluator::NodeEval(const HashLiteral* hash)
 		std::unordered_map<HashKey, HashEntry> evalArgs;
 		if (ResultCount() < hash->Elements.size())
 		{
-			Push_Result(MakeError("failed to evaluate all hash elements", hash->BaseToken));
+			Push_Result(MakeError(_currentEnv, "failed to evaluate all hash elements", hash->BaseToken));
 			return;
 		}
 
@@ -528,7 +535,8 @@ void StackEvaluator::NodeEval(const HashLiteral* hash)
 
 			evalArgs[HashKey{ key->Type(), key->Inspect() }] = HashEntry{ key, value };
 		}
-		Push_Result(HashObj::New(evalArgs));
+		auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+		Push_Result(store.New_HashObj(evalArgs));
 	}
 }
 void StackEvaluator::NodeEval(const NullLiteral* null)
@@ -544,7 +552,7 @@ void StackEvaluator::NodeEval(const WhileStatement* whileExp)
 		{
 			auto top = Pop_Result();
 
-			auto* ret = dynamic_no_copy_cast<ReturnObj>(top);
+			auto* ret = dynamic_cast<const ReturnObj*>(top);
 			if (!(ret->Value == ContinueObj::CONTINUE_OBJ_REF || ret->Value == BreakObj::BREAK_OBJ_REF))
 			{
 				Push_Result(top);
@@ -568,7 +576,7 @@ void StackEvaluator::NodeEval(const WhileStatement* whileExp)
 	{
 		auto lastResult = Pop_ResultAndUnwrap();
 
-		auto booleanObj = EvalAsBoolean(whileExp->BaseToken, lastResult.get());
+		auto booleanObj = EvalAsBoolean(_currentEnv, whileExp->BaseToken, lastResult);
 
 		if (booleanObj->IsThisA<ErrorObj>())
 		{
@@ -600,7 +608,7 @@ void StackEvaluator::NodeEval(const ForStatement* forExp)
 	{
 		auto lastResult = Pop_ResultAndUnwrap();
 
-		auto booleanObj = EvalAsBoolean(forExp->BaseToken, lastResult.get());
+		auto booleanObj = EvalAsBoolean(_currentEnv, forExp->BaseToken, lastResult);
 
 		if (booleanObj->IsThisA<ErrorObj>())
 		{
@@ -621,7 +629,7 @@ void StackEvaluator::NodeEval(const ForStatement* forExp)
 		{
 			auto top = Pop_Result();
 
-			auto* ret = dynamic_no_copy_cast<ReturnObj>(top);
+			auto* ret = dynamic_cast<const ReturnObj*>(top);
 			if (!(ret->Value == ContinueObj::CONTINUE_OBJ_REF || ret->Value == BreakObj::BREAK_OBJ_REF))
 			{
 				Push_Result(top);
@@ -643,9 +651,11 @@ void StackEvaluator::NodeEval(const ForStatement* forExp)
 }
 void StackEvaluator::NodeEval(const ContinueStatement* cont)
 {
-	Push_Result(ReturnObj::New(ContinueObj::CONTINUE_OBJ_REF));
+	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	Push_Result(store.New_ReturnObj(ContinueObj::CONTINUE_OBJ_REF));
 }
 void StackEvaluator::NodeEval(const BreakStatement* brk)
 {
-	Push_Result(ReturnObj::New(BreakObj::BREAK_OBJ_REF));
+	auto store = EvalEnvironment->GetObjectStore(_currentEnv);
+	Push_Result(store.New_ReturnObj(BreakObj::BREAK_OBJ_REF));
 }

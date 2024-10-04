@@ -1,86 +1,41 @@
 #include "IObject.h"
 #include "pch.h"
 
-std::shared_ptr<BooleanObj> BooleanObj::TRUE_OBJ_REF =  BooleanObj::New(true);
-std::shared_ptr<BooleanObj> BooleanObj::FALSE_OBJ_REF = BooleanObj::New(false);
+BooleanObj BooleanObj::TRUE_OBJ = BooleanObj(true);
+BooleanObj BooleanObj::FALSE_OBJ = BooleanObj(false);
+BooleanObj* BooleanObj::TRUE_OBJ_REF = &BooleanObj::TRUE_OBJ;
+BooleanObj* BooleanObj::FALSE_OBJ_REF = &BooleanObj::FALSE_OBJ;
 
+NullObj NullObj::NULL_OBJ = NullObj();
+NullObj* NullObj::NULL_OBJ_REF = &NullObj::NULL_OBJ;
 
-std::shared_ptr<NullObj> NullObj::NULL_OBJ_REF = NullObj::New();
+VoidObj VoidObj::VOID_OBJ = VoidObj();
+VoidObj* VoidObj::VOID_OBJ_REF = &VoidObj::VOID_OBJ;
 
-std::shared_ptr<NullObj> NullObj::New()
-{
-	return std::make_shared<NullObj>();
-}
+ContinueObj ContinueObj::CONTINUE_OBJ = ContinueObj();
+ContinueObj* ContinueObj::CONTINUE_OBJ_REF = &ContinueObj::CONTINUE_OBJ;
 
-std::shared_ptr<VoidObj> VoidObj::VOID_OBJ_REF = VoidObj::New();
+BreakObj BreakObj::BREAK_OBJ = BreakObj();
+BreakObj* BreakObj::BREAK_OBJ_REF = &BreakObj::BREAK_OBJ;
 
-std::shared_ptr<VoidObj> VoidObj::New()
-{
-	return std::make_shared<VoidObj>();
-}
-
-std::shared_ptr<BreakObj> BreakObj::BREAK_OBJ_REF = BreakObj::New();
-
-std::shared_ptr<BreakObj> BreakObj::New()
-{
-	return std::make_shared<BreakObj>();
-}
-
-std::shared_ptr<ContinueObj> ContinueObj::CONTINUE_OBJ_REF = ContinueObj::New();
-
-std::shared_ptr<ContinueObj> ContinueObj::New()
-{
-	return std::make_shared<ContinueObj>();
-}
-
-std::shared_ptr<IntegerObj> IntegerObj::New(int value)
-{
-	return std::make_shared<IntegerObj>(value);
-}
-
-std::shared_ptr<DecimalObj> DecimalObj::New(float value)
-{
-	return std::make_shared<DecimalObj>(value);
-}
-
-std::shared_ptr<StringObj> StringObj::New(const std::string& value)
-{
-	return std::make_shared<StringObj>(value);
-}
-
-std::shared_ptr<BooleanObj> BooleanObj::New(bool value)
-{
-	return std::make_shared<BooleanObj>(value);
-}
-
-std::shared_ptr<ArrayObj> ArrayObj::New(const std::vector<std::shared_ptr<IObject>>& elements)
-{
-	return std::make_shared<ArrayObj>(elements);
-}
-
-std::shared_ptr<IObject> ArrayObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
+const IObject* ArrayObj::Set(const IObject* key, const IObject* value)
 {
 	if (!key->IsThisA<IntegerObj>())
 	{
-		return ErrorObj::New("index must be an integer", ::Token::New(TokenType::TOKEN_ILLEGAL, ""));
+		throw std::runtime_error("index must be an integer");
 	}
 
-	auto index = std::dynamic_pointer_cast<IntegerObj>(key);
+	auto index = dynamic_cast<const IntegerObj*>(key);
 	if (index->Value < 0 || index->Value >= Elements.size())
 	{
-		return ErrorObj::New("index out of bounds", ::Token::New(TokenType::TOKEN_ILLEGAL, ""));
+		throw std::runtime_error("index out of bounds");
 	}
 
 	Elements[index->Value] = value;
 	return value;
 }
 
-std::shared_ptr<HashObj> HashObj::New(const std::unordered_map<HashKey, HashEntry>& pairs)
-{
-	return std::make_shared<HashObj>(pairs);
-}
-
-std::shared_ptr<IObject> HashObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
+const IObject* HashObj::Set(const IObject* key, const IObject* value)
 {
 	auto hashKey = HashKey(key->Type(), key->Inspect());
 		
@@ -88,33 +43,13 @@ std::shared_ptr<IObject> HashObj::Set(const std::shared_ptr<IObject>& key, const
 	return value;
 }
 
-std::shared_ptr<IdentifierObj> IdentifierObj::New(const std::string& name, const std::shared_ptr<IObject>& value)
-{
-	return std::make_shared<IdentifierObj>(name, value);
-}
-
-std::shared_ptr<IObject> IdentifierObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
+const IObject* IdentifierObj::Set(const IObject* key, const IObject* value)
 {
 	Value = value;
 	return Value;
 }
 
-std::shared_ptr<ErrorObj> ErrorObj::New(const std::string& message, const ::Token& token)
-{
-	return std::make_shared<ErrorObj>(message, token);
-}
-
-std::shared_ptr<ReturnObj> ReturnObj::New(const std::shared_ptr<IObject>& value)
-{
-	return std::make_shared<ReturnObj>(value);
-}
-
-std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<IExpression*>& parameters, const IStatement* body)
-{
-	return std::make_shared<FunctionObj>(parameters, body);
-}
-
-std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> BuiltInObj::Resolve(std::shared_ptr<BuiltIn> externals) const
+std::function<IObject*(const std::vector<const IObject*>& args)> BuiltInObj::Resolve(std::shared_ptr<BuiltIn> externals) const
 {
 	if (Idx != -1)
 	{
@@ -123,23 +58,6 @@ std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject
 	return externals->GetBuiltInFunction(Name);
 }
 
-std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
-{
-	return std::make_shared<BuiltInObj>(name);
-}
 
-std::shared_ptr<BuiltInObj> BuiltInObj::New(const int idx)
-{
-	return std::make_shared<BuiltInObj>(idx);
-}
 
-std::shared_ptr<FunctionCompiledObj> FunctionCompiledObj::New(const Instructions& instructions, int numLocals, int numParameters)
-{
-	return std::make_shared<FunctionCompiledObj>(instructions, numLocals, numParameters);
-}
-
-std::shared_ptr<ClosureObj> ClosureObj::New(const std::shared_ptr<FunctionCompiledObj>& function, const std::vector<std::shared_ptr<IObject>>& free)
-{
-	return std::make_shared<ClosureObj>(function, free);
-}
 

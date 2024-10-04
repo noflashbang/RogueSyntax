@@ -1,4 +1,5 @@
 #include "Environment.h"
+#include "Environment.h"
 #include "pch.h"
 
 ScopedEnvironment::ScopedEnvironment(EnvironmentHandle hnd) : Handle(hnd)
@@ -15,23 +16,23 @@ ScopedEnvironment::~ScopedEnvironment()
 {
 }
 
-void ScopedEnvironment::Set(const std::string& name, const std::shared_ptr<IObject>& value)
+void ScopedEnvironment::Set(const std::string& name, const IObject* value)
 {
-	auto it = Store.find(name);
-	if (it == Store.end() && Parent != nullptr)
+	auto it = IdentifierStore.find(name);
+	if (it == IdentifierStore.end() && Parent != nullptr)
 	{
 		Parent->Set(name, value);
 	}
 	else
 	{
-		Store[name] = value;
+		IdentifierStore[name] = value;
 	}
 }
 
-std::shared_ptr<IObject> ScopedEnvironment::Get(const std::string& name) const
+const IObject* ScopedEnvironment::Get(const std::string& name) const
 {
-	auto it = Store.find(name);
-	if (it != Store.end())
+	auto it = IdentifierStore.find(name);
+	if (it != IdentifierStore.end())
 	{
 		return it->second;
 	}
@@ -53,7 +54,18 @@ Environment::~Environment()
 {
 }
 
-void Environment::Set(const uint32_t env, const std::string& name, const std::shared_ptr<IObject>& value)
+ObjectStore& Environment::GetObjectStore(const uint32_t env)
+{
+	EnvironmentHandle envHandle(env);
+	auto envObj = _environments[envHandle._internal.Index];
+	if (envObj->Handle.Handle != envHandle.Handle)
+	{
+		throw std::runtime_error("Invalid environment");
+	}
+	return envObj->ObjectStore;
+}
+
+void Environment::Set(const uint32_t env, const std::string& name, const IObject* value)
 {
 	EnvironmentHandle envHandle(env);
 	auto envObj = _environments[envHandle._internal.Index];
@@ -64,7 +76,7 @@ void Environment::Set(const uint32_t env, const std::string& name, const std::sh
 	envObj->Set(name, value);
 }
 
-std::shared_ptr<IObject> Environment::Get(const uint32_t env, const std::string& name) const
+const IObject* Environment::Get(const uint32_t env, const std::string& name) const
 {
 	EnvironmentHandle envHandle(env);
 	auto envObj = _environments[envHandle._internal.Index];

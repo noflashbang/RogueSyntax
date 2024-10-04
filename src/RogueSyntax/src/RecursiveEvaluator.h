@@ -5,8 +5,8 @@
 class RecursiveEvaluator : public Evaluator
 {
 public:
-	std::shared_ptr<IObject> Eval(const INode* node, const uint32_t env) override;
-	std::shared_ptr<IObject> Eval(const INode* node);
+	const IObject* Eval(const INode* node, const uint32_t env) override;
+	const IObject* Eval(const INode* node);
 
 	void NodeEval(const Program* program) override;
 	void NodeEval(const BlockStatement* block) override;
@@ -35,9 +35,9 @@ public:
 	std::string Type() override { return "Recursive"; }
 
 private:
-	std::vector<std::shared_ptr<IObject>> EvalExpressions(const std::vector<IExpression*>& expressions);
-	std::shared_ptr<IObject> ApplyFunction(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args);
+	std::vector<const IObject*> EvalExpressions(const std::vector<IExpression*>& expressions);
+	const IObject* ApplyFunction(const FunctionObj* func, const std::vector<const IObject*>& args);
 
-	std::stack<std::shared_ptr<IObject>> _results;
+	std::stack<const IObject*> _results;
 	uint32_t _env;
 };

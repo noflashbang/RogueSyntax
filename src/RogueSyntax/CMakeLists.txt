@@ -13,6 +13,7 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Parser.h
     ${PARENT_DIR}/include/RogueSyntax/StandardLib.h
     ${PARENT_DIR}/include/RogueSyntax/IObject.h
+    ${PARENT_DIR}/include/RogueSyntax/ObjectStore.h
     ${PARENT_DIR}/include/RogueSyntax/TypeCoercer.h
     ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
@@ -37,6 +38,7 @@ set( libSource
  "src/AstNodeStore.cpp"
  "src/Parser.cpp"  
  "src/IObject.cpp"
+ "src/ObjectStore.cpp"
  "src/TypeCoercer.cpp"
  "src/Evaluator.cpp"
  "src/Environment.cpp"

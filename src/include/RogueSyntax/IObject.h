@@ -13,7 +13,7 @@ class IObject: public IUnquielyIdentifiable
 public:
 	inline const std::size_t Type() const noexcept { return IUnquielyIdentifiable::Tag(); }
 	virtual std::string Inspect() const = 0;
-	virtual std::shared_ptr<IObject> Clone() const = 0;
+	virtual IObject* Clone() const = 0;
 
 	virtual ~IObject() = default;
 };
@@ -21,9 +21,7 @@ public:
 class IAssignableObject : public IObject
 {
 public:
-	
-	virtual std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) = 0;
-	
+	virtual const IObject* Set(const IObject* key, const IObject* value) = 0;
 	virtual ~IAssignableObject() = default;
 };
 
@@ -38,16 +36,13 @@ public:
 		return "null";
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
 		return NULL_OBJ_REF;
 	}
+	static NullObj NULL_OBJ;
+	static NullObj* NULL_OBJ_REF;
 
-	static std::shared_ptr<NullObj> NULL_OBJ_REF;
-
-protected:
-	static std::shared_ptr<NullObj> New();
-	
 private:
 	int _dummy;
 };
@@ -63,15 +58,16 @@ public:
 		return "null";
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
 		return VOID_OBJ_REF;
 	}
 
-	static std::shared_ptr<VoidObj> VOID_OBJ_REF;
+	static VoidObj VOID_OBJ;
+	static VoidObj* VOID_OBJ_REF;
 
 protected:
-	static std::shared_ptr<VoidObj> New();
+
 
 private:
 	int _dummy;
@@ -89,13 +85,14 @@ public:
 		return "break";
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
 		return BREAK_OBJ_REF;
 	}
 
-	static std::shared_ptr<BreakObj> BREAK_OBJ_REF;
-	static std::shared_ptr<BreakObj> New();
+	static BreakObj BREAK_OBJ;
+	static BreakObj* BREAK_OBJ_REF;
+
 
 private:
 	int _dummy;
@@ -112,13 +109,13 @@ public:
 		return "continue";
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
 		return CONTINUE_OBJ_REF;
 	}
 
-	static std::shared_ptr<ContinueObj> CONTINUE_OBJ_REF;
-	static std::shared_ptr<ContinueObj> New();
+	static ContinueObj CONTINUE_OBJ;
+	static ContinueObj* CONTINUE_OBJ_REF;
 
 private:
 	int _dummy;
@@ -135,14 +132,12 @@ public:
 		return std::to_string(Value);
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Value);
+		return new IntegerObj(Value);
 	}
 
 	int32_t Value;
-
-	static std::shared_ptr<IntegerObj> New(int value);
 };
 
 class DecimalObj : public IObject
@@ -156,14 +151,12 @@ public:
 		return std::to_string(Value);
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Value);
+		return new DecimalObj(Value);
 	}
 
 	float Value;
-
-	static std::shared_ptr<DecimalObj> New(float value);
 };
 
 class StringObj : public IObject
@@ -177,14 +170,12 @@ public:
 		return Value;
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Value);
+		return new StringObj(Value);
 	}
 
 	std::string Value;
-
-	static std::shared_ptr<StringObj> New(const std::string& value);
 };
 
 class BooleanObj : public IObject
@@ -198,25 +189,26 @@ public:
 		return Value ? "true" : "false";
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Value);
+		return Value ? TRUE_OBJ_REF : FALSE_OBJ_REF;
 	}
 
 	bool Value;
 
 	//Native object references
-	static std::shared_ptr<BooleanObj> TRUE_OBJ_REF;
-	static std::shared_ptr<BooleanObj> FALSE_OBJ_REF;
 
+	static BooleanObj TRUE_OBJ;
+	static BooleanObj* TRUE_OBJ_REF;
 
-	static std::shared_ptr<BooleanObj> New(bool value);
+	static BooleanObj FALSE_OBJ;
+	static BooleanObj* FALSE_OBJ_REF;
 };
 
 class ArrayObj : public IAssignableObject
 {
 public:
-	ArrayObj(const std::vector<std::shared_ptr<IObject>>& elements) : Elements(elements) { SetUniqueId(this); }
+	ArrayObj(const std::vector<const IObject*>& elements) : Elements(elements) { SetUniqueId(this); }
 	virtual ~ArrayObj() = default;
 
 	std::string Inspect() const override
@@ -240,18 +232,16 @@ public:
 		return out;
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Elements);
+		std::vector<const IObject*> clonedElements;
+		std::transform(Elements.begin(), Elements.end(), std::back_inserter(clonedElements), [](const auto& elem) { return elem->Clone(); });
+		return new ArrayObj(clonedElements);
 	}
-	std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) override;
 
-	std::vector<std::shared_ptr<IObject>> Elements;
-
-	static std::shared_ptr<ArrayObj> New(const std::vector<std::shared_ptr<IObject>>& elements);
+	const IObject* Set(const IObject* key, const IObject* value) override;
+	std::vector<const IObject*> Elements;
 };
-
-
 
 struct HashKey
 {
@@ -285,8 +275,8 @@ namespace std
 
 struct HashEntry
 {
-	std::shared_ptr<IObject> Key;
-	std::shared_ptr<IObject> Value;
+	const IObject* Key;
+	const IObject* Value;
 };
 
 class HashObj : public IAssignableObject
@@ -319,22 +309,25 @@ public:
 		return out;
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Elements);
+		std::unordered_map<HashKey, HashEntry> clonedElements;
+		std::transform(Elements.begin(), Elements.end(), std::inserter(clonedElements, clonedElements.end()), [](const auto& elem)
+			{
+				auto [key, value] = elem;
+				return std::make_pair(key, HashEntry{ value.Key->Clone(), value.Value->Clone() });
+			});
+		return new HashObj(clonedElements);
 	}
 
-	std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) override;
-
+	const IObject* Set(const IObject* key, const IObject* value) override;
 	std::unordered_map<HashKey, HashEntry> Elements;
-
-	static std::shared_ptr<HashObj> New(const std::unordered_map<HashKey, HashEntry>& elements);
 };
 
 class IdentifierObj : public IAssignableObject
 {
 public:
-	IdentifierObj(const std::string& name, const std::shared_ptr<IObject>& value) : Name(name), Value(value) { SetUniqueId(this); }
+	IdentifierObj(const std::string& name, const IObject* value) : Name(name), Value(value) { SetUniqueId(this); }
 	virtual ~IdentifierObj() = default;
 
 	std::string Inspect() const override
@@ -342,26 +335,21 @@ public:
 		return Value->Inspect();
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Name, Value->Clone());
+		return new IdentifierObj(Name, Value->Clone());
 	}
 
-	std::shared_ptr<IObject> Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value) override;
+	const IObject* Set(const IObject* key, const IObject* value) override;
 
 	std::string Name;
-	std::shared_ptr<IObject> Value;
-
-	static std::shared_ptr<IdentifierObj> New(const std::string& name, const std::shared_ptr<IObject>& value);
-
-private:
-
+	const IObject* Value;
 };
 
 class ReturnObj : public IObject
 {
 public:
-	ReturnObj(const std::shared_ptr<IObject>& value) : Value(value) { SetUniqueId(this); }
+	ReturnObj(const IObject* value) : Value(value) { SetUniqueId(this); }
 	virtual ~ReturnObj() = default;
 
 	std::string Inspect() const override
@@ -369,14 +357,12 @@ public:
 		return Value->Inspect();
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Value->Clone());
+		return new ReturnObj(Value->Clone());
 	}
 
-	std::shared_ptr<IObject> Value;
-
-	static std::shared_ptr<ReturnObj> New(const std::shared_ptr<IObject>& value);
+	const IObject* Value;
 };
 
 class ErrorObj : public IObject
@@ -390,15 +376,13 @@ public:
 		return "ERROR: " + Message;
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Message, Token);
+		return new ErrorObj(Message, Token);
 	}
 
 	std::string Message;
 	Token Token;
-
-	static std::shared_ptr<ErrorObj> New(const std::string& message, const ::Token& token);
 };
 
 class FunctionObj : public IObject
@@ -430,15 +414,13 @@ public:
 		return out;
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Parameters, Body);
+		return new FunctionObj(Parameters, Body); //shallow copy is fine
 	}
 
 	std::vector<IExpression*> Parameters;
 	const IStatement* Body;
-
-	static std::shared_ptr<FunctionObj> New(const std::vector<IExpression*>& parameters, const IStatement* body);
 };
 
 class BuiltInObj : public IObject
@@ -448,27 +430,20 @@ public:
 	BuiltInObj(const int idx) : Name(""), Idx(idx) { SetUniqueId(this); }
 	virtual ~BuiltInObj() = default;
 
-	std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> Resolve(std::shared_ptr<BuiltIn> externals) const;
+	std::function<IObject*(const std::vector<const IObject*>& args)> Resolve(std::shared_ptr<BuiltIn> externals) const;
 
 	std::string Inspect() const override
 	{
 		return "builtin function";
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		if (Idx != -1)
-		{
-			return New(Idx);
-		}
-		return New(Name);
+		return Idx != -1 ? new BuiltInObj(Idx) : new BuiltInObj(Name);
 	}
 
 	std::string Name;
 	int Idx;
-
-	static std::shared_ptr<BuiltInObj> New(const std::string& name);
-	static std::shared_ptr<BuiltInObj> New(const int idx);
 };
 
 class FunctionCompiledObj : public IObject
@@ -482,22 +457,20 @@ public:
 		return OpCode::PrintInstructions(FuncInstructions);
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(FuncInstructions, NumLocals, NumParameters);
+		return new FunctionCompiledObj(FuncInstructions, NumLocals, NumParameters);
 	}
 	
 	Instructions FuncInstructions;
 	int NumLocals;
 	int NumParameters;
-
-	static std::shared_ptr<FunctionCompiledObj> New(const Instructions& instructions, int numLocals, int numParameters);
 };
 
 class ClosureObj : public IObject
 {
 public:
-	ClosureObj(const std::shared_ptr<FunctionCompiledObj>& fun, const std::vector<std::shared_ptr<IObject>>& free) : Function(fun), Frees(free) { SetUniqueId(this); }
+	ClosureObj(const FunctionCompiledObj* fun, const std::vector<const IObject*>& free) : Function(fun), Frees(free) { SetUniqueId(this); }
 	virtual ~ClosureObj() = default;
 
 	std::string Inspect() const override
@@ -505,13 +478,13 @@ public:
 		return Function->Inspect();
 	}
 
-	std::shared_ptr<IObject> Clone() const override
+	IObject* Clone() const override
 	{
-		return New(Function, Frees);
+		std::vector<const IObject*> clonedFrees;
+		std::transform(Frees.begin(), Frees.end(), std::back_inserter(clonedFrees), [](const auto& free) { return free->Clone(); });
+		return new ClosureObj(Function, clonedFrees);
 	}
 
-	std::shared_ptr<FunctionCompiledObj> Function;
-	std::vector<std::shared_ptr<IObject>> Frees;
-	
-	static std::shared_ptr<ClosureObj> New(const std::shared_ptr<FunctionCompiledObj>& fun, const std::vector<std::shared_ptr<IObject>>& free);
+	const FunctionCompiledObj* Function;
+	std::vector<const IObject*> Frees;
 };

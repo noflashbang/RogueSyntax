@@ -3,7 +3,7 @@
 #include "RecursiveEvaluator.h"
 
 
-std::shared_ptr<IObject> RecursiveEvaluator::Eval(const INode* node, const uint32_t env)
+const IObject* RecursiveEvaluator::Eval(const INode* node, const uint32_t env)
 {
 	_env = env; // set the environment
 	auto result = Eval(node);
@@ -16,7 +16,7 @@ std::shared_ptr<IObject> RecursiveEvaluator::Eval(const INode* node, const uint3
 	return result;
 }
 
-std::shared_ptr<IObject> RecursiveEvaluator::Eval(const INode* node)
+const IObject* RecursiveEvaluator::Eval(const INode* node)
 {
 	node->Eval(this);
 	
@@ -60,12 +60,14 @@ void RecursiveEvaluator::NodeEval(const ExpressionStatement* expression)
 
 void RecursiveEvaluator::NodeEval(const ReturnStatement* ret)
 {
+	auto store = EvalEnvironment->GetObjectStore(_env);
 	auto value = Eval(ret->ReturnValue, _env);
-	_results.push(ReturnObj::New(value));
+	_results.push(store.New_ReturnObj(value));
 }
 
 void RecursiveEvaluator::NodeEval(const LetStatement* let)
 {
+	auto store = EvalEnvironment->GetObjectStore(_env);
 	auto value = Eval(let->Value, _env);
 
 	value = UnwrapIfReturnObj(value);
@@ -85,7 +87,11 @@ void RecursiveEvaluator::NodeEval(const LetStatement* let)
 			_results.push(target);
 			return;
 		}
-		auto* ident = dynamic_no_copy_cast<IdentifierObj>(target);
+		
+		auto identClone = target->Clone();
+		store.Add(identClone);
+
+		auto* ident = dynamic_cast<IdentifierObj*>(identClone);
 		ident->Set(nullptr, value);
 		EvalEnvironment->Set(_env, ident->Name, value);
 	}
@@ -113,43 +119,47 @@ void RecursiveEvaluator::NodeEval(const LetStatement* let)
 			return;
 		}
 
-		auto* assignable = dynamic_no_copy_cast<IAssignableObject>(left);
+		auto assignableClone = left->Clone();
+		store.Add(assignableClone);
+		auto* assignable = dynamic_cast<IAssignableObject*>(assignableClone);
 		if (assignable == nullptr)
 		{
-			_results.push(MakeError("left side of assignment is not assignable", index->BaseToken));
+			_results.push(MakeError(_env, "left side of assignment is not assignable", index->BaseToken));
 			return;
 		}
 		assignable->Set(indexObj, value);
 	}
 	else
 	{
-		_results.push(MakeError("let target must be identifier or index expression", let->BaseToken));
+		_results.push(MakeError(_env, "let target must be identifier or index expression", let->BaseToken));
 	}
 }
 
 void RecursiveEvaluator::NodeEval(const Identifier* ident)
 {
+	auto store = EvalEnvironment->GetObjectStore(_env);
 	if (EvalBuiltIn->IsBuiltIn(ident->Value))
 	{
-		_results.push(BuiltInObj::New(ident->Value));
+		_results.push(store.New_BuiltInObj(ident->Value));
 	}
 	else
 	{
 		auto value = EvalEnvironment->Get(_env, ident->Value);
 		if (value != nullptr)
 		{
-			_results.push(IdentifierObj::New(ident->Value, value));
+			_results.push(store.New_IdentifierObj(ident->Value, value));
 		}
 		else
 		{
-			_results.push(IdentifierObj::New(ident->Value, NullObj::NULL_OBJ_REF));
+			_results.push(store.New_IdentifierObj(ident->Value, NullObj::NULL_OBJ_REF));
 		}
 	}
 }
 
 void RecursiveEvaluator::NodeEval(const IntegerLiteral* integer)
 {
-	_results.push(IntegerObj::New(integer->Value));
+	auto store = EvalEnvironment->GetObjectStore(_env);
+	_results.push(store.New_IntegerObj(integer->Value));
 }
 
 void RecursiveEvaluator::NodeEval(const BooleanLiteral* boolean)
@@ -159,12 +169,14 @@ void RecursiveEvaluator::NodeEval(const BooleanLiteral* boolean)
 
 void RecursiveEvaluator::NodeEval(const StringLiteral* string)
 {
-	_results.push(StringObj::New(string->Value));
+	auto store = EvalEnvironment->GetObjectStore(_env);
+	_results.push(store.New_StringObj(string->Value));
 }
 
 void RecursiveEvaluator::NodeEval(const DecimalLiteral* decimal)
 {
-	_results.push(DecimalObj::New(decimal->Value));
+	auto store = EvalEnvironment->GetObjectStore(_env);
+	_results.push(store.New_DecimalObj(decimal->Value));
 }
 
 void RecursiveEvaluator::NodeEval(const PrefixExpression* prefix)
@@ -179,7 +191,7 @@ void RecursiveEvaluator::NodeEval(const PrefixExpression* prefix)
 		_results.push(right);
 		return;
 	}
-	_results.push(EvalPrefixExpression(prefix->BaseToken, right));
+	_results.push(EvalPrefixExpression(_env, prefix->BaseToken, right));
 }
 
 void RecursiveEvaluator::NodeEval(const InfixExpression* infix)
@@ -204,7 +216,7 @@ void RecursiveEvaluator::NodeEval(const InfixExpression* infix)
 		_results.push(right);
 		return;
 	}
-	_results.push(EvalInfixExpression(infix->BaseToken, left, right));
+	_results.push(EvalInfixExpression(_env, infix->BaseToken, left, right));
 }
 
 void RecursiveEvaluator::NodeEval(const IfStatement* ifExpr)
@@ -220,7 +232,7 @@ void RecursiveEvaluator::NodeEval(const IfStatement* ifExpr)
 		return;
 	}
 
-	auto booleanObj = EvalAsBoolean(ifExpr->BaseToken, condition.get());
+	auto booleanObj = EvalAsBoolean(_env, ifExpr->BaseToken, condition);
 
 	if (booleanObj->IsThisA<ErrorObj>())
 	{
@@ -244,7 +256,8 @@ void RecursiveEvaluator::NodeEval(const IfStatement* ifExpr)
 
 void RecursiveEvaluator::NodeEval(const FunctionLiteral* function)
 {
-	_results.push(FunctionObj::New(function->Parameters, function->Body));
+	auto store = EvalEnvironment->GetObjectStore(_env);
+	_results.push(store.New_FunctionObj(function->Parameters, function->Body));
 }
 
 void RecursiveEvaluator::NodeEval(const CallExpression* call)
@@ -260,7 +273,7 @@ void RecursiveEvaluator::NodeEval(const CallExpression* call)
 
 	if (!(function->IsThisA<FunctionObj>() || function->IsThisA<BuiltInObj>()))
 	{
-		_results.push(MakeError(std::format("literal not a function or builtin: {}", function->Inspect()), call->BaseToken));
+		_results.push(MakeError(_env, std::format("literal not a function or builtin: {}", function->Inspect()), call->BaseToken));
 		return;
 	}
 
@@ -273,12 +286,12 @@ void RecursiveEvaluator::NodeEval(const CallExpression* call)
 
 	if (function->IsThisA<BuiltInObj>())
 	{
-		auto* builtInObj = dynamic_no_copy_cast<BuiltInObj>(function);
+		auto* builtInObj = dynamic_cast<const BuiltInObj*>(function);
 		auto builtInToCall = EvalBuiltIn->GetBuiltInFunction(builtInObj->Name);
 
 		if (builtInToCall == nullptr)
 		{
-			_results.push(MakeError(std::format("builtin function not found: {}", builtInObj->Name), call->BaseToken));
+			_results.push(MakeError(_env, std::format("builtin function not found: {}", builtInObj->Name), call->BaseToken));
 			return;
 		}
 
@@ -292,19 +305,20 @@ void RecursiveEvaluator::NodeEval(const CallExpression* call)
 		}
 		catch (const std::exception& e)
 		{
-			_results.push(MakeError(e.what(), call->BaseToken));
+			_results.push(MakeError(_env, e.what(), call->BaseToken));
 		}
 	}
 	else
 	{
-		auto func = std::dynamic_pointer_cast<FunctionObj>(function);
+		auto func = dynamic_cast<const FunctionObj*>(function);
 		_results.push(ApplyFunction(func, evalArgs));
 	}
 }
 
 void RecursiveEvaluator::NodeEval(const ArrayLiteral* array)
 {
-	std::vector<std::shared_ptr<IObject>> elements;
+	auto store = EvalEnvironment->GetObjectStore(_env);
+	std::vector<const IObject*> elements;
 	for (const auto& elem : array->Elements)
 	{
 		auto eval = Eval(elem, _env);
@@ -315,7 +329,7 @@ void RecursiveEvaluator::NodeEval(const ArrayLiteral* array)
 		}
 		elements.push_back(eval);
 	}
-	_results.push(ArrayObj::New(elements));
+	_results.push(store.New_ArrayObj(elements));
 }
 
 void RecursiveEvaluator::NodeEval(const IndexExpression* index)
@@ -341,11 +355,12 @@ void RecursiveEvaluator::NodeEval(const IndexExpression* index)
 		return;
 	}
 
-	_results.push(EvalIndexExpression(index->BaseToken, left, indexObj));
+	_results.push(EvalIndexExpression(_env, index->BaseToken, left, indexObj));
 }
 
 void RecursiveEvaluator::NodeEval(const HashLiteral* hash)
 {
+	auto store = EvalEnvironment->GetObjectStore(_env);
 	std::unordered_map<HashKey, HashEntry> elems;
 	for (const auto& [key, value] : hash->Elements)
 	{
@@ -364,7 +379,7 @@ void RecursiveEvaluator::NodeEval(const HashLiteral* hash)
 		}
 		elems[HashKey{ keyObj->Type(), keyObj->Inspect() }] = HashEntry{ keyObj, valueObj };
 	}
-	_results.push(HashObj::New(elems));
+	_results.push(store.New_HashObj(elems));
 }
 
 void RecursiveEvaluator::NodeEval(const WhileStatement* whileEx)
@@ -380,7 +395,7 @@ void RecursiveEvaluator::NodeEval(const WhileStatement* whileEx)
 		return;
 	}
 
-	auto booleanObj = EvalAsBoolean(whileEx->BaseToken, condition.get());
+	auto booleanObj = EvalAsBoolean(_env, whileEx->BaseToken, condition);
 
 	if (booleanObj->IsThisA<ErrorObj>())
 	{
@@ -395,7 +410,7 @@ void RecursiveEvaluator::NodeEval(const WhileStatement* whileEx)
 		{
 			if (evaluated->IsThisA<ReturnObj>())
 			{
-				auto* ret = dynamic_no_copy_cast<ReturnObj>(evaluated);
+				auto* ret = dynamic_cast<const ReturnObj*>(evaluated);
 				if (ret->Value == BreakObj::BREAK_OBJ_REF)
 				{
 					return;
@@ -425,7 +440,7 @@ void RecursiveEvaluator::NodeEval(const WhileStatement* whileEx)
 			return;
 		}
 
-		booleanObj = EvalAsBoolean(whileEx->BaseToken, condition.get());
+		booleanObj = EvalAsBoolean(_env, whileEx->BaseToken, condition);
 
 		if (booleanObj->IsThisA<ErrorObj>())
 		{
@@ -451,7 +466,7 @@ void RecursiveEvaluator::NodeEval(const ForStatement* forEx)
 		return;
 	}
 
-	auto booleanObj = EvalAsBoolean(forEx->BaseToken, condition.get());
+	auto booleanObj = EvalAsBoolean(_env, forEx->BaseToken, condition);
 
 	if (booleanObj->IsThisA<ErrorObj>())
 	{
@@ -466,7 +481,7 @@ void RecursiveEvaluator::NodeEval(const ForStatement* forEx)
 		{
 			if (evaluated->IsThisA<ReturnObj>())
 			{
-				auto* ret = dynamic_no_copy_cast<ReturnObj>(evaluated);
+				auto* ret = dynamic_cast<const ReturnObj*>(evaluated);
 				if (ret->Value == BreakObj::BREAK_OBJ_REF)
 				{
 					return;
@@ -499,7 +514,7 @@ void RecursiveEvaluator::NodeEval(const ForStatement* forEx)
 			return;
 		}
 
-		booleanObj = EvalAsBoolean(forEx->BaseToken, condition.get());
+		booleanObj = EvalAsBoolean(_env, forEx->BaseToken, condition);
 
 		if (booleanObj->IsThisA<ErrorObj>())
 		{
@@ -512,12 +527,14 @@ void RecursiveEvaluator::NodeEval(const ForStatement* forEx)
 
 void RecursiveEvaluator::NodeEval(const BreakStatement* breakStmt)
 {
-	_results.push(ReturnObj::New(BreakObj::BREAK_OBJ_REF));
+	auto store = EvalEnvironment->GetObjectStore(_env);
+	_results.push(store.New_ReturnObj(BreakObj::BREAK_OBJ_REF));
 }
 
 void RecursiveEvaluator::NodeEval(const ContinueStatement* continueStmt)
 {
-	_results.push(ReturnObj::New(ContinueObj::CONTINUE_OBJ_REF));
+	auto store = EvalEnvironment->GetObjectStore(_env);
+	_results.push(store.New_ReturnObj(ContinueObj::CONTINUE_OBJ_REF));
 }
 
 void RecursiveEvaluator::NodeEval(const NullLiteral* null)
@@ -525,9 +542,9 @@ void RecursiveEvaluator::NodeEval(const NullLiteral* null)
 	_results.push(NullObj::NULL_OBJ_REF);
 }
 
-std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const std::vector<IExpression*>& expressions)
+std::vector<const IObject*> RecursiveEvaluator::EvalExpressions(const std::vector<IExpression*>& expressions)
 {
-	std::vector<std::shared_ptr<IObject>> result;
+	std::vector<const IObject*> result;
 	for (const auto& expr : expressions)
 	{
 		auto evaluated = Eval(expr, _env);
@@ -538,7 +555,7 @@ std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const 
 
 		if (evaluated->IsThisA<ReturnObj>())
 		{
-			auto ret = std::dynamic_pointer_cast<ReturnObj>(evaluated);
+			auto ret = dynamic_cast<const ReturnObj*>(evaluated);
 
 			auto unwrapped = UnwrapIfReturnObj(ret->Value);
 			unwrapped = UnwrapIfIdentObj(unwrapped);
@@ -547,7 +564,7 @@ std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const 
 		}
 		else if (evaluated->IsThisA<IdentifierObj>())
 		{
-			auto ident = std::dynamic_pointer_cast<IdentifierObj>(evaluated);
+			auto ident = dynamic_cast<const IdentifierObj*>(evaluated);
 			auto unwrapped = UnwrapIfIdentObj(ident);
 			result.push_back(unwrapped);
 		}
@@ -558,7 +575,7 @@ std::vector<std::shared_ptr<IObject>> RecursiveEvaluator::EvalExpressions(const 
 	}
 	return result;
 }
-std::shared_ptr<IObject> RecursiveEvaluator::ApplyFunction(const std::shared_ptr<FunctionObj>& func, const std::vector<std::shared_ptr<IObject>>& args)
+const IObject* RecursiveEvaluator::ApplyFunction(const FunctionObj* func, const std::vector<const IObject*>& args)
 {
 	auto envHolder = _env; //save the current environment
 	auto extEnv = ExtendFunctionEnv(_env, func, args);

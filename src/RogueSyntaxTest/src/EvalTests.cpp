@@ -3,7 +3,7 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
-std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input, std::shared_ptr<Program>* progOut)
+const IObject* EvalTest(const std::shared_ptr<Evaluator>& eval, const std::string& input, std::shared_ptr<Program>* progOut)
 {
 	Lexer lexer(input);
 	Parser parser(lexer);
@@ -28,20 +28,20 @@ std::shared_ptr<IObject> EvalTest(const std::shared_ptr<Evaluator>& eval, const 
 	return result;
 }
 
-bool TestIntegerObject(std::shared_ptr<IObject> obj, const int32_t expected)
+bool TestIntegerObject(const IObject* obj, const int32_t expected)
 {
 	if (!obj->IsThisA<IntegerObj>())
 	{
 		if (obj->IsThisA<ErrorObj>())
 		{
-			auto errorObj = std::dynamic_pointer_cast<ErrorObj>(obj);
+			auto errorObj = dynamic_cast<const ErrorObj*>(obj);
 			UNSCOPED_INFO(errorObj->Message);
 		}
 		throw std::invalid_argument(std::format("Object is not an integer -> Expected {} GOT {}", "IntegerObj", obj->TypeName()));
 		return false;
 	}
 
-	auto converted = std::dynamic_pointer_cast<IntegerObj>(obj);
+	auto converted = dynamic_cast<const IntegerObj*>(obj);
 	auto actualValue = converted->Value;
 
 	if (actualValue != expected)
@@ -62,7 +62,7 @@ bool TestEvalInteger(const std::shared_ptr<Evaluator>& eval, const std::string& 
 	return TestIntegerObject(result, expected);
 }
 
-bool TestBooleanObject(std::shared_ptr<IObject> obj, const bool expected)
+bool TestBooleanObject(const IObject* obj, const bool expected)
 {
 	if (!obj->IsThisA<BooleanObj>())
 	{
@@ -70,7 +70,7 @@ bool TestBooleanObject(std::shared_ptr<IObject> obj, const bool expected)
 		return false;
 	}
 
-	auto converted = std::dynamic_pointer_cast<BooleanObj>(obj);
+	auto converted = dynamic_cast<const BooleanObj*>(obj);
 	auto actualValue = converted->Value;
 
 	if (actualValue != expected)
@@ -242,7 +242,7 @@ TEST_CASE("Test Error Obj")
 		auto result = EvalTest(eng, test.first, &prog);
 		CAPTURE(test.first);
 		REQUIRE(result->IsThisA<ErrorObj>());
-		auto errorObj = std::dynamic_pointer_cast<ErrorObj>(result);
+		auto errorObj = dynamic_cast<const ErrorObj*>(result);
 		REQUIRE(errorObj->Message == test.second);
 	}
 }
@@ -271,7 +271,7 @@ TEST_CASE("Test Function Object")
 	std::shared_ptr<Program> prog;
 	auto result = EvalTest(eng, input, &prog);
 	REQUIRE(result->IsThisA<FunctionObj>());
-	auto func = dynamic_pointer_cast<FunctionObj>(result);
+	auto func = dynamic_cast<const FunctionObj*>(result);
 	REQUIRE(func->Parameters.size() == 1);
 	REQUIRE(func->Parameters[0]->ToString() == "x");
 	REQUIRE(func->Body->ToString() == "{(x + 2)}");

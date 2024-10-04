@@ -11,7 +11,7 @@ BuiltIn::BuiltIn()
 	RegisterBuiltIn("printLine", std::bind(&BuiltIn::PrintLine, this, std::placeholders::_1));
 }
 
-std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> BuiltIn::GetBuiltInFunction(const std::string& name)
+std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::GetBuiltInFunction(const std::string& name)
 {
 	auto it = std::find(_builtinNames.begin(), _builtinNames.end(), name);
 	if (it != _builtinNames.end())
@@ -22,7 +22,7 @@ std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject
 	return nullptr;
 }
 
-std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> BuiltIn::GetBuiltInFunction(const int idx)
+std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::GetBuiltInFunction(const int idx)
 {
 	if (idx < 0 || idx >= _builtins.size())
 	{
@@ -31,7 +31,7 @@ std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject
 	return _builtins[idx];
 }
 
-void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> func)
+void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (const std::vector<const IObject*>& args)> func)
 {
 	_builtinNames.push_back(name);
 	_builtins.push_back(func);
@@ -40,7 +40,7 @@ void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<std::shared
 	_ASSERT(_builtinNames.size() == _builtins.size());
 }
 
-std::shared_ptr<IObject> BuiltIn::Len(const std::vector<std::shared_ptr<IObject>>& args)
+IObject* BuiltIn::Len(const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -49,26 +49,26 @@ std::shared_ptr<IObject> BuiltIn::Len(const std::vector<std::shared_ptr<IObject>
 
 	if (args[0]->IsThisA<StringObj>())
 	{
-		auto str = dynamic_cast<StringObj*>(args[0].get());
-		return IntegerObj::New(str->Value.size());
+		auto str = dynamic_cast<const StringObj*>(args[0]);
+		return _objectStore.New_IntegerObj(str->Value.size());
 	}
 
 	if (args[0]->IsThisA<ArrayObj>())
 	{
-		auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
-		return IntegerObj::New(arr->Elements.size());
+		auto arr = dynamic_cast<const ArrayObj*>(args[0]);
+		return _objectStore.New_IntegerObj(arr->Elements.size());
 	}
 
 	if (args[0]->IsThisA<HashObj>())
 	{
-		auto hash = std::dynamic_pointer_cast<HashObj>(args[0]);
-		return IntegerObj::New(hash->Elements.size());
+		auto hash = dynamic_cast<const HashObj*>(args[0]);
+		return _objectStore.New_IntegerObj(hash->Elements.size());
 	}
 
-	throw std::runtime_error(std::format("argument to `len` not supported, got {}", args[0].get()->TypeName()));
+	throw std::runtime_error(std::format("argument to `len` not supported, got {}", args[0]->TypeName()));
 }
 
-std::shared_ptr<IObject> BuiltIn::First(const std::vector<std::shared_ptr<IObject>>& args)
+IObject* BuiltIn::First(const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -77,19 +77,21 @@ std::shared_ptr<IObject> BuiltIn::First(const std::vector<std::shared_ptr<IObjec
 
 	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `first` must be ARRAY, got {}", args[0].get()->TypeName()));
+		throw std::runtime_error(std::format("argument to `first` must be ARRAY, got {}", args[0]->TypeName()));
 	}
 
-	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
+	auto arr = dynamic_cast<const ArrayObj*>(args[0]);
 	if (arr->Elements.size() > 0)
 	{
-		return arr->Elements[0];
+		auto cloned = arr->Elements[0]->Clone();
+		_objectStore.Add(cloned);
+		return cloned;
 	}
 
 	return NullObj::NULL_OBJ_REF;
 }
 
-std::shared_ptr<IObject> BuiltIn::Last(const std::vector<std::shared_ptr<IObject>>& args)
+IObject* BuiltIn::Last(const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -98,20 +100,22 @@ std::shared_ptr<IObject> BuiltIn::Last(const std::vector<std::shared_ptr<IObject
 
 	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `last` must be ARRAY, got {}", args[0].get()->TypeName()));
+		throw std::runtime_error(std::format("argument to `last` must be ARRAY, got {}", args[0]->TypeName()));
 	}
 
-	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
+	auto arr = dynamic_cast<const ArrayObj*>(args[0]);
 	auto length = arr->Elements.size();
 	if (length > 0)
 	{
-		return arr->Elements[length - 1];
+		auto cloned = arr->Elements[length - 1]->Clone();
+		_objectStore.Add(cloned);
+		return cloned;
 	}
 
 	return NullObj::NULL_OBJ_REF;
 }
 
-std::shared_ptr<IObject> BuiltIn::Rest(const std::vector<std::shared_ptr<IObject>>& args)
+IObject* BuiltIn::Rest(const std::vector<const IObject*>& args)
 {
 	if (args.size() != 1)
 	{
@@ -120,25 +124,25 @@ std::shared_ptr<IObject> BuiltIn::Rest(const std::vector<std::shared_ptr<IObject
 
 	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `rest` must be ARRAY, got {}", args[0].get()->TypeName()));
+		throw std::runtime_error(std::format("argument to `rest` must be ARRAY, got {}", args[0]->TypeName()));
 	}
 
-	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
+	auto arr = dynamic_cast<const ArrayObj*>(args[0]);
 	auto length = arr->Elements.size();
 	if (length > 0)
 	{
-		std::vector<std::shared_ptr<IObject>> newElements;
+		std::vector<const IObject*> newElements;
 		for (size_t i = 1; i < length; i++)
 		{
 			newElements.push_back(arr->Elements[i]);
 		}
-		return ArrayObj::New(newElements);
+		return _objectStore.New_ArrayObj(newElements);
 	}
 
 	return NullObj::NULL_OBJ_REF;
 }
 
-std::shared_ptr<IObject> BuiltIn::Push(const std::vector<std::shared_ptr<IObject>>& args)
+IObject* BuiltIn::Push(const std::vector<const IObject*>& args)
 {
 	if (args.size() != 2)
 	{
@@ -147,16 +151,16 @@ std::shared_ptr<IObject> BuiltIn::Push(const std::vector<std::shared_ptr<IObject
 
 	if (!args[0]->IsThisA<ArrayObj>())
 	{
-		throw std::runtime_error(std::format("argument to `push` must be ARRAY, got {}", args[0].get()->TypeName()));
+		throw std::runtime_error(std::format("argument to `push` must be ARRAY, got {}", args[0]->TypeName()));
 	}
 
-	auto arr = std::dynamic_pointer_cast<ArrayObj>(args[0]);
+	auto arr = dynamic_cast<const ArrayObj*>(args[0]);
 	auto newElements = arr->Elements;
 	newElements.push_back(args[1]);
-	return ArrayObj::New(newElements);
+	return _objectStore.New_ArrayObj(newElements);
 }
 
-std::shared_ptr<IObject> BuiltIn::PrintLine(const std::vector<std::shared_ptr<IObject>>& args)
+IObject* BuiltIn::PrintLine(const std::vector<const IObject*>& args)
 {
 	for (const auto& arg : args)
 	{

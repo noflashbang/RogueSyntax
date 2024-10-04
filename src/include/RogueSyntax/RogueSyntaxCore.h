@@ -29,6 +29,7 @@
 #include "AstNodeStore.h"
 #include "Parser.h"
 #include "IObject.h"
+#include "ObjectStore.h"
 #include "Environment.h"
 #include "Builtin.h"
 #include "TypeCoercer.h"

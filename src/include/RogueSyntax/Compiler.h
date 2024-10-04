@@ -96,7 +96,7 @@ struct CompilationUnit
 	void RemoveLastPop();
 	bool LastInstructionIs(OpCode::Constants opcode);
 	void RemoveLastInstruction();
-	void ChangeOperand(int position, int operand);
+	void ChangeOperand(int position, uint32_t operand);
 	void ReplaceInstruction(int position, Instructions instructions);
 };
 
@@ -124,6 +124,14 @@ struct ByteCode
 	std::vector<std::shared_ptr<IObject>> Constants;
 };
 
+enum GetSetType
+{
+	LOCAL,
+	GLOBAL,
+	FREE,
+	EXTERN,
+};
+
 class Compiler
 {
 public:
@@ -137,8 +145,12 @@ public:
 	int EnterUnit();
 	CompilationUnit ExitUnit();
 
-	int AddConstant(std::shared_ptr<IObject> obj);
-	int Emit(OpCode::Constants opcode, std::vector<int> operands);
+	uint32_t AddConstant(std::shared_ptr<IObject> obj);
+	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands);
+
+	int EmitGet(Symbol symbol);
+	int EmitSet(Symbol symbol);
+	uint32_t GetSymbolIdx(const Symbol& symbol);
 	
 	std::vector<std::string> GetErrors() const { return _errors; };
 	inline bool HasErrors() const { return !_errors.empty(); };

@@ -6,7 +6,7 @@
 class StackEvaluator : public Evaluator
 {
 public:
-	std::shared_ptr<IObject> Eval(const INode* node, const uint32_t env) override;
+	const IObject* Eval(const INode* node, const uint32_t env) override;
 
 	void NodeEval(const Program* program) override;
 	void NodeEval(const BlockStatement* block) override;
@@ -42,9 +42,9 @@ private:
 	void Push_Eval(const INode* node, const int32_t signal, const uint32_t env);
 	void Pop_Eval();
 
-	void Push_Result(std::shared_ptr<IObject> result);
-	std::shared_ptr<IObject> Pop_Result();
-	std::shared_ptr<IObject> Pop_ResultAndUnwrap();
+	void Push_Result(const IObject* result);
+	const IObject* Pop_Result();
+	const IObject* Pop_ResultAndUnwrap();
 
 	bool HasResults() const;
 	bool ResultIsError() const;
@@ -53,5 +53,5 @@ private:
 	size_t ResultCount() const;
 
 	std::stack<std::tuple<const INode*, int32_t, uint32_t>> _stack;
-	std::stack<std::shared_ptr<IObject>> _results;
+	std::stack<const IObject*> _results;
 };

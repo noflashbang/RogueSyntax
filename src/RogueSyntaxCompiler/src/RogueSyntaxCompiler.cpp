@@ -56,7 +56,7 @@ void InteractiveCompiler::Run()
 
 	if (top->IsThisA<ErrorObj>())
 	{
-		auto error = std::dynamic_pointer_cast<ErrorObj>(top);
+		auto error = dynamic_cast<const ErrorObj*>(top);
 		std::cout << "Error: " << error->Message << std::endl;
 
 		//print out the source and error location

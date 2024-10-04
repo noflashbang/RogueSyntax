@@ -1,6 +1,10 @@
 #include "Compiler.h"
 #include "Compiler.h"
 #include "Compiler.h"
+#include "Compiler.h"
+#include "Compiler.h"
+#include "Compiler.h"
+#include "Compiler.h"
 #include <pch.h>
 
 
@@ -126,7 +130,7 @@ void CompilationUnit::RemoveLastInstruction()
 	SetLastInstruction(PreviousLastInstruction);
 }
 
-void CompilationUnit::ChangeOperand(int position, int operand)
+void CompilationUnit::ChangeOperand(int position, uint32_t operand)
 {
 	auto instruction = OpCode::Make(static_cast<OpCode::Constants>(UnitInstructions[position]), { operand });
 	ReplaceInstruction(position, instruction);
@@ -199,16 +203,64 @@ CompilationUnit Compiler::ExitUnit()
 	return unit;
 }
 
-int Compiler::AddConstant(std::shared_ptr<IObject> obj)
+uint32_t Compiler::AddConstant(std::shared_ptr<IObject> obj)
 {
 	_constants.push_back(obj);
 	return _constants.size() - 1;
 }
 
-int Compiler::Emit(OpCode::Constants opcode, std::vector<int> operands)
+int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands)
 {
 	auto instructions = OpCode::Make(opcode, operands);
 	return _CompilationUnits.top().AddInstruction(instructions);
+}
+
+int Compiler::EmitGet(Symbol symbol)
+{
+	if (symbol.Scope == SCOPE_FUNCTION)
+	{
+		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
+	}
+	else
+	{
+		return Emit(OpCode::Constants::OP_GET, { GetSymbolIdx(symbol) });
+	}
+}
+
+int Compiler::EmitSet(Symbol symbol)
+{
+	if (symbol.Scope == SCOPE_FUNCTION)
+	{
+		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
+	}
+	else
+	{
+		return Emit(OpCode::Constants::OP_SET, { GetSymbolIdx(symbol) });
+	}
+}
+
+uint32_t Compiler::GetSymbolIdx(const Symbol& symbol)
+{
+	if (symbol.Scope == SCOPE_GLOBAL)
+	{
+		return (symbol.Index & 0x3FFF);
+	}
+	else if (symbol.Scope == SCOPE_LOCAL)
+	{
+		return ((symbol.Index & 0x3FFF)) | 0x8000;
+	}
+	else if (symbol.Scope == SCOPE_EXTERN)
+	{
+		return ((symbol.Index & 0x3FFF)) | 0x4000;
+	}
+	else if (symbol.Scope == SCOPE_FREE)
+	{
+		return ((symbol.Index & 0x3FFF)) | 0xC000;
+	}
+	else
+	{
+		throw std::runtime_error("Invalid symbol scope");
+	}
 }
 
 void Compiler::NodeCompile(const Program* program)
@@ -269,18 +321,18 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
-		if (symbol.Scope == SCOPE_LOCAL)
-		{
-			Emit(OpCode::Constants::OP_SET_LOCAL, { symbol.Index });
-		}
-		else
-		{
-			Emit(OpCode::Constants::OP_SET_GLOBAL, { symbol.Index });
-		}
+		EmitSet(symbol);
 	}
 	else if (let->Name->IsThisA<IndexExpression>())
 	{
 		auto* index = dynamic_cast<const IndexExpression*>(let->Name);
+		if (!index->Left->IsThisA<Identifier>())
+		{
+			_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownError, "Expected identifier"));
+			return;
+		}
+		auto* ident = dynamic_cast<const Identifier*>(index->Left);
+		auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
 
 		//get the lvalue
 		index->Compile(this);
@@ -289,6 +341,9 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
+		//remove the last index instruction
+		_CompilationUnits.top().RemoveLastInstruction();
+
 		//get the rvalue
 		let->Value->Compile(this);
 		if (HasErrors())
@@ -296,7 +351,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
-		Emit(OpCode::Constants::OP_SET_ASSIGN, {});
+		Emit(OpCode::Constants::OP_SET_ASSIGN, { GetSymbolIdx(sym) });
 	}
 	else
 	{
@@ -307,31 +362,12 @@ void Compiler::NodeCompile(const LetStatement* let)
 void Compiler::NodeCompile(const Identifier* ident)
 {
 	auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
-	if (sym.Scope == SCOPE_LOCAL)
-	{
-		Emit(OpCode::Constants::OP_GET_LOCAL, { sym.Index });
-	}
-	else if (sym.Scope == SCOPE_GLOBAL)
-	{
-		Emit(OpCode::Constants::OP_GET_GLOBAL, { sym.Index });
-	}
-	else if (sym.Scope == SCOPE_EXTERN)
-	{
-		Emit(OpCode::Constants::OP_GET_EXTRN, { sym.Index });
-	}
-	else if (sym.Scope == SCOPE_FREE)
-	{
-		Emit(OpCode::Constants::OP_GET_FREE, { sym.Index });
-	}
-	else if (sym.Scope == SCOPE_FUNCTION)
-	{
-		Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
-	}
+	EmitGet(sym);
 }
 
 void Compiler::NodeCompile(const IntegerLiteral* integer)
 {
-	auto obj = IntegerObj::New(integer->Value);
+	auto obj = std::make_shared<IntegerObj>(integer->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
@@ -343,14 +379,14 @@ void Compiler::NodeCompile(const BooleanLiteral* boolean)
 
 void Compiler::NodeCompile(const StringLiteral* string)
 {
-	auto obj = StringObj::New(string->Value);
+	auto obj = std::make_shared<StringObj>(string->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
 
 void Compiler::NodeCompile(const DecimalLiteral* decimal)
 {
-	auto obj = DecimalObj::New(decimal->Value);
+	auto obj = std::make_shared<DecimalObj>(decimal->Value);
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CONSTANT, { index });
 }
@@ -541,26 +577,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	auto frees = unit.SymbolTable->FreeSymbols();
 	for (auto& sym : frees)
 	{
-		if (sym.Scope == SCOPE_LOCAL)
-		{
-			Emit(OpCode::Constants::OP_GET_LOCAL, { sym.Index });
-		}
-		else if (sym.Scope == SCOPE_GLOBAL)
-		{
-			Emit(OpCode::Constants::OP_GET_GLOBAL, { sym.Index });
-		}
-		else if (sym.Scope == SCOPE_EXTERN)
-		{
-			Emit(OpCode::Constants::OP_GET_EXTRN, { sym.Index });
-		}
-		else if(sym.Scope == SCOPE_FREE)
-		{
-			Emit(OpCode::Constants::OP_GET_FREE, { sym.Index });
-		}
-		else if (sym.Scope == SCOPE_FUNCTION)
-		{
-			Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
-		}
+		EmitGet(sym);
 	}
 	
 	if (unit.LastInstructionIs(OpCode::Constants::OP_POP))
@@ -573,9 +590,9 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	{
 		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN, {}));
 	}
-
-	auto index = AddConstant(FunctionCompiledObj::New(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), function->Parameters.size()));
-	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<int>(frees.size())});
+	auto obj = std::make_shared<FunctionCompiledObj>(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), static_cast<int>(function->Parameters.size()));
+	auto index = AddConstant(obj);
+	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<uint32_t>(frees.size())});
 }
 
 void Compiler::NodeCompile(const CallExpression* call)
@@ -595,7 +612,7 @@ void Compiler::NodeCompile(const CallExpression* call)
 		}
 	}
 
-	Emit(OpCode::Constants::OP_CALL, { static_cast<int>(call->Arguments.size())});
+	Emit(OpCode::Constants::OP_CALL, { static_cast<uint32_t>(call->Arguments.size())});
 }
 
 void Compiler::NodeCompile(const ArrayLiteral* array)
@@ -608,7 +625,7 @@ void Compiler::NodeCompile(const ArrayLiteral* array)
 			return;
 		}
 	}
-	Emit(OpCode::Constants::OP_ARRAY, { static_cast<int>(array->Elements.size()) });
+	Emit(OpCode::Constants::OP_ARRAY, { static_cast<uint32_t>(array->Elements.size()) });
 }
 
 void Compiler::NodeCompile(const IndexExpression* index)
@@ -641,7 +658,7 @@ void Compiler::NodeCompile(const HashLiteral* hash)
 			return;
 		}
 	}
-	Emit(OpCode::Constants::OP_HASH, { static_cast<int>(hash->Elements.size()) });
+	Emit(OpCode::Constants::OP_HASH, { static_cast<uint32_t>(hash->Elements.size()) });
 }
 
 void Compiler::NodeCompile(const NullLiteral* null)
@@ -666,7 +683,7 @@ void Compiler::NodeCompile(const WhileStatement* whileExp)
 		return;
 	}
 
-	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { static_cast<int>(conditionPos) });
+	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { static_cast<uint32_t>(conditionPos) });
 	auto afterBodyPos = _CompilationUnits.top().UnitInstructions.size();
 	_CompilationUnits.top().ChangeOperand(jumpNotTruthyPos, afterBodyPos);
 
@@ -716,7 +733,7 @@ void Compiler::NodeCompile(const ForStatement* forExp)
 	{
 		return;
 	}
-	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { static_cast<int>(conditionPos) });
+	auto jumpPos = Emit(OpCode::Constants::OP_JUMP, { static_cast<uint32_t>(conditionPos) });
 	
 	auto afterLoopPos = _CompilationUnits.top().UnitInstructions.size();
 

@@ -1,18 +1,25 @@
 #include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
 #include "pch.h"
 
 RogueVM::RogueVM(const ByteCode& byteCode)
 	: _byteCode(byteCode)
 {
 	//main frame
-	PushFrame(Frame(ClosureObj::New(FunctionCompiledObj::New(_byteCode.Instructions, 0, 0), {}), 0));
+	auto function = _store.New_FunctionCompiledObj(_byteCode.Instructions, 0, 0);
+	auto closure = _store.New_ClosureObj(function, {});
+	PushFrame(Frame(closure, 0));
 	_externals = nullptr;
 }
 
 RogueVM::RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals) : _byteCode(byteCode), _externals(externals)
 {
 	//main frame
-	PushFrame(Frame(ClosureObj::New(FunctionCompiledObj::New(_byteCode.Instructions, 0, 0), {}), 0));
+	auto function = _store.New_FunctionCompiledObj(_byteCode.Instructions, 0, 0);
+	auto closure = _store.New_ClosureObj(function, {});
+	PushFrame(Frame(closure, 0));
 }
 
 RogueVM::~RogueVM()
@@ -21,7 +28,17 @@ RogueVM::~RogueVM()
 
 void RogueVM::Run()
 {
-	auto constants = _byteCode.Constants;	
+	//make a local copy of the constants
+	auto pgrmConstants = _byteCode.Constants;	
+	std::vector<const IObject*> constants;
+	constants.reserve(pgrmConstants.size());
+	for (auto& c : pgrmConstants)
+	{
+		auto copy = c->Clone();
+		constants.push_back(copy);
+		_store.Add(copy);
+	}
+
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
 		auto instructions = CurrentFrame().Instructions();
@@ -45,13 +62,14 @@ void RogueVM::Run()
 			auto numElements = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 
-			std::vector<std::shared_ptr<IObject>> elements;
+			std::vector<const IObject*> elements;
+			elements.reserve(numElements);
 			for (int i = 0; i < numElements; i++)
 			{
 				elements.push_back(Pop());
 			}
 			std::reverse(elements.begin(), elements.end());
-			auto array = ArrayObj::New(elements);
+			auto array = _store.New_ArrayObj(elements);
 			Push(array);
 			break;
 		}
@@ -69,7 +87,7 @@ void RogueVM::Run()
 				pairs[HashKey{ key->Type(), key->Inspect() }] = HashEntry{ key, value };
 			}
 
-			auto hash = HashObj::New(pairs);
+			auto hash = _store.New_HashObj(pairs);
 			Push(hash);
 			break;
 		}
@@ -141,7 +159,7 @@ void RogueVM::Run()
 			}
 			else
 			{
-				auto coerced = _coercer.EvalAsBoolean(condition.get());
+				auto coerced = _coercer.EvalAsBoolean(_store, condition);
 				if (coerced == BooleanObj::FALSE_OBJ_REF)
 				{
 					SetFrameIp(pos);
@@ -154,80 +172,77 @@ void RogueVM::Run()
 			Push(NullObj::NULL_OBJ_REF);
 			break;
 		}
-		case OpCode::Constants::OP_GET_GLOBAL:
+		case OpCode::Constants::OP_SET:
 		{
 			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
-			auto global = _globals[idx];
-			Push(global);
-			break;
+			ExecuteSetInstruction(idx);
 		}
-		case OpCode::Constants::OP_SET_GLOBAL:
+		case OpCode::Constants::OP_GET:
 		{
 			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
-			auto global = Pop();
-			_globals[idx] = global->Clone();
-			break;
-		}
-		case OpCode::Constants::OP_GET_LOCAL:
-		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
-			auto local = CurrentFrame().BasePointer() + idx;
-			Push(_stack[local]);
-			break;
-		}
-		case OpCode::Constants::OP_SET_LOCAL:
-		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
-			auto local = Pop();
-			auto localIdx = CurrentFrame().BasePointer() + idx;
-			_stack[localIdx] = local->Clone();
-			break;
+			ExecuteGetInstruction(idx);
 		}
 		case OpCode::Constants::OP_SET_ASSIGN:
 		{
-			auto rvalue = Pop();
-			auto lvalue = Pop();
+			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
 
-			if (lvalue->Type() == rvalue->Type())
+			auto rValue = Pop();
+			auto indexValue = Pop();
+			auto arrValue = Pop();
+			if (arrValue->IsThisA<ArrayObj>())
 			{
-				if (lvalue->IsThisA<IntegerObj>())
+				auto arr = dynamic_cast<const ArrayObj*>(arrValue);
+				if (indexValue->IsThisA<IntegerObj>())
 				{
-					auto l = std::dynamic_pointer_cast<IntegerObj>(lvalue);
-					auto r = std::dynamic_pointer_cast<IntegerObj>(rvalue);
-					l->Value = r->Value;
-				}
-				else if (lvalue->IsThisA<DecimalObj>())
-				{
-					auto l = std::dynamic_pointer_cast<DecimalObj>(lvalue);
-					auto r = std::dynamic_pointer_cast<DecimalObj>(rvalue);
-					l->Value = r->Value;
-				}
-				else if (lvalue->IsThisA<StringObj>())
-				{
-					auto l = std::dynamic_pointer_cast<StringObj>(lvalue);
-					auto r = std::dynamic_pointer_cast<StringObj>(rvalue);
-					l->Value = r->Value;
-				}
-				else if (lvalue->IsThisA<BooleanObj>())
-				{
-					auto l = std::dynamic_pointer_cast<BooleanObj>(lvalue);
-					auto r = std::dynamic_pointer_cast<BooleanObj>(rvalue);
-					l->Value = r->Value;
-				}
-				else if (lvalue->IsThisA<NullObj>())
-				{
-					//do nothing
+					auto index = dynamic_cast<const IntegerObj*>(indexValue);
+					if (index->Value >= 0 && index->Value < arr->Elements.size())
+					{
+						auto arrayClone = arr->Clone();
+						_store.Add(arrayClone);
+						auto arrayObj = dynamic_cast<ArrayObj*>(arrayClone);
+						auto rValueClone = rValue->Clone();
+						_store.Add(rValueClone);
+						arrayObj->Elements[index->Value] = rValueClone;
+						
+						Push(arrayObj);
+						ExecuteSetInstruction(idx);
+						Push(rValueClone);
+					}
+					else
+					{
+						throw std::runtime_error("Index out of bounds");
+					}
 				}
 				else
 				{
-					throw std::runtime_error(std::format("Unsupported type {}", lvalue->TypeName()));
+					throw std::runtime_error("Index must be an integer");
 				}
 			}
-			Push(lvalue);
+			else if (arrValue->IsThisA<HashObj>())
+			{
+				auto hashClone = arrValue->Clone();
+				_store.Add(hashClone);
+				auto hash = dynamic_cast<HashObj*>(hashClone);
+				auto key = HashKey{ indexValue->Type(), indexValue->Inspect() };
+
+				auto rValueClone = rValue->Clone();
+				_store.Add(rValueClone);
+				auto keyClone = indexValue->Clone();
+				_store.Add(keyClone);
+				auto entry = HashEntry{ keyClone, rValueClone };
+				hash->Elements[key] = entry;
+
+				Push(hash);
+				ExecuteSetInstruction(idx);
+				Push(rValueClone);
+			}
+			else
+			{
+				throw std::runtime_error("Can only set assign to arrays or hashes");
+			}
 			break;
 		}
 		case OpCode::Constants::OP_INDEX:
@@ -235,25 +250,11 @@ void RogueVM::Run()
 			auto index = Pop();
 			auto left = Pop();
 
-			ExecuteIndexOperation(left.get(), index.get());
+			ExecuteIndexOperation(left, index);
 			
 			break;
 		}
-		case OpCode::Constants::OP_GET_EXTRN:
-		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
-			Push(BuiltInObj::New(idx));
-			break;
-		}
-		case OpCode::Constants::OP_GET_FREE:
-		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
-			auto free = CurrentFrame().Closure()->Frees[idx];
-			Push(free);
-			break;
-		}
+		
 		case OpCode::Constants::OP_CALL:
 		{
 			auto numArgs = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
@@ -263,7 +264,7 @@ void RogueVM::Run()
 			auto callee = _stack[calleeIdx];
 			if (callee->IsThisA<ClosureObj>())
 			{
-				auto closure = std::dynamic_pointer_cast<ClosureObj>(callee);
+				auto closure = dynamic_cast<const ClosureObj*>(callee);
 				auto fn = closure->Function;
 				if (numArgs != fn->NumParameters)
 				{
@@ -282,8 +283,8 @@ void RogueVM::Run()
 					throw std::runtime_error("No external symbols provided");
 				}
 
-				auto builtin = std::dynamic_pointer_cast<BuiltInObj>(callee);
-				auto args = std::vector<std::shared_ptr<IObject>>(_stack.begin() + calleeIdx + 1, _stack.begin() + _sp);
+				auto builtin = dynamic_cast<const BuiltInObj*>(callee);
+				auto args = std::vector<const IObject*>(_stack.begin() + calleeIdx + 1, _stack.begin() + _sp);
 				auto fn = builtin->Resolve(_externals);
 				auto result = fn(args);
 				_sp = calleeIdx;
@@ -306,16 +307,17 @@ void RogueVM::Run()
 			auto numFree = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 
-			auto fn = std::dynamic_pointer_cast<FunctionCompiledObj>(constants[idx]);
+			auto fn = dynamic_cast<const FunctionCompiledObj*>(constants[idx]);
 			
-			std::vector<std::shared_ptr<IObject>> free(numFree);
+			std::vector<const IObject*> free;
+			free.reserve(numFree);
 			for (int i = 0; i < numFree; i++)
 			{
 				free[i] = _stack[_sp - numFree + i];
 			}
 			_sp = _sp - numFree;
 
-			auto closure = ClosureObj::New(fn, free);
+			auto closure = _store.New_ClosureObj(fn, free);
 			Push(closure);
 			break;
 		}
@@ -347,11 +349,11 @@ void RogueVM::Run()
 	}
 }
 
-std::shared_ptr<IObject> RogueVM::Top() const 
+const IObject* RogueVM::Top() const 
 { 
 	return _sp > 0 ? _stack[_sp - 1] : NullObj::NULL_OBJ_REF; 
 }
-void RogueVM::Push(std::shared_ptr<IObject> obj) 
+void RogueVM::Push(const IObject* obj) 
 {
 	if (_sp >= _stack.size()) 
 	{ 
@@ -359,7 +361,8 @@ void RogueVM::Push(std::shared_ptr<IObject> obj)
 	}  
 	_stack[_sp++] = obj; 
 }
-std::shared_ptr<IObject> RogueVM::Pop() 
+
+const IObject* RogueVM::Pop() 
 { 
 	if (_sp == 0) 
 	{ 
@@ -368,7 +371,7 @@ std::shared_ptr<IObject> RogueVM::Pop()
 	return _stack[--_sp];
 }
 
-std::shared_ptr<IObject> RogueVM::LastPoppped() const 
+const IObject* RogueVM::LastPoppped() const 
 { 
 	if (_sp == 0)
 	{
@@ -413,9 +416,9 @@ void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 	auto left = Pop();
 	if (left->Type() != right->Type())
 	{
-		if (_coercer.CanCoerceTypes(left.get(), right.get()))
+		if (_coercer.CanCoerceTypes(left, right))
 		{
-			auto [left_c, right_c] = _coercer.CoerceTypes(left.get(), right.get());
+			auto [left_c, right_c] = _coercer.CoerceTypes(_store, left, right);
 			Push(left_c);
 			Push(right_c);
 			ExecuteArithmeticInfix(opcode);
@@ -428,15 +431,15 @@ void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 	}
 	if (left->IsThisA<IntegerObj>())
 	{
-		ExecuteIntegerArithmeticInfix(opcode, *std::dynamic_pointer_cast<IntegerObj>(left), *std::dynamic_pointer_cast<IntegerObj>(right));
+		ExecuteIntegerArithmeticInfix(opcode, dynamic_cast<const IntegerObj*>(left), dynamic_cast<const IntegerObj*>(right));
 	}
 	else if (left->IsThisA<DecimalObj>())
 	{
-		ExecuteDecimalArithmeticInfix(opcode, *std::dynamic_pointer_cast<DecimalObj>(left), *std::dynamic_pointer_cast<DecimalObj>(right));
+		ExecuteDecimalArithmeticInfix(opcode, dynamic_cast<const DecimalObj*>(left), dynamic_cast<const DecimalObj*>(right));
 	}
 	else if (left->IsThisA<StringObj>())
 	{
-		ExecuteStringArithmeticInfix(opcode, *std::dynamic_pointer_cast<StringObj>(left), *std::dynamic_pointer_cast<StringObj>(right));
+		ExecuteStringArithmeticInfix(opcode, dynamic_cast<const StringObj*>(left), dynamic_cast<const StringObj*>(right));
 	}
 	else
 	{
@@ -444,67 +447,67 @@ void RogueVM::ExecuteArithmeticInfix(OpCode::Constants opcode)
 	}
 }
 
-void RogueVM::ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right)
+void RogueVM::ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_ADD:
 	{
-		auto result = IntegerObj::New(left.Value + right.Value);
+		auto result = _store.New_IntegerObj(left->Value + right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_SUB:
 	{
-		auto result = IntegerObj::New(left.Value - right.Value);
+		auto result = _store.New_IntegerObj(left->Value - right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MUL:
 	{
-		auto result = IntegerObj::New(left.Value * right.Value);
+		auto result = _store.New_IntegerObj(left->Value * right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_DIV:
 	{
-		auto result = IntegerObj::New(left.Value / right.Value);
+		auto result = _store.New_IntegerObj(left->Value / right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MOD:
 	{
-		auto result = IntegerObj::New(left.Value % right.Value);
+		auto result = _store.New_IntegerObj(left->Value % right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BOR:
 	{
-		auto result = IntegerObj::New(left.Value | right.Value);
+		auto result = _store.New_IntegerObj(left->Value | right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BAND:
 	{
-		auto result = IntegerObj::New(left.Value & right.Value);
+		auto result = _store.New_IntegerObj(left->Value & right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BXOR:
 	{
-		auto result = IntegerObj::New(left.Value ^ right.Value);
+		auto result = _store.New_IntegerObj(left->Value ^ right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BLSHIFT:
 	{
-		auto result = IntegerObj::New(left.Value << right.Value);
+		auto result = _store.New_IntegerObj(left->Value << right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BRSHIFT:
 	{
-		auto result = IntegerObj::New(left.Value >> right.Value);
+		auto result = _store.New_IntegerObj(left->Value >> right->Value);
 		Push(result);
 		break;
 	}
@@ -515,37 +518,37 @@ void RogueVM::ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, IntegerObj
 	}
 }
 
-void RogueVM::ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right)
+void RogueVM::ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, const DecimalObj* left, const DecimalObj* right)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_ADD:
 	{
-		auto result = DecimalObj::New(left.Value + right.Value);
+		auto result = _store.New_DecimalObj(left->Value + right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_SUB:
 	{
-		auto result = DecimalObj::New(left.Value - right.Value);
+		auto result = _store.New_DecimalObj(left->Value - right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MUL:
 	{
-		auto result = DecimalObj::New(left.Value * right.Value);
+		auto result = _store.New_DecimalObj(left->Value * right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_DIV:
 	{
-		auto result = DecimalObj::New(left.Value / right.Value);
+		auto result = _store.New_DecimalObj(left->Value / right->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_MOD:
 	{
-		auto result = DecimalObj::New(std::fmod(left.Value, right.Value));
+		auto result = _store.New_DecimalObj(std::fmod(left->Value, right->Value));
 		Push(result);
 		break;
 	}
@@ -554,13 +557,13 @@ void RogueVM::ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, DecimalObj
 	}
 }
 
-void RogueVM::ExecuteStringArithmeticInfix(OpCode::Constants opcode, StringObj left, StringObj right)
+void RogueVM::ExecuteStringArithmeticInfix(OpCode::Constants opcode, const StringObj* left, const StringObj* right)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_ADD:
 	{
-		auto result = StringObj::New(left.Value + right.Value);
+		auto result = _store.New_StringObj(left->Value + right->Value);
 		Push(result);
 		break;
 	}
@@ -579,23 +582,23 @@ void RogueVM::ExecuteComparisonInfix(OpCode::Constants opcode)
 	}
 	if (left->IsThisA<IntegerObj>())
 	{
-		ExecuteIntegerComparisonInfix(opcode, *std::dynamic_pointer_cast<IntegerObj>(left), *std::dynamic_pointer_cast<IntegerObj>(right));
+		ExecuteIntegerComparisonInfix(opcode, dynamic_cast<const IntegerObj*>(left), dynamic_cast<const IntegerObj*>(right));
 	}
 	else if (left->IsThisA<DecimalObj>())
 	{
-		ExecuteDecimalComparisonInfix(opcode, *std::dynamic_pointer_cast<DecimalObj>(left), *std::dynamic_pointer_cast<DecimalObj>(right));
+		ExecuteDecimalComparisonInfix(opcode, dynamic_cast<const DecimalObj*>(left), dynamic_cast<const DecimalObj*>(right));
 	}
 	else if (left->IsThisA<StringObj>())
 	{
-		ExecuteStringComparisonInfix(opcode, *std::dynamic_pointer_cast<StringObj>(left), *std::dynamic_pointer_cast<StringObj>(right));
+		ExecuteStringComparisonInfix(opcode, dynamic_cast<const StringObj*>(left), dynamic_cast<const StringObj*>(right));
 	}
 	else if (left->IsThisA<BooleanObj>())
 	{
-		ExecuteBooleanComparisonInfix(opcode, *std::dynamic_pointer_cast<BooleanObj>(left), *std::dynamic_pointer_cast<BooleanObj>(right));
+		ExecuteBooleanComparisonInfix(opcode, dynamic_cast<const BooleanObj*>(left), dynamic_cast<const BooleanObj*>(right));
 	}
 	else if (left->IsThisA<NullObj>())
 	{
-		ExecuteNullComparisonInfix(opcode, *std::dynamic_pointer_cast<NullObj>(left), *std::dynamic_pointer_cast<NullObj>(right));
+		ExecuteNullComparisonInfix(opcode, dynamic_cast<const NullObj*>(left), dynamic_cast<const NullObj*>(right));
 	}
 	else
 	{
@@ -603,43 +606,43 @@ void RogueVM::ExecuteComparisonInfix(OpCode::Constants opcode)
 	}
 }
 
-void RogueVM::ExecuteIntegerComparisonInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right)
+void RogueVM::ExecuteIntegerComparisonInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_EQUAL:
 	{
-		auto result = left.Value == right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_NOT_EQUAL:
 	{
-		auto result = left.Value != right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_GREATER_THAN:
 	{
-		auto result = left.Value > right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
 	{
-		auto result = left.Value >= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_LESS_THAN:
 	{
-		auto result = left.Value < right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value < right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_LESS_THAN_EQUAL:
 	{
-		auto result = left.Value <= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
@@ -648,43 +651,43 @@ void RogueVM::ExecuteIntegerComparisonInfix(OpCode::Constants opcode, IntegerObj
 	}
 }
 
-void RogueVM::ExecuteDecimalComparisonInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right)
+void RogueVM::ExecuteDecimalComparisonInfix(OpCode::Constants opcode, const DecimalObj* left, const DecimalObj* right)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_EQUAL:
 	{
-		auto result = std::abs(left.Value - right.Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = std::abs(left->Value - right->Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_NOT_EQUAL:
 	{
-		auto result = std::abs(left.Value - right.Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = std::abs(left->Value - right->Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_GREATER_THAN:
 	{
-		auto result = left.Value > right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
 	{
-		auto result = left.Value >= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_LESS_THAN:
 	{
-		auto result = left.Value < right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value < right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_LESS_THAN_EQUAL:
 	{
-		auto result = left.Value <= right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
@@ -693,19 +696,19 @@ void RogueVM::ExecuteDecimalComparisonInfix(OpCode::Constants opcode, DecimalObj
 	}
 }
 
-void RogueVM::ExecuteStringComparisonInfix(OpCode::Constants opcode, StringObj left, StringObj right)
+void RogueVM::ExecuteStringComparisonInfix(OpCode::Constants opcode, const StringObj* left, const StringObj* right)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_EQUAL:
 	{
-		auto result = left.Value == right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_NOT_EQUAL:
 	{
-		auto result = left.Value != right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
@@ -714,7 +717,7 @@ void RogueVM::ExecuteStringComparisonInfix(OpCode::Constants opcode, StringObj l
 	}
 }
 
-void RogueVM::ExecuteNullComparisonInfix(OpCode::Constants opcode, NullObj left, NullObj right)
+void RogueVM::ExecuteNullComparisonInfix(OpCode::Constants opcode, const NullObj* left, const NullObj* right)
 {
 	switch (opcode)
 	{
@@ -733,31 +736,31 @@ void RogueVM::ExecuteNullComparisonInfix(OpCode::Constants opcode, NullObj left,
 	}
 }
 
-void RogueVM::ExecuteBooleanComparisonInfix(OpCode::Constants opcode, BooleanObj left, BooleanObj right)
+void RogueVM::ExecuteBooleanComparisonInfix(OpCode::Constants opcode, const BooleanObj* left, const BooleanObj* right)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_EQUAL:
 	{
-		auto result = left.Value == right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_NOT_EQUAL:
 	{
-		auto result = left.Value != right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BOOL_AND:
 	{
-		auto result = left.Value && right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value && right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BOOL_OR:
 	{
-		auto result = left.Value || right.Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = left->Value || right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
@@ -771,19 +774,19 @@ void RogueVM::ExecutePrefix(OpCode::Constants opcode)
 	auto right = Pop();
 	if (right->IsThisA<IntegerObj>())
 	{
-		ExecuteIntegerPrefix(opcode, *std::dynamic_pointer_cast<IntegerObj>(right));
+		ExecuteIntegerPrefix(opcode, dynamic_cast<const IntegerObj*>(right));
 	}
 	else if (right->IsThisA<DecimalObj>())
 	{
-		ExecuteDecimalPrefix(opcode, *std::dynamic_pointer_cast<DecimalObj>(right));
+		ExecuteDecimalPrefix(opcode, dynamic_cast<const DecimalObj*>(right));
 	}
 	else if (right->IsThisA<BooleanObj>())
 	{
-		ExecuteBooleanPrefix(opcode, *std::dynamic_pointer_cast<BooleanObj>(right));
+		ExecuteBooleanPrefix(opcode, dynamic_cast<const BooleanObj*>(right));
 	}
 	else if (right->IsThisA<NullObj>())
 	{
-		ExecuteNullPrefix(opcode, *std::dynamic_pointer_cast<NullObj>(right));
+		ExecuteNullPrefix(opcode, dynamic_cast<const NullObj*>(right));
 	}
 	else
 	{
@@ -791,25 +794,25 @@ void RogueVM::ExecutePrefix(OpCode::Constants opcode)
 	}
 }
 
-void RogueVM::ExecuteIntegerPrefix(OpCode::Constants opcode, IntegerObj obj)
+void RogueVM::ExecuteIntegerPrefix(OpCode::Constants opcode, const IntegerObj* obj)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_NEGATE:
 	{
-		auto result = IntegerObj::New(-obj.Value);
+		auto result = _store.New_IntegerObj(-obj->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_NOT:
 	{
-		auto result = obj.Value == 0 ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = obj->Value == 0 ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_BNOT:
 	{
-		auto result = IntegerObj::New(~obj.Value);
+		auto result = _store.New_IntegerObj(~obj->Value);
 		Push(result);
 		break;
 	}
@@ -818,19 +821,19 @@ void RogueVM::ExecuteIntegerPrefix(OpCode::Constants opcode, IntegerObj obj)
 	}
 }
 
-void RogueVM::ExecuteDecimalPrefix(OpCode::Constants opcode, DecimalObj obj)
+void RogueVM::ExecuteDecimalPrefix(OpCode::Constants opcode, const DecimalObj* obj)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_NEGATE:
 	{
-		auto result = DecimalObj::New(-obj.Value);
+		auto result = _store.New_DecimalObj(-obj->Value);
 		Push(result);
 		break;
 	}
 	case OpCode::Constants::OP_NOT:
 	{
-		auto result = std::abs(obj.Value) < FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		auto result = std::abs(obj->Value) < FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
@@ -839,13 +842,13 @@ void RogueVM::ExecuteDecimalPrefix(OpCode::Constants opcode, DecimalObj obj)
 	}
 }
 
-void RogueVM::ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj)
+void RogueVM::ExecuteBooleanPrefix(OpCode::Constants opcode, const BooleanObj* obj)
 {
 	switch (opcode)
 	{
 	case OpCode::Constants::OP_NOT:
 	{
-		auto result = obj.Value ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
+		auto result = obj->Value ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
 		Push(result);
 		break;
 	}
@@ -854,7 +857,7 @@ void RogueVM::ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj)
 	}
 }
 
-void RogueVM::ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj)
+void RogueVM::ExecuteNullPrefix(OpCode::Constants opcode, const NullObj* obj)
 {
 	switch (opcode)
 	{
@@ -868,12 +871,12 @@ void RogueVM::ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj)
 	}
 }
 
-void RogueVM::ExecuteIndexOperation(IObject* left, IObject* index)
+void RogueVM::ExecuteIndexOperation(const IObject* left, const IObject* index)
 {
 	if (left->IsThisA<ArrayObj>())
 	{
-		auto arr = dynamic_cast<ArrayObj*>(left);
-		auto idx = dynamic_cast<IntegerObj*>(index);
+		auto arr = dynamic_cast<const ArrayObj*>(left);
+		auto idx = dynamic_cast<const IntegerObj*>(index);
 		if (idx == nullptr)
 		{
 			throw std::runtime_error("Index must be an integer");
@@ -887,10 +890,15 @@ void RogueVM::ExecuteIndexOperation(IObject* left, IObject* index)
 	}
 	else if (left->IsThisA<HashObj>())
 	{
-		auto hash = dynamic_cast<HashObj*>(left);
+		const IObject* result = NullObj::NULL_OBJ_REF;
+		auto hash = dynamic_cast<const HashObj*>(left);
 		auto key = HashKey{ index->Type(), index->Inspect() };
-		auto entry = hash->Elements[key];
-		Push(entry.Value);
+		auto entry = hash->Elements.find(key);
+		if (entry != hash->Elements.end())
+		{
+			result = entry->second.Value;
+		}
+		Push(result);
 	}
 	else
 	{
@@ -910,6 +918,92 @@ std::string RogueVM::MakeOpCodeError(const std::string& message, OpCode::Constan
 	{
 		auto definition = std::get<Definition>(def);
 		return std::format("{} : {}",message, definition.Name);
+	}
+}
+
+void RogueVM::ExecuteGetInstruction(int idx)
+{
+	auto type = GetTypeFromIdx(idx);
+	switch (type)
+	{
+		case GetSetType::GLOBAL:
+		{
+			auto adjustedIdx = (idx & 0x3FFF);
+			auto global = _globals[adjustedIdx];
+			Push(global);
+			break;
+		}
+		case GetSetType::LOCAL:
+		{
+			auto adjustedIdx = (idx & 0x3FFF);
+			auto local = CurrentFrame().BasePointer() + adjustedIdx;
+			Push(_stack[local]);
+			break;
+		}
+		case GetSetType::EXTERN:
+		{
+			auto adjustedIdx = (idx & 0x3FFF);
+			Push(_store.New_BuiltInObj(adjustedIdx));
+			break;
+		}
+		case GetSetType::FREE:
+		{
+			auto adjustedIdx = (idx & 0x3FFF);
+			auto free = CurrentFrame().Closure()->Frees[adjustedIdx];
+			Push(free);
+			break;
+		}
+	}
+}
+
+void RogueVM::ExecuteSetInstruction(int idx)
+{
+	auto type = GetTypeFromIdx(idx);
+	switch (type)
+	{
+		case GetSetType::GLOBAL:
+		{
+			auto adjustedIdx = (idx & 0x3FFF);
+			auto global = Pop();
+			auto cloned = global->Clone();
+			_store.Add(cloned);
+			_globals[adjustedIdx] = cloned;
+			break;
+		}
+		case GetSetType::LOCAL:
+		{
+			auto adjustedIdx = (idx & 0x3FFF);
+			auto local = Pop();
+			auto localIdx = CurrentFrame().BasePointer() + idx;
+			auto cloned = local->Clone();
+			_store.Add(cloned);
+			_stack[adjustedIdx] = cloned;
+			break;
+		}
+	}
+}
+
+GetSetType RogueVM::GetTypeFromIdx(int idx)
+{
+	if ((idx | 0x3FFF) == 0x3FFF)
+	{
+		return GetSetType::LOCAL;
+	}
+	else if ((idx & 0x8000) != 0)
+	{
+		return GetSetType::GLOBAL;
+	}
+	else if ((idx & 0x4000) != 0)
+	{
+		return GetSetType::EXTERN;
+	}
+	else if ((idx & 0xC000) != 0)
+	{
+		return GetSetType::FREE;
+	}
+	else
+	{
+		throw std::runtime_error("Invalid index");
 	}
 }
 

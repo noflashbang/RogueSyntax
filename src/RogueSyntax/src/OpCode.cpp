@@ -32,13 +32,9 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_BNOT, Definition{ "OP_BNOT", {} } },
 	{ OpCode::Constants::OP_JUMP, Definition{ "OP_JUMP", { 2 } } },
 	{ OpCode::Constants::OP_JUMP_IF_FALSE, Definition{ "OP_JUMP_IF_FALSE", { 2 } } },
-	{ OpCode::Constants::OP_GET_LOCAL, Definition{ "OP_GET_LOCAL", { 2 } } },
-	{ OpCode::Constants::OP_SET_LOCAL, Definition{ "OP_SET_LOCAL", { 2 } } },
-	{ OpCode::Constants::OP_GET_GLOBAL, Definition{ "OP_GET_GLOBAL", { 2 } } },
-	{ OpCode::Constants::OP_SET_GLOBAL, Definition{ "OP_SET_GLOBAL", { 2 } } },
-	{ OpCode::Constants::OP_GET_EXTRN, Definition{ "OP_GET_EXTRN", { 2 } } },
-	{ OpCode::Constants::OP_GET_FREE, Definition{ "OP_GET_FREE", { 2 } } },
-	{ OpCode::Constants::OP_SET_ASSIGN, Definition{ "OP_SET_ASSIGN", {} } },
+	{ OpCode::Constants::OP_GET, Definition{ "OP_GET", { 2 } } },
+	{ OpCode::Constants::OP_SET, Definition{ "OP_SET", { 2 } } },
+	{ OpCode::Constants::OP_SET_ASSIGN, Definition{ "OP_SET_ASSIGN", {2} } },
 	{ OpCode::Constants::OP_INDEX, Definition{ "OP_INDEX", {} } },
 	{ OpCode::Constants::OP_CALL, Definition{ "OP_CALL", { 2 } } },
 	{ OpCode::Constants::OP_CLOSURE, Definition{ "OP_CLOSURE", { 2, 2 } } },
@@ -57,7 +53,7 @@ std::variant<Definition, std::string> OpCode::Lookup(const OpCode::Constants opc
 	return std::format("Opcode {} not found", static_cast<Opcode>(opcode));
 }
 
-Instructions OpCode::Make(OpCode::Constants opcode, std::vector<int> operands)
+Instructions OpCode::Make(OpCode::Constants opcode, std::vector<uint32_t> operands)
 {
 	auto def = Lookup(opcode);
 	if (std::holds_alternative<std::string>(def))
@@ -84,7 +80,7 @@ Instructions OpCode::Make(OpCode::Constants opcode, std::vector<int> operands)
 	return instructions;
 }
 
-std::tuple<OpCode::Constants, std::vector<int>, size_t> OpCode::ReadOperand(const Instructions& instructions, size_t offset)
+std::tuple<OpCode::Constants, std::vector<uint32_t>, size_t> OpCode::ReadOperand(const Instructions& instructions, size_t offset)
 {
 	if (instructions.size() < 2)
 	{
@@ -102,7 +98,7 @@ std::tuple<OpCode::Constants, std::vector<int>, size_t> OpCode::ReadOperand(cons
 
 	auto definition = std::get<Definition>(def);
 
-	std::vector<int> operands;
+	std::vector<uint32_t> operands;
 	for (size_t i = 0; i < definition.OperandWidths.size(); i++)
 	{
 		if (instructions.size() < read + definition.OperandWidths[i])
