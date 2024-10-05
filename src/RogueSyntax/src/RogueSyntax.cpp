@@ -38,7 +38,7 @@ std::shared_ptr<Evaluator> RogueSyntax::MakeEvaluator(EvaluatorType type) const
 
 std::shared_ptr<RogueVM> RogueSyntax::MakeVM(ByteCode code) const
 {
-	return std::make_shared<RogueVM>(code, _builtIn, _objectStore);
+	return std::make_shared<RogueVM>(code, _builtIn, _objectStore->Factory());
 }
 
 const IObject* RogueSyntax::QuickEval(EvaluatorType type, const std::string& input) const

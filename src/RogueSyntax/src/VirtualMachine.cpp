@@ -1,6 +1,6 @@
 #include "pch.h"
 
-RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory> factory)
+RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>& factory)
 	: _byteCode(byteCode), _externals(nullptr), _factory(factory), _coercer(factory)
 {
 	//main frame
@@ -10,7 +10,7 @@ RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory> 
 	_externals = nullptr;
 }
 
-RogueVM::RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals, const std::shared_ptr<ObjectFactory> factory) : _byteCode(byteCode), _externals(externals), _factory(factory), _coercer(factory)
+RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<BuiltIn>& externals, const std::shared_ptr<ObjectFactory>& factory) : _byteCode(byteCode), _externals(externals), _factory(factory), _coercer(factory)
 {
 	//main frame
 	auto function = _factory->New<FunctionCompiledObj>(_byteCode.Instructions, 0, 0);
@@ -172,12 +172,14 @@ void RogueVM::Run()
 			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 			ExecuteSetInstruction(idx);
+			break;
 		}
 		case OpCode::Constants::OP_GET:
 		{
 			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 			ExecuteGetInstruction(idx);
+			break;
 		}
 		case OpCode::Constants::OP_SET_ASSIGN:
 		{
@@ -929,7 +931,7 @@ void RogueVM::ExecuteGetInstruction(int idx)
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto local = CurrentFrame().BasePointer() + adjustedIdx;
-			Push(_stack[local]);
+			Push(_stack[adjustedIdx]);
 			break;
 		}
 		case GetSetType::EXTERN:

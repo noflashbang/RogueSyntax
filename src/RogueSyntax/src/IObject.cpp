@@ -1,51 +1,51 @@
 #include "IObject.h"
 #include "pch.h"
 
-BooleanObj* BooleanObj::TRUE_OBJ_REF = &BooleanObj::TRUE_OBJ;
-BooleanObj* BooleanObj::FALSE_OBJ_REF = &BooleanObj::FALSE_OBJ;
-NullObj* NullObj::NULL_OBJ_REF = &NullObj::NULL_OBJ;
-VoidObj* VoidObj::VOID_OBJ_REF = &VoidObj::VOID_OBJ;
-ContinueObj* ContinueObj::CONTINUE_OBJ_REF = &ContinueObj::CONTINUE_OBJ;
-BreakObj* BreakObj::BREAK_OBJ_REF = &BreakObj::BREAK_OBJ;
+//BooleanObj* BooleanObj::TRUE_OBJ_REF = ObjectStore::TRUE_OBJ.get();
+//BooleanObj* BooleanObj::FALSE_OBJ_REF = ObjectStore::FALSE_OBJ.get();
+//NullObj* NullObj::NULL_OBJ_REF = ObjectStore::NULL_OBJ.get();
+//VoidObj* VoidObj::VOID_OBJ_REF = ObjectStore::VOID_OBJ.get();
+//ContinueObj* ContinueObj::CONTINUE_OBJ_REF = ObjectStore::CONTINUE_OBJ.get();
+//BreakObj* BreakObj::BREAK_OBJ_REF = ObjectStore::BREAK_OBJ.get();
 
-IObject* NullObj::Clone(ObjectFactory* factory) const
+IObject* NullObj::Clone(const ObjectFactory* factory) const
 {
 	return NULL_OBJ_REF;
 }
 
-IObject* VoidObj::Clone(ObjectFactory* factory) const
+IObject* VoidObj::Clone(const ObjectFactory* factory) const
 {
 	return VOID_OBJ_REF;
 }
 
-IObject* BooleanObj::Clone(ObjectFactory* factory) const
+IObject* BooleanObj::Clone(const ObjectFactory* factory) const
 {
 	return Value ? TRUE_OBJ_REF : FALSE_OBJ_REF;
 }
 
-IObject* IntegerObj::Clone(ObjectFactory* factory) const
+IObject* IntegerObj::Clone(const ObjectFactory* factory) const
 {
 	return factory->New<IntegerObj>(Value);
 }
 
-IObject* DecimalObj::Clone(ObjectFactory* factory) const
+IObject* DecimalObj::Clone(const ObjectFactory* factory) const
 {
 	return factory->New<DecimalObj>(Value);
 }
 
-IObject* StringObj::Clone(ObjectFactory* factory) const
+IObject* StringObj::Clone(const ObjectFactory* factory) const
 {
 	return factory->New<StringObj>(Value);
 }
 
-IObject* ArrayObj::Clone(ObjectFactory* factory) const
+IObject* ArrayObj::Clone(const ObjectFactory* factory) const
 {
 	std::vector<const IObject*> clonedElements;
 	std::transform(Elements.begin(), Elements.end(), std::back_inserter(clonedElements), [factory](const auto& elem) { return elem->Clone(factory); });
 	return factory->New<ArrayObj>(clonedElements);
 }
 
-IObject* HashObj::Clone(ObjectFactory* factory) const
+IObject* HashObj::Clone(const ObjectFactory* factory) const
 {
 	std::unordered_map<HashKey, HashEntry> clonedElements;
 	std::transform(Elements.begin(), Elements.end(), std::inserter(clonedElements, clonedElements.end()), [factory](const auto& elem)
@@ -56,47 +56,47 @@ IObject* HashObj::Clone(ObjectFactory* factory) const
 	return factory->New<HashObj>(clonedElements);
 }
 
-IObject* FunctionObj::Clone(ObjectFactory* factory) const
+IObject* FunctionObj::Clone(const ObjectFactory* factory) const
 {
 	return factory->New<FunctionObj>(Parameters, Body); //shallow copy is fine
 }
 
-IObject* BuiltInObj::Clone(ObjectFactory* factory) const
+IObject* BuiltInObj::Clone(const ObjectFactory* factory) const
 {
 	return Idx != -1 ? factory->New<BuiltInObj>(Idx) : factory->New<BuiltInObj>(Name);
 }
 
-IObject* IdentifierObj::Clone(ObjectFactory* factory) const
+IObject* IdentifierObj::Clone(const ObjectFactory* factory) const
 {
 	return factory->New<IdentifierObj>(Name, Value->Clone(factory));
 }
 
-IObject* FunctionCompiledObj::Clone(ObjectFactory* factory) const
+IObject* FunctionCompiledObj::Clone(const ObjectFactory* factory) const
 {
 	return factory->New<FunctionCompiledObj>(FuncInstructions, NumLocals, NumParameters);
 }
 
-IObject* ReturnObj::Clone(ObjectFactory* factory) const
+IObject* ReturnObj::Clone(const ObjectFactory* factory) const
 {
 	return factory->New<ReturnObj>(Value->Clone(factory));
 }
 
-IObject* ErrorObj::Clone(ObjectFactory* factory) const
+IObject* ErrorObj::Clone(const ObjectFactory* factory) const
 {
-	return factory->New<ErrorObj>(Message);
+	return factory->New<ErrorObj>(Message, Token);
 }
 
-IObject* ContinueObj::Clone(ObjectFactory* factory) const
+IObject* ContinueObj::Clone(const ObjectFactory* factory) const
 {
 	return CONTINUE_OBJ_REF;
 }
 
-IObject* BreakObj::Clone(ObjectFactory* factory) const
+IObject* BreakObj::Clone(const ObjectFactory* factory) const
 {
 	return BREAK_OBJ_REF;
 }
 
-IObject* ClosureObj::Clone(ObjectFactory* factory) const
+IObject* ClosureObj::Clone(const ObjectFactory* factory) const
 {
 	std::vector<const IObject*> clonedFrees;
 	std::transform(Frees.begin(), Frees.end(), std::back_inserter(clonedFrees), [factory](const auto& free) { return free->Clone(factory); });

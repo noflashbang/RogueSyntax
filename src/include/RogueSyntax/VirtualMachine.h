@@ -35,8 +35,8 @@ private:
 class RogueVM
 {
 public:
-	RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory> factory);
-	RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals, const std::shared_ptr<ObjectFactory> factory);
+	RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>& factory);
+	RogueVM(const ByteCode& byteCode, const std::shared_ptr<BuiltIn>& externals, const std::shared_ptr<ObjectFactory>& factory);
 	~RogueVM();
 
 	void Run();

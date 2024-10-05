@@ -15,7 +15,7 @@ public:
 	inline const std::size_t Type() const noexcept { return IUnquielyIdentifiable::Tag(); }
 	virtual std::string Inspect() const = 0;
 
-	virtual IObject* Clone(ObjectFactory* factory) const = 0;
+	virtual IObject* Clone(const ObjectFactory* factory) const = 0;
 
 	virtual ~IObject() = default;
 };
@@ -37,7 +37,7 @@ public:
 	{
 		return "null";
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 
 	static NullObj* NULL_OBJ_REF;
 
@@ -55,7 +55,7 @@ public:
 	{
 		return "null";
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	static VoidObj* VOID_OBJ_REF;
 
 protected:
@@ -76,7 +76,7 @@ public:
 	{
 		return "break";
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	static BreakObj* BREAK_OBJ_REF;
 
 
@@ -94,7 +94,7 @@ public:
 	{
 		return "continue";
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	static ContinueObj* CONTINUE_OBJ_REF;
 
 private:
@@ -112,7 +112,7 @@ public:
 		return std::to_string(Value);
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	int32_t Value;
 };
 
@@ -126,7 +126,7 @@ public:
 	{
 		return std::to_string(Value);
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	float Value;
 };
 
@@ -140,7 +140,7 @@ public:
 	{
 		return Value;
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	std::string Value;
 };
 
@@ -154,7 +154,7 @@ public:
 	{
 		return Value ? "true" : "false";
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	bool Value;
 
 	//Native object references
@@ -188,7 +188,7 @@ public:
 		out += "]";
 		return out;
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	const IObject* Set(const IObject* key, const IObject* value) override;
 	std::vector<const IObject*> Elements;
 };
@@ -258,7 +258,7 @@ public:
 		out += "}";
 		return out;
 	}
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	const IObject* Set(const IObject* key, const IObject* value) override;
 	std::unordered_map<HashKey, HashEntry> Elements;
 };
@@ -274,7 +274,7 @@ public:
 		return Value->Inspect();
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 
 	const IObject* Set(const IObject* key, const IObject* value) override;
 
@@ -293,7 +293,7 @@ public:
 		return Value->Inspect();
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	const IObject* Value;
 };
 
@@ -308,7 +308,7 @@ public:
 		return "ERROR: " + Message;
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 
 	std::string Message;
 	Token Token;
@@ -343,7 +343,7 @@ public:
 		return out;
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 
 	std::vector<IExpression*> Parameters;
 	const IStatement* Body;
@@ -363,7 +363,7 @@ public:
 		return "builtin function";
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 
 	std::string Name;
 	int Idx;
@@ -380,7 +380,7 @@ public:
 		return OpCode::PrintInstructions(FuncInstructions);
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	
 	Instructions FuncInstructions;
 	int NumLocals;
@@ -398,7 +398,7 @@ public:
 		return Function->Inspect();
 	}
 
-	virtual IObject* Clone(ObjectFactory* factory) const override;
+	virtual IObject* Clone(const ObjectFactory* factory) const override;
 
 	const FunctionCompiledObj* Function;
 	std::vector<const IObject*> Frees;

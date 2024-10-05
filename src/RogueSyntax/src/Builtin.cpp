@@ -58,7 +58,7 @@ IObject* BuiltIn::Len(const ObjectFactory* factory, const std::vector<const IObj
 	if (args[0]->IsThisA<StringObj>())
 	{
 		auto str = dynamic_cast<const StringObj*>(args[0]);
-		return factory->New<IntegerObj>(str->Value.size());
+		return factory->New<IntegerObj>(static_cast<int>(str->Value.size()));
 	}
 
 	if (args[0]->IsThisA<ArrayObj>())
@@ -91,7 +91,8 @@ IObject* BuiltIn::First(const ObjectFactory* factory, const std::vector<const IO
 	auto arr = dynamic_cast<const ArrayObj*>(args[0]);
 	if (arr->Elements.size() > 0)
 	{
-		return factory->Clone(arr->Elements[0]);
+		const IObject* obj = arr->Elements[0];
+		return factory->Clone(obj);
 	}
 
 	return NullObj::NULL_OBJ_REF;
