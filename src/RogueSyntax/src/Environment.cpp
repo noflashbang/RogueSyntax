@@ -1,5 +1,7 @@
 #include "Environment.h"
 #include "Environment.h"
+#include "Environment.h"
+#include "Environment.h"
 #include "pch.h"
 
 ScopedEnvironment::ScopedEnvironment(EnvironmentHandle hnd) : Handle(hnd)
@@ -45,6 +47,21 @@ const IObject* ScopedEnvironment::Get(const std::string& name) const
 	return nullptr;
 }
 
+void ScopedEnvironment::Update(const size_t id, const IObject* updatedValue)
+{
+	for (auto& [key, value] : IdentifierStore)
+	{
+		if (value->Id() == id)
+		{
+			IdentifierStore[key] = updatedValue;
+			return;
+		}
+	}
+	if (Parent != nullptr)
+	{
+		return Parent->Update(id, updatedValue);
+	}
+}
 
 Environment::Environment() : _current(0,0)
 {
@@ -74,6 +91,17 @@ const IObject* Environment::Get(const uint32_t env, const std::string& name) con
 		throw std::runtime_error("Invalid environment");
 	}
 	return envObj->Get(name);
+}
+
+void Environment::Update(const uint32_t env, const size_t id, const IObject* updatedValue)
+{
+	EnvironmentHandle envHandle(env);
+	auto envObj = _environments[envHandle._internal.Index];
+	if (envObj->Handle.Handle != envHandle.Handle)
+	{
+		throw std::runtime_error("Invalid environment");
+	}
+	envObj->Update(id, updatedValue);
 }
 
 uint32_t Environment::New()

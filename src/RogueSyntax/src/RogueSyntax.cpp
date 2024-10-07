@@ -49,7 +49,14 @@ const IObject* RogueSyntax::QuickEval(EvaluatorType type, const std::string& inp
 		return nullptr;
 	}
 	auto eval = MakeEvaluator(type);
-	return eval->Eval(program, _builtIn);
+	try
+	{
+		return eval->Eval(program, _builtIn);
+	}
+	catch (const std::exception& e)
+	{
+		std::cout << e.what() << std::endl;
+	}
 }
 
 void RogueSyntax::RegisterBuiltIn(const std::string& name, std::function<IObject* (const ObjectFactory* factory, const std::vector<const IObject*>& args)> func)

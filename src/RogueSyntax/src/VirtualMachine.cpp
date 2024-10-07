@@ -37,6 +37,7 @@ void RogueVM::Run()
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
 		auto instructions = CurrentFrame().Instructions();
+		auto instructString = OpCode::PrintInstructions(instructions);
 		auto opcode = OpCode::GetOpcode(instructions, CurrentFrame().Ip());
 		IncrementFrameIp();
 
@@ -307,7 +308,7 @@ void RogueVM::Run()
 			free.reserve(numFree);
 			for (int i = 0; i < numFree; i++)
 			{
-				free[i] = _stack[_sp - numFree + i];
+				free.push_back(_stack[_sp - numFree + i]);
 			}
 			_sp = _sp - numFree;
 
@@ -931,7 +932,7 @@ void RogueVM::ExecuteGetInstruction(int idx)
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto local = CurrentFrame().BasePointer() + adjustedIdx;
-			Push(_stack[adjustedIdx]);
+			Push(_stack[local]);
 			break;
 		}
 		case GetSetType::EXTERN:
@@ -967,9 +968,9 @@ void RogueVM::ExecuteSetInstruction(int idx)
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto local = Pop();
-			auto localIdx = CurrentFrame().BasePointer() + idx;
+			auto localIdx = CurrentFrame().BasePointer() + adjustedIdx;
 			auto cloned =  _factory->Clone(local);
-			_stack[adjustedIdx] = cloned;
+			_stack[localIdx] = cloned;
 			break;
 		}
 	}
@@ -977,19 +978,20 @@ void RogueVM::ExecuteSetInstruction(int idx)
 
 GetSetType RogueVM::GetTypeFromIdx(int idx)
 {
-	if ((idx | 0x3FFF) == 0x3FFF)
-	{
-		return GetSetType::LOCAL;
-	}
-	else if ((idx & 0x8000) != 0)
+	auto flags = idx & 0xC000;
+	if (flags == 0x0000)
 	{
 		return GetSetType::GLOBAL;
 	}
-	else if ((idx & 0x4000) != 0)
+	else if (flags == 0x8000)
+	{
+		return GetSetType::LOCAL;
+	}
+	else if (flags == 0x4000)
 	{
 		return GetSetType::EXTERN;
 	}
-	else if ((idx & 0xC000) != 0)
+	else if (flags == 0xC000)
 	{
 		return GetSetType::FREE;
 	}

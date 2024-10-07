@@ -70,6 +70,7 @@ bool TestEvalInspect(EvaluatorType type, const std::string& input, const std::st
 {
 	RogueSyntax syn;
 	auto result = syn.QuickEval(type, input);
+	REQUIRE(result->Inspect() == expected);
 	return result->Inspect() == expected;
 }
 	
@@ -469,20 +470,20 @@ TEST_CASE("Built In method test")
 			{"len(\"\");", "0"},
 			{"len(\"four\");", "4"},
 			{"len(\"hello world\");", "11"},
-			{"len(1);", "ERROR: argument to `len` not supported, got class IntegerObj"},
-			{"len(\"one\", \"two\");", "ERROR: wrong number of arguments. got=2, wanted=1"},
+			{"len(1);", "argument to `len` not supported, got class IntegerObj"},
+			{"len(\"one\", \"two\");", "wrong number of arguments. got=2, wanted=1"},
 			{"len([1, 2, 3]);", "3"},
 			{"len([]);", "0"},
 			{"first([1, 2, 3]);", "1"},
 			{"first([]);", "null"},
-			{"first(1);", "ERROR: argument to `first` must be ARRAY, got class IntegerObj"},
+			{"first(1);", "argument to `first` must be ARRAY, got class IntegerObj"},
 			{"last([1, 2, 3]);", "3"},
 			{"last([]);", "null"},
-			{"last(1);", "ERROR: argument to `last` must be ARRAY, got class IntegerObj"},
+			{"last(1);", "argument to `last` must be ARRAY, got class IntegerObj"},
 			{"rest([1, 2, 3]);", "[2, 3]"},
 			{"rest([]);", "null"},
 			{"push([], 1);", "[1]"},
-			{"push(1, 1);", "ERROR: argument to `push` must be ARRAY, got class IntegerObj"},
+			{"push(1, 1);", "argument to `push` must be ARRAY, got class IntegerObj"},
 			{"let acc = 0; let list = [1,2,3,4,5,6,7,8,9]; for(iter = 0; iter < len(list); iter++) { acc = acc + list[iter]; } acc;", "45"},
 		}));
 

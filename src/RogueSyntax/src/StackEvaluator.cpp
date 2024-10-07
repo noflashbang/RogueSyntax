@@ -214,7 +214,7 @@ void StackEvaluator::NodeEval(const LetStatement* let)
 			auto assignableClone = EvalFactory->Clone(left);
 			auto* assignable = dynamic_cast<IAssignableObject*>(assignableClone);
 			auto result = assignable->Set(index, value);
-			//results.push(result);
+			EvalEnvironment->Update(_currentEnv, left->Id(), assignable);
 		}
 	}
 	else

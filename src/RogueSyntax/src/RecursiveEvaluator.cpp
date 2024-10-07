@@ -123,6 +123,7 @@ void RecursiveEvaluator::NodeEval(const LetStatement* let)
 			return;
 		}
 		assignable->Set(indexObj, value);
+		EvalEnvironment->Update(_env, left->Id(), assignable);
 	}
 	else
 	{

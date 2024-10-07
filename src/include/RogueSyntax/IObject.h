@@ -305,7 +305,7 @@ public:
 
 	std::string Inspect() const override
 	{
-		return "ERROR: " + Message;
+		return Message;
 	}
 
 	virtual IObject* Clone(const ObjectFactory* factory) const override;
