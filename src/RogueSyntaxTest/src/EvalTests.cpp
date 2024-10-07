@@ -544,7 +544,7 @@ TEST_CASE("Incrementer Tests")
 
 TEST_CASE("BENCHMARK STACK EVALUATOR")
 {
-	auto eng = Evaluator::New(EvaluatorType::Stack);
+	auto eng = EvaluatorType::Stack;
 	auto input = "let x = 0; for (let i = 0; i < 100; i = i + 1) { x = x + i; }; x;";
 	auto expected = 4950;
 	
@@ -566,7 +566,7 @@ TEST_CASE("BENCHMARK STACK EVALUATOR")
 
 TEST_CASE("BENCHMARK RECURSIVE EVALUATOR")
 {
-	auto eng = Evaluator::New(EvaluatorType::Recursive);
+	auto eng = EvaluatorType::Recursive;
 	auto input = "let x = 0; for (let i = 0; i < 100; i = i + 1) { x = x + i; }; x;";
 	auto expected = 4950;
 

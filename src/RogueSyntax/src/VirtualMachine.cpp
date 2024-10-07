@@ -36,8 +36,7 @@ void RogueVM::Run()
 
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
-		auto instructions = CurrentFrame().Instructions();
-		auto instructString = OpCode::PrintInstructions(instructions);
+		const auto& instructions = CurrentFrame().Instructions();
 		auto opcode = OpCode::GetOpcode(instructions, CurrentFrame().Ip());
 		IncrementFrameIp();
 
