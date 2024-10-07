@@ -1,29 +1,32 @@
 #include "Compiler.h"
 #include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
 #include <pch.h>
 
-
-SymbolTable::SymbolTable(std::string scope, std::shared_ptr<BuiltIn> externs)
-	: _scope(scope), _outer(nullptr), _externals(externs)
+uint32_t Symbol::EncodedIdx()
 {
+	if (Type == ScopeType::SCOPE_GLOBAL)
+	{
+		return (Index & 0x3FFF);
+	}
+	else if (Type == ScopeType::SCOPE_LOCAL)
+	{
+		return ((Index & 0x3FFF)) | 0x8000;
+	}
+	else if (Type == ScopeType::SCOPE_EXTERN)
+	{
+		return ((Index & 0x3FFF)) | 0x4000;
+	}
+	else if (Type == ScopeType::SCOPE_FREE)
+	{
+		return ((Index & 0x3FFF)) | 0xC000;
+	}
+	else
+	{
+		throw std::runtime_error("Invalid symbol scope");
+	}
 }
 
-SymbolTable::SymbolTable(std::shared_ptr<BuiltIn> externs)
-	: _scope(SCOPE_GLOBAL), _outer(nullptr), _externals(externs)
-{
-}
-
-SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> outer)
-	: _outer(outer), _scope(SCOPE_LOCAL), _externals(outer->_externals)
-{
-}
-
-Symbol SymbolTable::Define(const std::string& name)
+Symbol CompilationUnit::Define(const std::string& name)
 {
 	int index = -1;
 	for (int i = _store.size() - 1; i >= 0; i--)
@@ -38,22 +41,29 @@ Symbol SymbolTable::Define(const std::string& name)
 	{
 		return _store[index];
 	}
-	
-	index = _nextIndex++;
-	auto symbol = Symbol{ name, _scope, index };
-	_store.push_back(symbol);
-	return symbol;	
-}
+	index = _nextSymIndex++;
 
-Symbol SymbolTable::DefineFunctionName(const std::string& name)
-{
-	int index = 0; //not used
-	auto symbol = Symbol{ name, SCOPE_FUNCTION, index };
+	auto symbol = Symbol{ _type, name, "", index };
 	_store.push_back(symbol);
 	return symbol;
 }
 
-Symbol SymbolTable::Resolve(const std::string& name)
+Symbol CompilationUnit::DefineFunctionName(const std::string& name)
+{
+	int index = 0; //not used
+	auto symbol = Symbol{ ScopeType::SCOPE_FUNCTION, name, "", index};
+	_store.push_back(symbol);
+	return symbol;
+}
+
+Symbol CompilationUnit::DefineExternal(const std::string& name, int idx)
+{
+	auto symbol = Symbol{ ScopeType::SCOPE_EXTERN, name, "", idx  };
+	_store.push_back(symbol);
+	return symbol;
+}
+
+Symbol CompilationUnit::Resolve(const std::string& name)
 {
 	int index = -1;
 	for (int i = _store.size() - 1; i >= 0; i--)
@@ -68,7 +78,7 @@ Symbol SymbolTable::Resolve(const std::string& name)
 	{
 		auto upval = _outer->Resolve(name);
 
-		if (upval.Scope == SCOPE_GLOBAL || upval.Scope == SCOPE_EXTERN)
+		if (upval.Type == ScopeType::SCOPE_GLOBAL || upval.Type == ScopeType::SCOPE_EXTERN)
 		{
 			return upval;
 		}
@@ -78,21 +88,15 @@ Symbol SymbolTable::Resolve(const std::string& name)
 
 	if (index == -1)
 	{
-		if (_externals->IsBuiltIn(name))
-		{
-			auto index = _externals->BuiltInIdx(name);
-			return Symbol{ name, SCOPE_EXTERN, index };
-		}
 		throw std::runtime_error("Symbol not found");
 	}
-
 	return _store[index];
 }
 
-Symbol SymbolTable::DefineFree(const Symbol& symbol)
+Symbol CompilationUnit::DefineFree(const Symbol& symbol)
 {
-	_free.push_back(symbol);
-	auto freeSym = Symbol{ symbol.Name, SCOPE_FREE, static_cast<int>(_free.size()-1) };
+	int index = _nextFreeIdx++;
+	auto freeSym = Symbol{ ScopeType::SCOPE_FREE, symbol.Name, "", index};
 	_store.push_back(freeSym);
 	return freeSym;
 }
@@ -177,16 +181,16 @@ CompilerError Compiler::Compile(INode* node)
 	}
 }
 
-int Compiler::EnterUnit()
+int Compiler::EnterUnit(const std::string& context)
 {
 	if (_CompilationUnits.empty())
 	{
-		_CompilationUnits.push(CompilationUnit(_externals));
+		_CompilationUnits.push(CompilationUnit(context, _externals));
 	}
 	else
 	{
 		auto outer = _CompilationUnits.top().SymbolTable;
-		_CompilationUnits.push(CompilationUnit(outer));
+		_CompilationUnits.push(CompilationUnit(context, outer));
 	}
 	return _CompilationUnits.size() - 1;
 }
@@ -212,55 +216,31 @@ int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands)
 
 int Compiler::EmitGet(Symbol symbol)
 {
-	if (symbol.Scope == SCOPE_FUNCTION)
+	if (symbol.Type == ScopeType::SCOPE_FUNCTION)
 	{
 		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
 	}
 	else
 	{
-		return Emit(OpCode::Constants::OP_GET, { GetSymbolIdx(symbol) });
+		return Emit(OpCode::Constants::OP_GET, { symbol.EncodedIdx() });
 	}
 }
 
 int Compiler::EmitSet(Symbol symbol)
 {
-	if (symbol.Scope == SCOPE_FUNCTION)
+	if (symbol.Type == ScopeType::SCOPE_FUNCTION)
 	{
 		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
 	}
 	else
 	{
-		return Emit(OpCode::Constants::OP_SET, { GetSymbolIdx(symbol) });
-	}
-}
-
-uint32_t Compiler::GetSymbolIdx(const Symbol& symbol)
-{
-	if (symbol.Scope == SCOPE_GLOBAL)
-	{
-		return (symbol.Index & 0x3FFF);
-	}
-	else if (symbol.Scope == SCOPE_LOCAL)
-	{
-		return ((symbol.Index & 0x3FFF)) | 0x8000;
-	}
-	else if (symbol.Scope == SCOPE_EXTERN)
-	{
-		return ((symbol.Index & 0x3FFF)) | 0x4000;
-	}
-	else if (symbol.Scope == SCOPE_FREE)
-	{
-		return ((symbol.Index & 0x3FFF)) | 0xC000;
-	}
-	else
-	{
-		throw std::runtime_error("Invalid symbol scope");
+		return Emit(OpCode::Constants::OP_SET, { symbol.EncodedIdx() });
 	}
 }
 
 void Compiler::NodeCompile(const Program* program)
 {
-	EnterUnit(); // enter global unit
+	EnterUnit("MAIN"); // enter global unit
 	for (auto& stmt : program->Statements)
 	{
 		stmt->Compile(this);
@@ -327,7 +307,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 		auto* ident = dynamic_cast<const Identifier*>(index->Left);
-		auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
+		auto symbol = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
 
 		//get the lvalue
 		index->Compile(this);
@@ -346,7 +326,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
-		Emit(OpCode::Constants::OP_SET_ASSIGN, { GetSymbolIdx(sym) });
+		Emit(OpCode::Constants::OP_SET_ASSIGN, { symbol.EncodedIdx() });
 	}
 	else
 	{
@@ -543,7 +523,7 @@ void Compiler::NodeCompile(const IfStatement* ifExpr)
 
 void Compiler::NodeCompile(const FunctionLiteral* function)
 {
-	EnterUnit();
+	EnterUnit(function->Name);
 
 	if (!function->Name.empty())
 	{

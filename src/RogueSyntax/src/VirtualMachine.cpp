@@ -916,27 +916,27 @@ void RogueVM::ExecuteGetInstruction(int idx)
 	auto type = GetTypeFromIdx(idx);
 	switch (type)
 	{
-		case GetSetType::GLOBAL:
+		case ScopeType::SCOPE_GLOBAL:
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto global = _globals[adjustedIdx];
 			Push(global);
 			break;
 		}
-		case GetSetType::LOCAL:
+		case ScopeType::SCOPE_LOCAL:
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto local = CurrentFrame().BasePointer() + adjustedIdx;
 			Push(_stack[local]);
 			break;
 		}
-		case GetSetType::EXTERN:
+		case ScopeType::SCOPE_EXTERN:
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			Push(_factory->New<BuiltInObj>(adjustedIdx));
 			break;
 		}
-		case GetSetType::FREE:
+		case ScopeType::SCOPE_FREE:
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto free = CurrentFrame().Closure()->Frees[adjustedIdx];
@@ -951,7 +951,7 @@ void RogueVM::ExecuteSetInstruction(int idx)
 	auto type = GetTypeFromIdx(idx);
 	switch (type)
 	{
-		case GetSetType::GLOBAL:
+		case ScopeType::SCOPE_GLOBAL:
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto global = Pop();
@@ -959,7 +959,7 @@ void RogueVM::ExecuteSetInstruction(int idx)
 			_globals[adjustedIdx] = cloned;
 			break;
 		}
-		case GetSetType::LOCAL:
+		case ScopeType::SCOPE_LOCAL:
 		{
 			auto adjustedIdx = (idx & 0x3FFF);
 			auto local = Pop();
@@ -971,24 +971,24 @@ void RogueVM::ExecuteSetInstruction(int idx)
 	}
 }
 
-GetSetType RogueVM::GetTypeFromIdx(int idx)
+ScopeType RogueVM::GetTypeFromIdx(int idx)
 {
 	auto flags = idx & 0xC000;
 	if (flags == 0x0000)
 	{
-		return GetSetType::GLOBAL;
+		return ScopeType::SCOPE_GLOBAL;
 	}
 	else if (flags == 0x8000)
 	{
-		return GetSetType::LOCAL;
+		return ScopeType::SCOPE_LOCAL;
 	}
 	else if (flags == 0x4000)
 	{
-		return GetSetType::EXTERN;
+		return ScopeType::SCOPE_EXTERN;
 	}
 	else if (flags == 0xC000)
 	{
-		return GetSetType::FREE;
+		return ScopeType::SCOPE_FREE;
 	}
 	else
 	{

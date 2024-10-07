@@ -4,59 +4,24 @@
 #include <IObject.h>
 #include <OpCode.h>
 
-#define SCOPE_GLOBAL "GLOBAL"
-#define SCOPE_LOCAL "LOCAL"
-#define SCOPE_EXTERN "EXTERN"
-#define SCOPE_FREE "FREE"
-#define SCOPE_FUNCTION "FUNCTION"
+enum class ScopeType : uint8_t
+{
+	SCOPE_GLOBAL,
+	SCOPE_LOCAL,
+	SCOPE_EXTERN,
+	SCOPE_FREE,
+	SCOPE_FUNCTION,
+};
 
 struct Symbol
 {
+	ScopeType Type;
 	std::string Name;
-	std::string Scope;
+	std::string MangledName;
 	int Index;
+
+	uint32_t EncodedIdx();
 };
-
-class SymbolTable
-{
-public:
-	SymbolTable(std::shared_ptr<SymbolTable> outer);
-	SymbolTable(std::string scope, std::shared_ptr<BuiltIn> externs);
-	SymbolTable(std::shared_ptr<BuiltIn> externs);
-
-	Symbol Define(const std::string& name);
-	Symbol DefineFunctionName(const std::string& name);
-
-	Symbol Resolve(const std::string& name);
-
-	Symbol DefineFree(const Symbol& symbol);
-	
-	inline int NumberOfSymbols() const { return _store.size(); };
-	inline std::shared_ptr<SymbolTable> Outer() const { return _outer; };
-
-	std::vector<Symbol> FreeSymbols() { return _free; };
-
-	static std::shared_ptr<SymbolTable> New(std::shared_ptr<BuiltIn> externs)
-	{
-		return std::make_shared<SymbolTable>(externs);
-	}
-	static std::shared_ptr<SymbolTable> New(std::string scope, std::shared_ptr<BuiltIn> externs)
-	{
-		return std::make_shared<SymbolTable>(scope, externs);
-	}
-	static std::shared_ptr<SymbolTable> New(std::shared_ptr<SymbolTable> outer)
-	{
-		return std::make_shared<SymbolTable>(outer);
-	}
-private:
-	std::shared_ptr<BuiltIn> _externals;
-	std::shared_ptr<SymbolTable> _outer;
-	std::vector<Symbol> _store;
-	uint32_t _nextIndex = 0;
-	std::vector<Symbol> _free;
-	std::string _scope;
-};
-
 
 enum LoopJumpType
 {
@@ -72,19 +37,21 @@ struct LoopJump
 
 struct CompilationUnit
 {
-	CompilationUnit(std::shared_ptr<SymbolTable> symbolTable)
+	CompilationUnit(ScopeType type, const std::string& context)
 	{
-		SymbolTable = SymbolTable::New(symbolTable);
+		_type = type;
+		_context = context;
 	}
-	CompilationUnit(std::shared_ptr<BuiltIn> externs)
+
+	CompilationUnit(ScopeType type, const std::string& context)
 	{
-		SymbolTable = SymbolTable::New(externs);
+		_type = type;
+		_context = context;
 	}
 
 	Instructions UnitInstructions;
 	Instructions LastInstruction;
 	Instructions PreviousLastInstruction;
-	std::shared_ptr<SymbolTable> SymbolTable;
 
 	std::stack<LoopJump> LoopJumps;
 
@@ -96,6 +63,24 @@ struct CompilationUnit
 	void RemoveLastInstruction();
 	void ChangeOperand(int position, uint32_t operand);
 	void ReplaceInstruction(int position, Instructions instructions);
+
+	const std::string context() const { return _context; };
+
+	Symbol Define(const std::string& name);
+	Symbol DefineFunctionName(const std::string& name);
+	Symbol DefineExternal(const std::string& name, int idx);
+	Symbol Resolve(const std::string& name);
+	Symbol DefineFree(const Symbol& symbol);
+
+	inline int NumberOfSymbols() const { return _store.size(); };
+
+
+private:
+	ScopeType _type;
+	std::string _context;
+	std::vector<Symbol> _store;
+	uint32_t _nextSymIndex = 0;
+	uint32_t _nextFreeIdx = 0;
 };
 
 enum class CompilerError
@@ -122,14 +107,6 @@ struct ByteCode
 	std::vector<const IObject*> Constants;
 };
 
-enum GetSetType
-{
-	LOCAL,
-	GLOBAL,
-	FREE,
-	EXTERN,
-};
-
 class Compiler
 {
 public:
@@ -138,7 +115,6 @@ public:
 	ByteCode Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs);
 	inline bool HasErrors() const { return !_errors.empty(); };
 	std::vector<std::string> GetErrors() const { return _errors; };
-
 
 	void NodeCompile(const Program* program);
 	void NodeCompile(const BlockStatement* block);
@@ -167,21 +143,17 @@ public:
 protected:
 
 	CompilerError Compile(INode* node);
-	int EnterUnit();
+	int EnterUnit(const std::string& context);
 	CompilationUnit ExitUnit();
 
 	uint32_t AddConstant(const IObject* obj);
 	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands);
 	int EmitGet(Symbol symbol);
 	int EmitSet(Symbol symbol);
-	uint32_t GetSymbolIdx(const Symbol& symbol);
-
-	
 
 private:
 	std::stack<CompilationUnit> _CompilationUnits;
 	std::shared_ptr<BuiltIn> _externals;
-
 	std::vector<const IObject*> _constants;
 	
 	std::vector<std::string> _errors;

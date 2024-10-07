@@ -81,7 +81,7 @@ protected:
 
 	void ExecuteGetInstruction(int idx);
 	void ExecuteSetInstruction(int idx);
-	GetSetType GetTypeFromIdx(int idx);
+	ScopeType GetTypeFromIdx(int idx);
 
 private:
 	int _frameIndex = 0;
