@@ -15,6 +15,7 @@ FetchContent_MakeAvailable(Catch2)
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
+    ${PARENT_DIR}/include/RogueSyntax/RogueSyntax.h
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
     ${PARENT_DIR}/include/RogueSyntax/Lexer.h
     ${PARENT_DIR}/include/RogueSyntax/Token.h

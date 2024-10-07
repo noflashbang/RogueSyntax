@@ -11,10 +11,10 @@ struct Frame
 {
 public:
 	Frame() : _ip(-1), _basePointer(0) {};
-	Frame(std::shared_ptr<ClosureObj> fn, int basepointer) : _fn(fn), _basePointer(basepointer), _ip(0) {};
-	Frame(std::shared_ptr<ClosureObj> fn, int ip, int basepointer) : _fn(fn), _ip(ip), _basePointer(basepointer) {};
+	Frame(const ClosureObj* fn, int basepointer) : _fn(fn), _basePointer(basepointer), _ip(0) {};
+	Frame(const ClosureObj* fn, int ip, int basepointer) : _fn(fn), _ip(ip), _basePointer(basepointer) {};
 	~Frame() {};
-	inline const Instructions Instructions() const { return _fn->Function->FuncInstructions; };
+	inline const Instructions& Instructions() const { return _fn->Function->FuncInstructions; };
 	inline int Ip() const { return _ip; };
 	inline void IncrementIp() { _ip++; };
 	inline void IncrementIp(int amount) { _ip += amount; };
@@ -22,12 +22,12 @@ public:
 
 	inline int BasePointer() const { return _basePointer; };
 	inline void SetBasePointer(int bp) { _basePointer = bp; };
-	inline ClosureObj* Closure() const { return _fn.get(); };
-	inline std::shared_ptr<ClosureObj> ClosureRef() const { return _fn; };
+	inline const ClosureObj* Closure() const { return _fn; };
+	inline const ClosureObj* ClosureRef() const { return _fn; };
 
 private:
 	int _ip;
-	std::shared_ptr<ClosureObj> _fn;
+	const ClosureObj* _fn;
 	int _basePointer;
 };
 
@@ -35,17 +35,17 @@ private:
 class RogueVM
 {
 public:
-	RogueVM(const ByteCode& byteCode);
-	RogueVM(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals);
+	RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>& factory);
+	RogueVM(const ByteCode& byteCode, const std::shared_ptr<BuiltIn>& externals, const std::shared_ptr<ObjectFactory>& factory);
 	~RogueVM();
 
 	void Run();
 
 	//stack operations
-	std::shared_ptr<IObject> Top() const;
-	void Push(std::shared_ptr<IObject> obj);
-	std::shared_ptr<IObject> Pop();
-	std::shared_ptr<IObject> LastPoppped() const;
+	const IObject* Top() const;
+	void Push(const IObject* obj);
+	const IObject* Pop();
+	const IObject* LastPoppped() const;
 
 	//frame operations
 	inline void IncrementFrameIp() { _frames[_frameIndex-1].IncrementIp(); };
@@ -56,39 +56,41 @@ public:
 	void PushFrame(Frame frame);
 	Frame PopFrame();
 
-	static std::shared_ptr<RogueVM> New(const ByteCode& byteCode, std::shared_ptr<BuiltIn> externals) { return std::make_shared<RogueVM>(byteCode, externals); }
-
 protected:
 	void ExecuteArithmeticInfix(OpCode::Constants opcode);
-	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right);
-	void ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right);
-	void ExecuteStringArithmeticInfix(OpCode::Constants opcode, StringObj left, StringObj right);
+	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right);
+	void ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, const DecimalObj* left, const DecimalObj* right);
+	void ExecuteStringArithmeticInfix(OpCode::Constants opcode, const StringObj* left, const StringObj* right);
 	
 	void ExecuteComparisonInfix(OpCode::Constants opcode);
-	void ExecuteIntegerComparisonInfix(OpCode::Constants opcode, IntegerObj left, IntegerObj right);
-	void ExecuteDecimalComparisonInfix(OpCode::Constants opcode, DecimalObj left, DecimalObj right);
-	void ExecuteStringComparisonInfix(OpCode::Constants opcode, StringObj left, StringObj right);
-	void ExecuteBooleanComparisonInfix(OpCode::Constants opcode, BooleanObj left, BooleanObj right);
-	void ExecuteNullComparisonInfix(OpCode::Constants opcode, NullObj left, NullObj right);
+	void ExecuteIntegerComparisonInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right);
+	void ExecuteDecimalComparisonInfix(OpCode::Constants opcode, const DecimalObj* left, const DecimalObj* right);
+	void ExecuteStringComparisonInfix(OpCode::Constants opcode, const StringObj* left, const StringObj* right);
+	void ExecuteBooleanComparisonInfix(OpCode::Constants opcode, const BooleanObj* left, const BooleanObj* right);
+	void ExecuteNullComparisonInfix(OpCode::Constants opcode, const NullObj* left, const NullObj* right);
 
 	void ExecutePrefix(OpCode::Constants opcode);
-	void ExecuteIntegerPrefix(OpCode::Constants opcode, IntegerObj obj);
-	void ExecuteDecimalPrefix(OpCode::Constants opcode, DecimalObj obj);
-	void ExecuteBooleanPrefix(OpCode::Constants opcode, BooleanObj obj);
-	void ExecuteNullPrefix(OpCode::Constants opcode, NullObj obj);
+	void ExecuteIntegerPrefix(OpCode::Constants opcode, const IntegerObj* obj);
+	void ExecuteDecimalPrefix(OpCode::Constants opcode, const DecimalObj* obj);
+	void ExecuteBooleanPrefix(OpCode::Constants opcode, const BooleanObj* obj);
+	void ExecuteNullPrefix(OpCode::Constants opcode, const NullObj* obj);
 
-	void ExecuteIndexOperation(IObject* left, IObject* index);
+	void ExecuteIndexOperation(const IObject* left, const IObject* index);
 
 	std::string MakeOpCodeError(const std::string& message, OpCode::Constants opcode);
 
-private:
-	std::array<Frame, MAX_FRAMES> _frames;
-	int _frameIndex = 0;
+	void ExecuteGetInstruction(int idx);
+	void ExecuteSetInstruction(int idx);
+	GetSetType GetTypeFromIdx(int idx);
 
-	TypeCoercer _coercer;
-	ByteCode _byteCode;
-	std::array<std::shared_ptr<IObject>, STACK_SIZE> _stack;
-	std::array<std::shared_ptr<IObject>, GLOBAL_SIZE> _globals;
+private:
+	int _frameIndex = 0;
 	uint16_t _sp = 0;
+	std::shared_ptr<ObjectFactory> _factory;
 	std::shared_ptr<BuiltIn> _externals;
+	TypeCoercer _coercer;
+	std::array<const IObject*, STACK_SIZE> _stack;
+	std::array<const IObject*, GLOBAL_SIZE> _globals;
+	std::array<Frame, MAX_FRAMES> _frames;
+	ByteCode _byteCode;
 };

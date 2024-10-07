@@ -1,40 +1,47 @@
 #include "pch.h"
 
-TypeCoercer::TypeCoercer()
+TypeCoercer::TypeCoercer(const std::shared_ptr<ObjectFactory>& factory) : _factory(factory)
 {
-	_coercionTable[ObjectType::INTEGER_OBJ] = {
-		{ ObjectType::DECIMAL_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ },
-		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
+	auto intType = typeid(IntegerObj).hash_code();
+	auto decType = typeid(DecimalObj).hash_code();
+	auto boolType = typeid(BooleanObj).hash_code();
+	auto strType = typeid(StringObj).hash_code();
+	auto arrType = typeid(ArrayObj).hash_code();
+
+
+	_coercionTable[intType] = {
+		{ decType, decType },
+		{ boolType, boolType },
+		{ strType, strType }
 	};
 
-	_coercionTable[ObjectType::DECIMAL_OBJ] = {
-		{ ObjectType::INTEGER_OBJ, ObjectType::DECIMAL_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::BOOLEAN_OBJ },
-		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
+	_coercionTable[decType] = {
+		{ intType, decType },
+		{ boolType, boolType },
+		{ strType, strType }
 	};
 
-	_coercionTable[ObjectType::BOOLEAN_OBJ] = {
-		{ ObjectType::INTEGER_OBJ, ObjectType::BOOLEAN_OBJ },
-		{ ObjectType::DECIMAL_OBJ, ObjectType::BOOLEAN_OBJ },
-		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
+	_coercionTable[boolType] = {
+		{ intType, boolType },
+		{ decType, boolType },
+		{ strType, strType }
 	};
 
-	_coercionTable[ObjectType::STRING_OBJ] = {
-		{ ObjectType::INTEGER_OBJ, ObjectType::STRING_OBJ },
-		{ ObjectType::DECIMAL_OBJ, ObjectType::STRING_OBJ },
-		{ ObjectType::BOOLEAN_OBJ, ObjectType::STRING_OBJ },
-		{ ObjectType::ARRAY_OBJ, ObjectType::STRING_OBJ }
+	_coercionTable[strType] = {
+		{ intType, strType },
+		{ decType, strType },
+		{ boolType, strType },
+		{arrType, strType }
 	};
 
-	_coercionTable[ObjectType::ARRAY_OBJ] = {
-		{ ObjectType::STRING_OBJ, ObjectType::STRING_OBJ }
+	_coercionTable[arrType] = {
+		{ strType, strType }
 	};
 
-	_coercionMap[ObjectType::INTEGER_OBJ] = std::bind(&TypeCoercer::EvalAsInteger, this, std::placeholders::_1);
-	_coercionMap[ObjectType::DECIMAL_OBJ] = std::bind(&TypeCoercer::EvalAsDecimal, this, std::placeholders::_1);
-	_coercionMap[ObjectType::BOOLEAN_OBJ] = std::bind(&TypeCoercer::EvalAsBoolean, this, std::placeholders::_1);
-	_coercionMap[ObjectType::STRING_OBJ] = std::bind(&TypeCoercer::EvalAsString, this, std::placeholders::_1);
+	_coercionMap[intType] = std::bind(&TypeCoercer::EvalAsInteger, this, std::placeholders::_1);
+	_coercionMap[decType] = std::bind(&TypeCoercer::EvalAsDecimal, this, std::placeholders::_1);
+	_coercionMap[boolType] = std::bind(&TypeCoercer::EvalAsBoolean, this, std::placeholders::_1);
+	_coercionMap[strType] = std::bind(&TypeCoercer::EvalAsString, this, std::placeholders::_1);
 }
 
 TypeCoercer::~TypeCoercer()
@@ -54,20 +61,17 @@ bool TypeCoercer::CanCoerceTypes(const IObject* const left, const IObject* const
 	}
 }
 
-std::tuple<std::shared_ptr<IObject>, std::shared_ptr<IObject>> TypeCoercer::CoerceTypes(const IObject* const left, const IObject* const right) const
+std::tuple<IObject*, IObject*> TypeCoercer::CoerceTypes(const IObject* const left, const IObject* const right) const
 {
-	std::string rName = right->Type().ToString();
-	std::string lName = left->Type().ToString();
-
-	std::shared_ptr<IObject> leftResult = CoerceThis(right, left);
-	std::shared_ptr<IObject> rightResult = CoerceThis(left, right);
+	IObject* leftResult = CoerceThis(right, left);
+	IObject* rightResult = CoerceThis(left, right);
 
 	return std::make_tuple(leftResult, rightResult);
 }
 
-std::shared_ptr<IObject> TypeCoercer::CoerceThis(const IObject* const source, const IObject* const target) const
+IObject* TypeCoercer::CoerceThis(const IObject* const source, const IObject* const target) const
 {
-	std::shared_ptr<IObject> result = nullptr;
+	IObject* result = nullptr;
 
 	auto sourceCoercion = _coercionTable.find(source->Type());
 	if (sourceCoercion != _coercionTable.end())
@@ -86,36 +90,36 @@ std::shared_ptr<IObject> TypeCoercer::CoerceThis(const IObject* const source, co
 
 	if (result == nullptr)
 	{
-		throw std::runtime_error(std::format("type mismatch can not coerce types: {} -> {}", source->Type().Name, target->Type().Name));
+		throw std::runtime_error(std::format("type mismatch can not coerce types: {} -> {}", source->TypeName(), target->TypeName()));
 	}
 	return result;
 }
 
-std::shared_ptr<IObject> TypeCoercer::EvalAsBoolean(const IObject* const obj) const
+IObject* TypeCoercer::EvalAsBoolean(const IObject* const obj) const
 {
-	std::shared_ptr<IObject> result = nullptr;
-	if (obj == NullObj::NULL_OBJ_REF.get())
+	IObject* result = nullptr;
+	if (obj == NullObj::NULL_OBJ_REF)
 	{
 		result = BooleanObj::FALSE_OBJ_REF;
 	}
 
-	if (obj == BooleanObj::TRUE_OBJ_REF.get())
+	if (obj == BooleanObj::TRUE_OBJ_REF)
 	{
 		result = BooleanObj::TRUE_OBJ_REF;
 	}
 	
-	if(obj == BooleanObj::FALSE_OBJ_REF.get())
+	if(obj == BooleanObj::FALSE_OBJ_REF)
 	{
 		result = BooleanObj::FALSE_OBJ_REF;
 	}
 
-	if (obj->Type() == ObjectType::INTEGER_OBJ)
+	if (obj->IsThisA<IntegerObj>())
 	{
 		auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
 		result = value == 0 ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
 	}
 
-	if (obj->Type() == ObjectType::DECIMAL_OBJ)
+	if (obj->IsThisA<DecimalObj>())
 	{
 		auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
 		result = abs(value) <= FLT_EPSILON ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
@@ -123,109 +127,109 @@ std::shared_ptr<IObject> TypeCoercer::EvalAsBoolean(const IObject* const obj) co
 
 	if (result == nullptr)
 	{
-		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as boolean: {}", obj->Type().Name, obj->Inspect()));
+		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as boolean: {}", obj->TypeName(), obj->Inspect()));
 	}
 		
 	return result;
 }
 
-std::shared_ptr<IObject> TypeCoercer::EvalAsDecimal(const IObject* const obj) const
+IObject* TypeCoercer::EvalAsDecimal(const IObject* const obj) const
 {
-	std::shared_ptr<IObject> result = nullptr;
-	if (obj->Type() != ObjectType::DECIMAL_OBJ)
+	IObject* result = nullptr;
+	if (!obj->IsThisA<DecimalObj>())
 	{
-		if (obj->Type() == ObjectType::INTEGER_OBJ)
+		if (obj->IsThisA<IntegerObj>())
 		{
 			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-			result = DecimalObj::New(static_cast<float>(value));
+			result = _factory->New<DecimalObj>(static_cast<float>(value));
 		}
 
-		if (obj->Type() == ObjectType::BOOLEAN_OBJ)
+		if (obj->IsThisA<BooleanObj>())
 		{
 			auto value = dynamic_cast<const BooleanObj const *>(obj)->Value;
-			result = DecimalObj::New(value ? 1.0f : 0.0f);
+			result = _factory->New<DecimalObj>(value ? 1.0f : 0.0f);
 		}
 	}
 	else
 	{
 		auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-		result = DecimalObj::New(value);
+		result = _factory->New<DecimalObj>(value);
 	}
 
 	if (result == nullptr)
 	{
-		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as decimal: {}", obj->Type().Name, obj->Inspect()));
+		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as decimal: {}", obj->TypeName(), obj->Inspect()));
 	}
 
 	return result;
 }
 
-std::shared_ptr<IObject> TypeCoercer::EvalAsInteger(const IObject* const obj) const
+IObject* TypeCoercer::EvalAsInteger(const IObject* const obj) const
 {
-	std::shared_ptr<IObject> result = nullptr;
-	if (obj->Type() != ObjectType::INTEGER_OBJ)
+	IObject* result = nullptr;
+	if (!obj->IsThisA<IntegerObj>())
 	{
-		if (obj->Type() == ObjectType::DECIMAL_OBJ)
+		if (obj->IsThisA<DecimalObj>())
 		{
 			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-			result = IntegerObj::New(static_cast<int>(value));
+			result = _factory->New<IntegerObj>(static_cast<int>(value));
 		}
 
-		if (obj->Type() == ObjectType::BOOLEAN_OBJ)
+		if (obj->IsThisA<BooleanObj>())
 		{
 			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
-			result = IntegerObj::New(value ? 1 : 0);
+			result = _factory->New<IntegerObj>(value ? 1 : 0);
 		}
 	}
 	else
 	{
 		auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-		result = IntegerObj::New(value);
+		result = _factory->New<IntegerObj>(value);
 	}
 
 	if (result == nullptr)
 	{
-		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as integer: {}", obj->Type().Name, obj->Inspect()));
+		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as integer: {}", obj->TypeName(), obj->Inspect()));
 	}
 
 	return result;
 }
 
-std::shared_ptr<IObject> TypeCoercer::EvalAsString(const IObject* const obj) const
+IObject* TypeCoercer::EvalAsString(const IObject* const obj) const
 {
-	std::shared_ptr<IObject> result = nullptr;
-	if (obj->Type() != ObjectType::STRING_OBJ)
+	IObject* result = nullptr;
+	if (!obj->IsThisA<StringObj>())
 	{
-		if (obj->Type() == ObjectType::INTEGER_OBJ)
+		if (obj->IsThisA<IntegerObj>())
 		{
 			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
-			result = StringObj::New(std::to_string(value));
+			result = _factory->New<StringObj>(std::to_string(value));
 		}
-		else if (obj->Type() == ObjectType::DECIMAL_OBJ)
+		else if (obj->IsThisA<DecimalObj>())
 		{
 			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
-			result = StringObj::New(std::to_string(value));
+			result = _factory->New<StringObj>(std::to_string(value));
 		}
-		else if (obj->Type() == ObjectType::BOOLEAN_OBJ)
+		else if (obj->IsThisA<BooleanObj>())
 		{
 			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
-			result = StringObj::New(value ? "true" : "false");
+			result = _factory->New<StringObj>(value ? "true" : "false");
 		}
-		else if (obj->Type() == ObjectType::ARRAY_OBJ)
+		else if (obj->IsThisA<ArrayObj>())
 		{
 			auto value = dynamic_cast<const ArrayObj const*>(obj)->Inspect();
-			result = StringObj::New(value);
+			result = _factory->New<StringObj>(value);
 		}
 	}
 	else
 	{
 		auto value = dynamic_cast<const StringObj const*>(obj)->Value;
-		result = StringObj::New(value);
+		result = _factory->New<StringObj>(value);
 	}
 
 	if (result == nullptr)
 	{
-		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as string: {}", obj->Type().Name, obj->Inspect()));
+		throw std::runtime_error(std::format("illegal expression, type {} can not be evaluated as string: {}", obj->TypeName(), obj->Inspect()));
 	}
 
 	return result;

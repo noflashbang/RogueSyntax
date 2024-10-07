@@ -10,8 +10,6 @@
 #define SCOPE_FREE "FREE"
 #define SCOPE_FUNCTION "FUNCTION"
 
-
-
 struct Symbol
 {
 	std::string Name;
@@ -96,7 +94,7 @@ struct CompilationUnit
 	void RemoveLastPop();
 	bool LastInstructionIs(OpCode::Constants opcode);
 	void RemoveLastInstruction();
-	void ChangeOperand(int position, int operand);
+	void ChangeOperand(int position, uint32_t operand);
 	void ReplaceInstruction(int position, Instructions instructions);
 };
 
@@ -121,61 +119,74 @@ struct CompilerErrorInfo
 struct ByteCode
 {
 	Instructions Instructions;
-	std::vector<std::shared_ptr<IObject>> Constants;
+	std::vector<const IObject*> Constants;
+};
+
+enum GetSetType
+{
+	LOCAL,
+	GLOBAL,
+	FREE,
+	EXTERN,
 };
 
 class Compiler
 {
 public:
-	Compiler();
+	Compiler(const std::shared_ptr<ObjectFactory> factory);
 	~Compiler();
-	CompilerError Compile(std::shared_ptr<INode> node, const std::shared_ptr<BuiltIn>& externs);
+	ByteCode Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs);
+	inline bool HasErrors() const { return !_errors.empty(); };
+	std::vector<std::string> GetErrors() const { return _errors; };
+
+
+	void NodeCompile(const Program* program);
+	void NodeCompile(const BlockStatement* block);
+	void NodeCompile(const ExpressionStatement* expression);
+	void NodeCompile(const ReturnStatement* ret);
+	void NodeCompile(const LetStatement* let);
+	void NodeCompile(const Identifier* ident);
+	void NodeCompile(const IntegerLiteral* integer);
+	void NodeCompile(const BooleanLiteral* boolean);
+	void NodeCompile(const StringLiteral* string);
+	void NodeCompile(const DecimalLiteral* decimal);
+	void NodeCompile(const PrefixExpression* prefix);
+	void NodeCompile(const InfixExpression* infix);
+	void NodeCompile(const IfStatement* ifExpr);
+	void NodeCompile(const FunctionLiteral* function);
+	void NodeCompile(const CallExpression* call);
+	void NodeCompile(const ArrayLiteral* array);
+	void NodeCompile(const IndexExpression* index);
+	void NodeCompile(const HashLiteral* hash);
+	void NodeCompile(const NullLiteral* null);
+	void NodeCompile(const WhileStatement* whileExp);
+	void NodeCompile(const ForStatement* forExp);
+	void NodeCompile(const ContinueStatement* cont);
+	void NodeCompile(const BreakStatement* brk);
+
+protected:
+
 	CompilerError Compile(INode* node);
-
-	ByteCode GetByteCode() const;
-
 	int EnterUnit();
 	CompilationUnit ExitUnit();
 
-	int AddConstant(std::shared_ptr<IObject> obj);
-	int Emit(OpCode::Constants opcode, std::vector<int> operands);
+	uint32_t AddConstant(const IObject* obj);
+	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands);
+	int EmitGet(Symbol symbol);
+	int EmitSet(Symbol symbol);
+	uint32_t GetSymbolIdx(const Symbol& symbol);
+
 	
-	std::vector<std::string> GetErrors() const { return _errors; };
-	inline bool HasErrors() const { return !_errors.empty(); };
 
-	void NodeCompile(Program* program);
-	void NodeCompile(BlockStatement* block);
-	void NodeCompile(ExpressionStatement* expression);
-	void NodeCompile(ReturnStatement* ret);
-	void NodeCompile(LetStatement* let);
-	void NodeCompile(Identifier* ident);
-	void NodeCompile(IntegerLiteral* integer);
-	void NodeCompile(BooleanLiteral* boolean);
-	void NodeCompile(StringLiteral* string);
-	void NodeCompile(DecimalLiteral* decimal);
-	void NodeCompile(PrefixExpression* prefix);
-	void NodeCompile(InfixExpression* infix);
-	void NodeCompile(IfStatement* ifExpr);
-	void NodeCompile(FunctionLiteral* function);
-	void NodeCompile(CallExpression* call);
-	void NodeCompile(ArrayLiteral* array);
-	void NodeCompile(IndexExpression* index);
-	void NodeCompile(HashLiteral* hash);
-	void NodeCompile(NullLiteral* null);
-	void NodeCompile(WhileStatement* whileExp);
-	void NodeCompile(ForStatement* forExp);
-	void NodeCompile(ContinueStatement* cont);
-	void NodeCompile(BreakStatement* brk);
-
-	static std::shared_ptr<Compiler> New();
 private:
 	std::stack<CompilationUnit> _CompilationUnits;
 	std::shared_ptr<BuiltIn> _externals;
 
-	std::vector<std::shared_ptr<IObject>> _constants;
+	std::vector<const IObject*> _constants;
 	
 	std::vector<std::string> _errors;
 	std::stack<CompilerErrorInfo> _errorStack;
+	std::shared_ptr<ObjectFactory> _factory;
 };
 
 

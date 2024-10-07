@@ -74,7 +74,8 @@ void Parser::NextToken()
 
 std::shared_ptr<Program> Parser::ParseProgram()
 {
-	auto program = Program::New();
+	_currentStore = std::make_shared<AstNodeStore>();
+	auto program = Program::New(_currentStore);
 
 	while (_currentToken.Type != TokenType::TOKEN_EOF)
 	{
@@ -88,9 +89,9 @@ std::shared_ptr<Program> Parser::ParseProgram()
 	return program;
 }
 
-std::shared_ptr<IStatement> Parser::ParseStatement()
+IStatement* Parser::ParseStatement()
 {
-	std::shared_ptr<IStatement> statement = nullptr;
+	IStatement* statement = nullptr;
 	if (_currentToken.Type == TokenType::TOKEN_LET)
 	{
 		statement = ParseLetStatement();
@@ -138,7 +139,7 @@ std::shared_ptr<IStatement> Parser::ParseStatement()
 	return statement;
 }
 
-std::shared_ptr<IExpression> Parser::ParseExpression(const Precedence precedence)
+IExpression* Parser::ParseExpression(const Precedence precedence)
 {
 	auto prefix = _prefixDispatch.find(_currentToken.Type);
 	if (prefix == _prefixDispatch.end())
@@ -165,21 +166,21 @@ std::shared_ptr<IExpression> Parser::ParseExpression(const Precedence precedence
 	return left;
 }
 
-std::shared_ptr<IExpression> Parser::ParseIdentifier()
+IExpression* Parser::ParseIdentifier()
 {
-	return Identifier::New(_currentToken, _currentToken.Literal);
+	return _currentStore->New_Identifier(_currentToken, _currentToken.Literal);
 }
 
-std::shared_ptr<IExpression> Parser::ParseNullLiteral()
+IExpression* Parser::ParseNullLiteral()
 {
-	return NullLiteral::New(_currentToken);
+	return _currentStore->New_NullLiteral(_currentToken);
 }
 
-std::shared_ptr<IExpression> Parser::ParseIntegerLiteral()
+IExpression* Parser::ParseIntegerLiteral()
 {
 	try
 	{
-		return IntegerLiteral::New(_currentToken, std::stoi(_currentToken.Literal));
+		return _currentStore->New_IntegerLiteral(_currentToken, std::stoi(_currentToken.Literal));
 	}
 	catch (const std::invalid_argument& e)
 	{
@@ -190,7 +191,7 @@ std::shared_ptr<IExpression> Parser::ParseIntegerLiteral()
 	}
 }
 
-std::shared_ptr<IExpression> Parser::ParseDecimalLiteral()
+IExpression* Parser::ParseDecimalLiteral()
 {
 	try
 	{
@@ -199,7 +200,7 @@ std::shared_ptr<IExpression> Parser::ParseDecimalLiteral()
 		{
 			_currentToken.Literal.pop_back();
 		}
-		return DecimalLiteral::New(_currentToken, std::stof(_currentToken.Literal));
+		return _currentStore->New_DecimalLiteral(_currentToken, std::stof(_currentToken.Literal));
 	}
 	catch (const std::invalid_argument& e)
 	{
@@ -210,15 +211,15 @@ std::shared_ptr<IExpression> Parser::ParseDecimalLiteral()
 	}
 }
 
-std::shared_ptr<IExpression> Parser::ParseStringLiteral()
+IExpression* Parser::ParseStringLiteral()
 {
 	//remove the quotes
 	std::string result(_currentToken.Literal.begin() + 1, _currentToken.Literal.end() - 1);
 
-	return StringLiteral::New(_currentToken, result);
+	return _currentStore->New_StringLiteral(_currentToken, result);
 }
 
-std::shared_ptr<IExpression> Parser::ParsePrefixExpression()
+IExpression* Parser::ParsePrefixExpression()
 {
 	auto token = _currentToken;
 	auto op = _currentToken.Literal;
@@ -227,10 +228,10 @@ std::shared_ptr<IExpression> Parser::ParsePrefixExpression()
 
 	auto right = ParseExpression(Precedence::PREFIX);
 
-	return PrefixExpression::New(token, op, right);
+	return _currentStore->New_PrefixExpression(token, op, right);
 }
 
-std::shared_ptr<IExpression> Parser::ParseInfixExpression(const std::shared_ptr<IExpression>& left)
+IExpression* Parser::ParseInfixExpression(const IExpression* left)
 {	
 	auto token = _currentToken;
 	auto op = _currentToken.Literal;
@@ -239,15 +240,15 @@ std::shared_ptr<IExpression> Parser::ParseInfixExpression(const std::shared_ptr<
 	NextToken();
 	auto right = ParseExpression(precedence);
 
-	return InfixExpression::New(token, left, op, right);
+	return _currentStore->New_InfixExpression(token, left, op, right);
 }
 
-std::shared_ptr<IExpression> Parser::ParseBoolean()
+IExpression* Parser::ParseBoolean()
 {
-	return BooleanLiteral::New(_currentToken, _currentToken.Type == TokenType::TOKEN_TRUE);
+	return _currentStore->New_BooleanLiteral(_currentToken, _currentToken.Type == TokenType::TOKEN_TRUE);
 }
 
-std::shared_ptr<IExpression> Parser::ParseGroupedExpression()
+IExpression* Parser::ParseGroupedExpression()
 {
 	NextToken();
 
@@ -261,7 +262,7 @@ std::shared_ptr<IExpression> Parser::ParseGroupedExpression()
 	return expression;
 }
 
-std::shared_ptr<IStatement> Parser::ParseIfStatement()
+IStatement* Parser::ParseIfStatement()
 {
 	auto token = _currentToken;
 
@@ -287,7 +288,7 @@ std::shared_ptr<IStatement> Parser::ParseIfStatement()
 	//parse the consequence
 	auto consequence = ParseBlockStatement();
 
-	std::shared_ptr<IStatement> alternative = nullptr;
+	IStatement* alternative = nullptr;
 
 	if (PeekTokenIs(TokenType::TOKEN_ELSE))
 	{
@@ -298,13 +299,13 @@ std::shared_ptr<IStatement> Parser::ParseIfStatement()
 			return nullptr;
 		}
 		auto alt = ParseBlockStatement();
-		alternative.swap(alt);
+		alternative = alt;
 	}
 
-	return IfStatement::New(token, condition, consequence, alternative);
+	return _currentStore->New_IfStatement(token, condition, consequence, alternative);
 }
 
-std::shared_ptr<IStatement> Parser::ParseWhileStatement()
+IStatement* Parser::ParseWhileStatement()
 {
 	auto token = _currentToken;
 
@@ -330,10 +331,10 @@ std::shared_ptr<IStatement> Parser::ParseWhileStatement()
 	//parse the consequence
 	auto action = ParseBlockStatement();
 
-	return WhileStatement::New(token, condition, action);
+	return _currentStore->New_WhileStatement(token, condition, action);
 }
 
-std::shared_ptr<IStatement> Parser::ParseForStatement()
+IStatement* Parser::ParseForStatement()
 {
 	auto token = _currentToken;
 
@@ -361,7 +362,7 @@ std::shared_ptr<IStatement> Parser::ParseForStatement()
 	//	auto* postStmt = static_cast<ExpressionStatement*>(post.get());
 	//	Token token = post->BaseToken;
 	//	token.Literal = "let";
-	//	auto modifiedPost = LetStatement::New(token, initStmt->Name, postStmt->Expression);
+	//	auto modifiedPost = LetStatement(token, initStmt->Name, postStmt->Expression);
 	//	post = modifiedPost;
 	//
 	//	NextToken();
@@ -376,14 +377,14 @@ std::shared_ptr<IStatement> Parser::ParseForStatement()
 	//parse the action
 	auto action = ParseBlockStatement();
 
-	return ForStatement::New(token, init, condition, post, action);
+	return _currentStore->New_ForStatement(token, init, condition, post, action);
 }
 
-std::shared_ptr<IExpression> Parser::ParseArrayLiteral()
+IExpression* Parser::ParseArrayLiteral()
 {
 	auto token = _currentToken;
 
-	std::vector<std::shared_ptr<IExpression>> arguments;
+	std::vector<IExpression*> arguments;
 
 	while (!PeekTokenIs(TokenType::TOKEN_RBRACKET))
 	{
@@ -400,16 +401,16 @@ std::shared_ptr<IExpression> Parser::ParseArrayLiteral()
 		return nullptr;
 	}
 
-	return ArrayLiteral::New(token, arguments);
+	return _currentStore->New_ArrayLiteral(token, arguments);
 }
 
-std::shared_ptr<IExpression> Parser::ParseHashLiteral()
+IExpression* Parser::ParseHashLiteral()
 {
 	// hashes look like {expression: expression, expression: expression}
 	//assume the current is {
 	auto token = _currentToken;
 
-	std::map<std::shared_ptr<IExpression>, std::shared_ptr<IExpression>> pairs;
+	std::map<IExpression*, IExpression*> pairs;
 
 	while (!PeekTokenIs(TokenType::TOKEN_RBRACE))
 	{
@@ -432,10 +433,10 @@ std::shared_ptr<IExpression> Parser::ParseHashLiteral()
 	}
 	NextToken();
 
-	return HashLiteral::New(token, pairs);
+	return _currentStore->New_HashLiteral(token, pairs);
 }
 
-std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<IExpression>& left)
+IExpression* Parser::ParseIndexExpression(const IExpression* left)
 {
 	NextToken();
 	
@@ -446,10 +447,10 @@ std::shared_ptr<IExpression> Parser::ParseIndexExpression(const std::shared_ptr<
 		return nullptr;
 	}
 
-	return IndexExpression::New(_currentToken, left, index);
+	return _currentStore->New_IndexExpression(_currentToken, left, index);
 }
 
-std::shared_ptr<IExpression> Parser::ParseAssignExpression(const std::shared_ptr<IExpression>& left)
+IExpression* Parser::ParseAssignExpression(const IExpression* left)
 {
 	auto token = _currentToken;
 	NextToken();
@@ -461,76 +462,76 @@ std::shared_ptr<IExpression> Parser::ParseAssignExpression(const std::shared_ptr
 		return nullptr;
 	}
 
-	return LetStatement::New(token, left, right);
+	return _currentStore->New_LetStatement(token, left, right);
 }
 
-std::shared_ptr<IExpression> Parser::ParseOpAssignExpression(const std::shared_ptr<IExpression>& left)
+IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 {
 	auto token = _currentToken;
 	NextToken();
 	if (token.Type == TokenType::TOKEN_INCREMENT)
 	{
-		Token opToken = Token::New(TokenType::TOKEN_PLUS, "+");
+		Token opToken = Token(TokenType::TOKEN_PLUS, "+");
 		opToken.Location = token.Location;
 
-		auto right = InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, _currentStore->New_IntegerLiteral(opToken, 1));
 
 		token.Literal = "let";
-		return LetStatement::New(token, left, right);
+		return _currentStore->New_LetStatement(token, left, right);
 	}
 	else if (token.Type == TokenType::TOKEN_DECREMENT)
 	{
-		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
+		Token opToken = Token(TokenType::TOKEN_MINUS, "-");
 		opToken.Location = token.Location;
-		auto right =  InfixExpression::New(opToken, left, opToken.Literal, IntegerLiteral::New(opToken, 1));
+		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, _currentStore->New_IntegerLiteral(opToken, 1));
 
 		token.Literal = "let";
-		return LetStatement::New(token, left, right);
+		return _currentStore->New_LetStatement(token, left, right);
 	}
 	else if (token.Type == TokenType::TOKEN_MINUS_ASSIGN)
 	{
-		Token opToken = Token::New(TokenType::TOKEN_MINUS, "-");
+		Token opToken = Token(TokenType::TOKEN_MINUS, "-");
 		opToken.Location = token.Location;
-		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
 		token.Literal = "let";
-		return LetStatement::New(token, left, right);
+		return _currentStore->New_LetStatement(token, left, right);
 	}
 	else if (token.Type == TokenType::TOKEN_PLUS_ASSIGN)
 	{
-		Token opToken = Token::New(TokenType::TOKEN_PLUS, "+");
+		Token opToken = Token(TokenType::TOKEN_PLUS, "+");
 		opToken.Location = token.Location;
-		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
 		token.Literal = "let";
-		return LetStatement::New(token, left, right);
+		return _currentStore->New_LetStatement(token, left, right);
 	}
 	else if (token.Type == TokenType::TOKEN_ASTERISK_ASSIGN)
 	{
-		Token opToken = Token::New(TokenType::TOKEN_ASTERISK, "*");
+		Token opToken = Token(TokenType::TOKEN_ASTERISK, "*");
 		opToken.Location = token.Location;
-		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
 		token.Literal = "let";
-		return LetStatement::New(token, left, right);
+		return _currentStore->New_LetStatement(token, left, right);
 	}
 	else if (token.Type == TokenType::TOKEN_SLASH_ASSIGN)
 	{
-		Token opToken = Token::New(TokenType::TOKEN_SLASH, "/");
+		Token opToken = Token(TokenType::TOKEN_SLASH, "/");
 		opToken.Location = token.Location;
-		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
 		token.Literal = "let";
-		return LetStatement::New(token, left, right);
+		return _currentStore->New_LetStatement(token, left, right);
 	}
 	else if (token.Type == TokenType::TOKEN_MODULO_ASSIGN)
 	{
-		Token opToken = Token::New(TokenType::TOKEN_MODULO, "%");
+		Token opToken = Token(TokenType::TOKEN_MODULO, "%");
 		opToken.Location = token.Location;
-		auto right = InfixExpression::New(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
+		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
 		token.Literal = "let";
-		return LetStatement::New(token, left, right);
+		return _currentStore->New_LetStatement(token, left, right);
 	}
 	else
 	{
@@ -540,11 +541,11 @@ std::shared_ptr<IExpression> Parser::ParseOpAssignExpression(const std::shared_p
 	}
 }
 
-std::shared_ptr<IStatement> Parser::ParseBlockStatement()
+IStatement* Parser::ParseBlockStatement()
 {
 	auto token = _currentToken;
 
-	std::vector<std::shared_ptr<IStatement>> statements;
+	std::vector<IStatement*> statements;
 
 	NextToken();
 
@@ -558,10 +559,10 @@ std::shared_ptr<IStatement> Parser::ParseBlockStatement()
 		NextToken();
 	}
 
-	return BlockStatement::New(token, statements);
+	return _currentStore->New_BlockStatement(token, statements);
 }
 
-std::shared_ptr<IExpression> Parser::ParseFunctionLiteral()
+IExpression* Parser::ParseFunctionLiteral()
 {
 	auto token = _currentToken;
 
@@ -570,14 +571,14 @@ std::shared_ptr<IExpression> Parser::ParseFunctionLiteral()
 		return nullptr;
 	}
 
-	std::vector<std::shared_ptr<IExpression>> parameters;
+	std::vector<IExpression*> parameters;
 
 	while (!PeekTokenIs(TokenType::TOKEN_RPAREN))
 	{
 		NextToken();
 		if (CurrentTokenIs(TokenType::TOKEN_IDENT))
 		{
-			auto param = Identifier::New(_currentToken, _currentToken.Literal);
+			auto param = _currentStore->New_Identifier(_currentToken, _currentToken.Literal);
 			parameters.push_back(std::move(param));
 		}
 	}
@@ -594,14 +595,14 @@ std::shared_ptr<IExpression> Parser::ParseFunctionLiteral()
 
 	auto body = ParseBlockStatement();
 
-	return FunctionLiteral::New(token, parameters, body);
+	return _currentStore->New_FunctionLiteral(token, parameters, body);
 }
 
-std::shared_ptr<IExpression> Parser::ParseCallExpression(const std::shared_ptr<IExpression>& function)
+IExpression* Parser::ParseCallExpression(const IExpression* function)
 {
 	auto token = _currentToken;
 
-	std::vector<std::shared_ptr<IExpression>> arguments;
+	std::vector<IExpression*> arguments;
 
 	while (!PeekTokenIs(TokenType::TOKEN_RPAREN))
 	{
@@ -618,26 +619,26 @@ std::shared_ptr<IExpression> Parser::ParseCallExpression(const std::shared_ptr<I
 		return nullptr;
 	}
 
-	return CallExpression::New(token, function, arguments);
+	return _currentStore->New_CallExpression(token, function, arguments);
 }
 
-std::shared_ptr<IStatement> Parser::ParseLetStatement()
+IStatement* Parser::ParseLetStatement()
 {
 	auto token = _currentToken;
 	
 	NextToken();
 
-	std::shared_ptr<IExpression> holder = nullptr;
+	IExpression* holder = nullptr;
 	if (_currentToken.Type == TokenType::TOKEN_IDENT && _nextToken.Type != TokenType::TOKEN_LBRACKET)
 	{
-		holder = Identifier::New(_currentToken, _currentToken.Literal);
+		holder = _currentStore->New_Identifier(_currentToken, _currentToken.Literal);
 	}
 	else
 	{
 		holder = ParseExpression(Precedence::LOWEST);
-		if (holder != NULL && typeid(*(holder.get())) == typeid(LetStatement))
+		if (holder != NULL && holder->IsThisA<LetStatement>())
 		{
-			return dynamic_pointer_cast<LetStatement>(holder);
+			return dynamic_cast<LetStatement*>(holder);
 		}
 	}
 
@@ -668,21 +669,21 @@ std::shared_ptr<IStatement> Parser::ParseLetStatement()
 
 	if (value->Type() == TokenType::TOKEN_FUNCTION)
 	{
-		auto function = dynamic_pointer_cast<FunctionLiteral>(value);
-		function->Name = dynamic_pointer_cast<Identifier>(holder)->Value;
+		auto function = dynamic_cast<FunctionLiteral*>(value);
+		function->Name = dynamic_cast<Identifier*>(holder)->Value;
 	}
 
-	return LetStatement::New(token, holder, value);
+	return _currentStore->New_LetStatement(token, holder, value);
 }
 
-std::shared_ptr<IStatement> Parser::ParseAssignStatement()
+IStatement* Parser::ParseAssignStatement()
 {
 	auto token = _currentToken;
 
-	std::shared_ptr<IExpression> holder = nullptr;
+	IExpression* holder = nullptr;
 	if (_currentToken.Type == TokenType::TOKEN_IDENT)
 	{
-		holder = Identifier::New(_currentToken, _currentToken.Literal);
+		holder = _currentStore->New_Identifier(_currentToken, _currentToken.Literal);
 	}
 	else
 	{
@@ -714,10 +715,10 @@ std::shared_ptr<IStatement> Parser::ParseAssignStatement()
 		NextToken();
 	}
 
-	return LetStatement::New(Token::New(TokenType::TOKEN_LET, "let"), holder, value);
+	return _currentStore->New_LetStatement(Token(TokenType::TOKEN_LET, "let"), holder, value);
 }
 
-std::shared_ptr<IStatement> Parser::ParseReturnStatement()
+IStatement* Parser::ParseReturnStatement()
 {
 	auto token = _currentToken;
 
@@ -730,10 +731,10 @@ std::shared_ptr<IStatement> Parser::ParseReturnStatement()
 		NextToken();
 	}
 
-	return ReturnStatement::New(token, returnValue);
+	return _currentStore->New_ReturnStatement(token, returnValue);
 }
 
-std::shared_ptr<IStatement> Parser::ParseBreakStatement()
+IStatement* Parser::ParseBreakStatement()
 {
 	auto token = _currentToken;
 
@@ -742,10 +743,10 @@ std::shared_ptr<IStatement> Parser::ParseBreakStatement()
 		NextToken();
 	}
 
-	return BreakStatement::New(token);
+	return _currentStore->New_BreakStatement(token);
 }
 
-std::shared_ptr<IStatement> Parser::ParseContinueStatement()
+IStatement* Parser::ParseContinueStatement()
 {
 	auto token = _currentToken;
 
@@ -754,10 +755,10 @@ std::shared_ptr<IStatement> Parser::ParseContinueStatement()
 		NextToken();
 	}
 
-	return ContinueStatement::New(token);
+	return _currentStore->New_ContinueStatement(token);
 }
 
-std::shared_ptr<IStatement> Parser::ParseExpressionStatement()
+IStatement* Parser::ParseExpressionStatement()
 {
 	auto token = _currentToken;
 
@@ -777,7 +778,7 @@ std::shared_ptr<IStatement> Parser::ParseExpressionStatement()
 		NextToken();
 	}
 
-	return ExpressionStatement::New(token, expression);
+	return _currentStore->New_ExpressionStatement(token, expression);
 }
 
 

@@ -22,41 +22,15 @@ void InteractiveCompiler::Start()
 
 void InteractiveCompiler::Run()
 {
-	auto builtin = BuiltIn::New();
-	Lexer lexer(_input);
-	Parser parser(lexer);
-
-	auto program = parser.ParseProgram();
-	if (!parser.Errors().empty())
-	{
-		for (const auto& error : parser.Errors())
-		{
-			std::cout << "Parser error: " << error << std::endl;
-		}
-		return;
-	}
-
-	auto compile = Compiler::New();
-	auto compError = compile->Compile(program, builtin);
-	if (compile->HasErrors())
-	{
-		for (const auto& error : compile->GetErrors())
-		{
-			std::cout << "Compiler error: " << error << std::endl;
-		}
-		return;
-	}
-
-	auto bytecode = compile->GetByteCode();
-	auto vm = RogueVM::New(bytecode, builtin);
-
+	RogueSyntax syntax;
+	auto vm = syntax.MakeVM(syntax.Compile(_input));
 	vm->Run();
 	//auto top = vm->LastPoppped();
 	auto top = vm->Top();
 
-	if (top->Type() == ObjectType::ERROR_OBJ)
+	if (top->IsThisA<ErrorObj>())
 	{
-		auto error = std::dynamic_pointer_cast<ErrorObj>(top);
+		auto error = dynamic_cast<const ErrorObj*>(top);
 		std::cout << "Error: " << error->Message << std::endl;
 
 		//print out the source and error location
@@ -77,32 +51,17 @@ void InteractiveCompiler::Run()
 
 void InteractiveCompiler::PrintDecompile()
 {
-	auto builtin = BuiltIn::New();
-	Lexer lexer(_input);
-	Parser parser(lexer);
+	RogueSyntax syntax;
+	auto compile = syntax.Compile(_input);;
+	std::cout << OpCode::PrintInstructions(compile.Instructions) << std::endl;
 
-	auto program = parser.ParseProgram();
-	if (!parser.Errors().empty())
+	for (const auto& constant : compile.Constants)
 	{
-		for (const auto& error : parser.Errors())
+		if (constant->IsThisA<FunctionCompiledObj>())
 		{
-			std::cout << "Parser error: " << error << std::endl;
+			auto closure = dynamic_cast<const FunctionCompiledObj*>(constant);
+			std::cout << closure->Inspect() << std::endl;
 		}
-		return;
 	}
-
-	auto compile = Compiler::New();
-	auto compError = compile->Compile(program, builtin);
-	if (compile->HasErrors())
-	{
-		for (const auto& error : compile->GetErrors())
-		{
-			std::cout << "Compiler error: " << error << std::endl;
-		}
-		return;
-	}
-
-	auto bytecode = compile->GetByteCode();
-	std::cout << OpCode::PrintInstructions(bytecode.Instructions) << std::endl;
 }
 

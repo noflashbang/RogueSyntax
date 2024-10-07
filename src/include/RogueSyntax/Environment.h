@@ -28,11 +28,14 @@ struct ScopedEnvironment
 
 	void SetParent(const std::shared_ptr<ScopedEnvironment>& env);
 
-	void Set(const std::string& name, const std::shared_ptr<IObject>& value);
-	std::shared_ptr<IObject> Get(const std::string& name) const;
+	void Set(const std::string& name, const IObject* value);
+	const IObject* Get(const std::string& name) const;
+
+	//Used to update the value of an object in the environment, since the object is immutable
+	void Update(const size_t id, const IObject* updatedValue);
 
 	EnvironmentHandle Handle;
-	std::unordered_map<std::string, std::shared_ptr<IObject>> Store;
+	std::unordered_map<std::string, const IObject*> IdentifierStore;
 	std::shared_ptr<ScopedEnvironment> Parent;
 };
 
@@ -42,15 +45,16 @@ public:
 	Environment();
 	~Environment();
 
-	void Set(const uint32_t env, const std::string& name, const std::shared_ptr<IObject>& value);
-	std::shared_ptr<IObject> Get(const uint32_t env, const std::string& name) const;
+	void Set(const uint32_t env, const std::string& name, const IObject* value);
+	const IObject* Get(const uint32_t env, const std::string& name) const;
+
+	void Update(const uint32_t env, const size_t id, const IObject* updatedValue);
 
 	uint32_t New();
 	uint32_t NewEnclosed(const uint32_t parent);
 	void Release(const uint32_t env);
 
 private:
-
 	EnvironmentHandle Allocate();
 	EnvironmentHandle Allocate(const EnvironmentHandle parent);
 	void Free(const EnvironmentHandle env);

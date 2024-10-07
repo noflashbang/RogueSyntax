@@ -7,33 +7,33 @@
 typedef std::variant<int, std::string, float, bool, NullObj, std::shared_ptr<ArrayObj>, std::shared_ptr<HashObj>, std::shared_ptr<FunctionCompiledObj>> ConstantValue;
 
 
-bool TestIObjects(std::shared_ptr<IObject> expected, std::shared_ptr<IObject> actual);
+bool TestIObjects(const IObject* expected, const IObject* actual);
 
 template<typename T, typename R>
-bool TestConstantValues(ConstantValue expected, std::shared_ptr<IObject> actual)
+bool TestConstantValues(ConstantValue expected, const IObject* actual)
 {
 	if (std::holds_alternative<T>(expected))
 	{
-		if (typeid(*(actual.get())) == typeid(R))
+		if (actual->Type() == typeid(R).hash_code())
 		{
-			if (std::get<T>(expected) != std::dynamic_pointer_cast<R>(actual)->Value)
+			if (std::get<T>(expected) != dynamic_cast<const R*>(actual)->Value)
 			{
-				throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", std::get<T>(expected), std::dynamic_pointer_cast<R>(actual)->Value));
+				throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", std::get<T>(expected), dynamic_cast<const R*>(actual)->Value));
 			}
 		}
 		else
 		{
-			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(R).name(), typeid(*(actual.get())).name()));
+			throw std::runtime_error(std::format("Got wrong constant type. Expected={} Got={}", typeid(R).name(), actual->TypeName()));
 		}
 	}
 	return true;
 }
 
-bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>& actual);
+bool TestConstant(const ConstantValue& expected, const IObject* actual);
 
 bool TestInstructions(const Instructions& expected, const Instructions& actual);
 
-bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<std::shared_ptr<IObject>>& actual);
+bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<const IObject*>& actual);
 
 Instructions ConcatInstructions(const std::vector<Instructions>& instructions);
 

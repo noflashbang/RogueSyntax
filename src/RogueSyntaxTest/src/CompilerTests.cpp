@@ -5,6 +5,13 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
+
+std::shared_ptr<FunctionCompiledObj> MakeFunction(Instructions instructions, int numParam, int numFree)
+{
+	auto fn = std::make_shared<FunctionCompiledObj>(instructions, numParam, numFree);
+	return fn;
+};
+
 TEST_CASE("Instruction String")
 {
 	std::vector<Instructions> instructions = {
@@ -37,7 +44,7 @@ TEST_CASE("Instruction String 2")
 
 TEST_CASE("OpCode::Make tests")
 {
-	auto [opcode, operands, expected] = GENERATE(table<OpCode::Constants, std::vector<int>, std::vector<uint8_t>>(
+	auto [opcode, operands, expected] = GENERATE(table<OpCode::Constants, std::vector<uint32_t>, std::vector<uint8_t>>(
 		{
 			{ OpCode::Constants::OP_CONSTANT, { 65534 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFE } },
 			{ OpCode::Constants::OP_CONSTANT, { 65535 }, { static_cast<uint8_t>(OpCode::Constants::OP_CONSTANT) ,0xFF, 0xFF } },
@@ -535,26 +542,26 @@ TEST_CASE("Let statement")
 			{ "let one = 1; let two = 2;", { 1, 2 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {1})
+					OpCode::Make(OpCode::Constants::OP_SET, {1})
 				}
 			},
 			{ "let one = 1; one;", { 1 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
 			{ "let one = 1; let two = one; two;", { 1 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {1}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {1}),
+					OpCode::Make(OpCode::Constants::OP_GET, {1}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -709,7 +716,7 @@ TEST_CASE("Function Tests")
 {
 	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{ "fn() { return 5 + 10; }", { 5, 10, FunctionCompiledObj::New(ConcatInstructions({
+			{ "fn() { return 5 + 10; }", { 5, 10, MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
@@ -720,7 +727,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { 5 + 10; }", { 5, 10, FunctionCompiledObj::New(ConcatInstructions({
+			{ "fn() { 5 + 10; }", { 5, 10, MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
@@ -731,7 +738,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { 1; 2; }", { 1, 2, FunctionCompiledObj::New(ConcatInstructions({
+			{ "fn() { 1; 2; }", { 1, 2, MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
@@ -742,7 +749,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { }", { FunctionCompiledObj::New(ConcatInstructions({
+			{ "fn() { }", { MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_RETURN, {}),
 				}),0,0)},
 				{
@@ -750,7 +757,7 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { 25; }()", { 25, FunctionCompiledObj::New(ConcatInstructions({
+			{ "fn() { 25; }()", { 25, MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
@@ -760,30 +767,30 @@ TEST_CASE("Function Tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "let noArg = fn() { 24; }; noArg();", { 24,  FunctionCompiledObj::New(ConcatInstructions({
+			{ "let noArg = fn() { 24; }; noArg();", { 24,  MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "let manyArg = fn(x,y,z) { return x+y+z;}; manyArg(1,2,3);", { FunctionCompiledObj::New(ConcatInstructions({
-				OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
-				OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {1}),
+			{ "let manyArg = fn(x,y,z) { return x+y+z;}; manyArg(1,2,3);", { MakeFunction(ConcatInstructions({
+				OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
+				OpCode::Make(OpCode::Constants::OP_GET, {1 | 0x8000}),
 				OpCode::Make(OpCode::Constants::OP_ADD, {}),
-				OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {2}),
+				OpCode::Make(OpCode::Constants::OP_GET, {2 | 0x8000}),
 				OpCode::Make(OpCode::Constants::OP_ADD, {}),
 				OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,3), 1,2,3},
 				{
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
@@ -801,21 +808,21 @@ TEST_CASE("Let statement scopes tests")
 {
 	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{ "let x = 5; fn() { x; }", { 5, FunctionCompiledObj::New(ConcatInstructions({
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+			{ "let x = 5; fn() { x; }", { 5, MakeFunction(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0)},
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { let x = 5; x; }", {5, FunctionCompiledObj::New(ConcatInstructions({
+			{ "fn() { let x = 5; x; }", {5, MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_LOCAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0 | 0x8000}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),1,0)},
 				{
@@ -823,13 +830,13 @@ TEST_CASE("Let statement scopes tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { let x = 5; let y = 10; x + y; }", { 5, 10, FunctionCompiledObj::New(ConcatInstructions({
+			{ "fn() { let x = 5; let y = 10; x + y; }", { 5, 10, MakeFunction(ConcatInstructions({
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_LOCAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0 | 0x8000}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
-					OpCode::Make(OpCode::Constants::OP_SET_LOCAL, {1}),
-					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_SET, {1 | 0x8000}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
+					OpCode::Make(OpCode::Constants::OP_GET, {1 | 0x8000}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),2,0)},
@@ -851,59 +858,59 @@ TEST_CASE("While test")
 			{ "let x = 10; while (x > 0) { x = x - 1; }", { 10, 0, 1 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_SUB, {}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
 				}
 			},
 		{ "let x = 10; while (x > 0) { x = x - 1; if(x == 5) {break;} }; x;", { 10, 0, 1, 5 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_SUB, {}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
 					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 39 }),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 42 }),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
 				}
 		},
 		{ "let x = 10; while (x > 0) { x = x - 1; if(x == 5) {continue;} }; x;", { 10, 0, 1, 5 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_SUB, {}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
 					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 39 }),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
 				}
 		}
@@ -920,57 +927,57 @@ TEST_CASE("For loop test")
 			{ "for (let i = 0; i < 10; i = i + 1) { i; }", { 0, 10, 1 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 33 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
 				}
 			},
 			{ "for (let i = 0; i < 10; i = i + 1) { if(i == 5) {break;} }", { 0, 10, 5, 1 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 42 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
 				}
 			},
 			{ "for (let i = 0; i < 10; i = i + 1) { if(i == 5) {continue;} }", { 0, 10, 5, 1 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {1}),
 					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
 					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 29 }),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
 				}
 			}
@@ -986,7 +993,7 @@ TEST_CASE("External functions")
 		{
 			{ "len([]);", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_GET_EXTRN, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x4000}),
 					OpCode::Make(OpCode::Constants::OP_ARRAY, {0}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {1}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
@@ -1003,25 +1010,25 @@ TEST_CASE("Closure Test")
 		auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
 			{ "let newClosure = fn(a) { fn(b) { a + b; }; }; let closure = newClosure(2); closure(3);", { 
-				FunctionCompiledObj::New(ConcatInstructions({
-					OpCode::Make(OpCode::Constants::OP_GET_FREE, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+				MakeFunction(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0xC000}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),1,1), 
-				FunctionCompiledObj::New(ConcatInstructions({
-					OpCode::Make(OpCode::Constants::OP_GET_LOCAL, {0}),
+				MakeFunction(ConcatInstructions({
+					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 1}),
 					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
 				}),0,0), 2, 3 },
 				{
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {0}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {0}),
+					OpCode::Make(OpCode::Constants::OP_SET, {0}),
+					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {2}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {1}),
-					OpCode::Make(OpCode::Constants::OP_SET_GLOBAL, {1}),
-					OpCode::Make(OpCode::Constants::OP_GET_GLOBAL, {1}),
+					OpCode::Make(OpCode::Constants::OP_SET, {1}),
+					OpCode::Make(OpCode::Constants::OP_GET, {1}),
 					OpCode::Make(OpCode::Constants::OP_CONSTANT, {3}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {1}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})

@@ -5,6 +5,32 @@
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
 
+
+std::shared_ptr<ArrayObj> Array(std::vector<int> elms)
+{
+	std::vector<const IObject*> objs;
+	for (auto elm : elms)
+	{
+		objs.push_back(new IntegerObj(elm));
+	}
+
+	return std::make_shared<ArrayObj>(objs);
+}
+
+std::shared_ptr<HashObj> Hash(std::vector<int> elms)
+{
+	std::unordered_map<HashKey, HashEntry> objs;
+
+	for (int i = 0; i < elms.size(); i += 2)
+	{
+		auto key = new IntegerObj(elms[i]);
+		auto value = new IntegerObj(elms[i + 1]);
+		objs.insert({ HashKey{key->Type(), key->Inspect()}, HashEntry{key, value} });
+	}
+	return std::make_shared<HashObj>(objs);
+}
+
+
 TEST_CASE("Integer Arthmetic Instructions")
 {
 	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
@@ -138,9 +164,9 @@ TEST_CASE("Array instructions")
 {
 	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
 		{
-			{ "[1,2,3,4];", ArrayObj::New( { IntegerObj::New(1), IntegerObj::New(2), IntegerObj::New(3), IntegerObj::New(4) } ) },
-			{ "[1 + 2, 3 * 4, 5 + 6];", ArrayObj::New({ IntegerObj::New(3), IntegerObj::New(12), IntegerObj::New(11) }) },
-			{ "[1, 2 * 2, 3 + 3];", ArrayObj::New({ IntegerObj::New(1), IntegerObj::New(4), IntegerObj::New(6) }) },
+			{ "[1,2,3,4];", Array({1,2,3,4})},
+			{ "[1 + 2, 3 * 4, 5 + 6];", Array({3,12,11})},
+			{ "[1, 2 * 2, 3 + 3];", Array({1,4,6})},
 			{ "[1, 2, 3][0]", 1 },
 			{ "[1, 2, 3][1]", 2 },
 			{ "[1, 2, 3][2]", 3 },
@@ -159,9 +185,9 @@ TEST_CASE("Hash instructions")
 {
 	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
 		{
-			{ "{}", HashObj::New({}) },
-			{ "{1: 2, 2: 3}", HashObj::New({{HashKey{ IntegerObj::New(1)->Type(),  IntegerObj::New(1)->Inspect()},HashEntry{ IntegerObj::New(1),IntegerObj::New(2)}}, {HashKey{ IntegerObj::New(2)->Type(),  IntegerObj::New(2)->Inspect()},HashEntry{ IntegerObj::New(2),IntegerObj::New(3)}}})},
-			{ "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", HashObj::New({{HashKey{ IntegerObj::New(2)->Type(),  IntegerObj::New(2)->Inspect()},HashEntry{ IntegerObj::New(2), IntegerObj::New(4)}}, {HashKey{ IntegerObj::New(6)->Type(),  IntegerObj::New(6)->Inspect()},HashEntry{ IntegerObj::New(6), IntegerObj::New(16)}}})},
+			{ "{}", Hash({})},
+			{ "{1: 2, 2: 3}", Hash({1,2,2,3})},
+			{ "{1 + 1: 2 * 2, 3 + 3: 4 * 4}", Hash({2,4,6,16})},
 			{ "{1: 2, 2: 3}[1]", 2 },
 			{ "{1: 2, 2: 3}[2]", 3 },
 			{ "{1: 2}[2]", NullObj() },
@@ -237,15 +263,15 @@ TEST_CASE("Extern/Builtin Function tests")
 			{"len(\"\")", 0},
 			{"len(\"four\")", 4},
 			{"len(\"hello world\")", 11},
-			{"len(1)", "argument to `len` not supported, got INTEGER"},
+			{"len(1)", "argument to `len` not supported, got class IntegerObj"},
 			{"len(\"one\", \"two\")", "wrong number of arguments. got=2, wanted=1"},
 			{"len([1, 2, 3])", 3},
 			{"first([1, 2, 3])", 1},
 			{"last([1, 2, 3])", 3},
-			{"rest([1, 2, 3])", ArrayObj::New({ IntegerObj::New(2), IntegerObj::New(3) })},
-			{"push([1, 2, 3], 4)", ArrayObj::New({ IntegerObj::New(1), IntegerObj::New(2), IntegerObj::New(3), IntegerObj::New(4) })},
+			{"rest([1, 2, 3])", Array({2,3})},
+			{"push([1, 2, 3], 4)", Array({1,2,3,4})},
 			{"push([1, 2, 3], 4, 5)", "wrong number of arguments. got=3, wanted=2"},
-			{"push(1, 2)", "argument to `push` must be ARRAY, got INTEGER"},
+			{"push(1, 2)", "argument to `push` must be ARRAY, got class IntegerObj"},
 		}));
 
 	CAPTURE(input);

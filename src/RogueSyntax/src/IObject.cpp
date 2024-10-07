@@ -1,109 +1,126 @@
 #include "IObject.h"
 #include "pch.h"
 
-unsigned int ObjectType::NextObjectType = 0;
+//BooleanObj* BooleanObj::TRUE_OBJ_REF = ObjectStore::TRUE_OBJ.get();
+//BooleanObj* BooleanObj::FALSE_OBJ_REF = ObjectStore::FALSE_OBJ.get();
+//NullObj* NullObj::NULL_OBJ_REF = ObjectStore::NULL_OBJ.get();
+//VoidObj* VoidObj::VOID_OBJ_REF = ObjectStore::VOID_OBJ.get();
+//ContinueObj* ContinueObj::CONTINUE_OBJ_REF = ObjectStore::CONTINUE_OBJ.get();
+//BreakObj* BreakObj::BREAK_OBJ_REF = ObjectStore::BREAK_OBJ.get();
 
-const ObjectType ObjectType::NULL_OBJ      = { NextObjectType++, "NULL" };
-const ObjectType ObjectType::VOID_OBJ      = { NextObjectType++, "VOID" };
-const ObjectType ObjectType::INTEGER_OBJ   = { NextObjectType++, "INTEGER" };
-const ObjectType ObjectType::DECIMAL_OBJ   = { NextObjectType++, "DECIMAL" };
-const ObjectType ObjectType::STRING_OBJ    = { NextObjectType++, "STRING" };
-const ObjectType ObjectType::BOOLEAN_OBJ   = { NextObjectType++, "BOOLEAN" };
-const ObjectType ObjectType::RETURN_OBJ    = { NextObjectType++, "RETURN" };
-const ObjectType ObjectType::ERROR_OBJ     = { NextObjectType++, "ERROR" };
-const ObjectType ObjectType::FUNCTION_OBJ  = { NextObjectType++, "FUNCTION" };
-const ObjectType ObjectType::BUILTIN_OBJ   = { NextObjectType++, "BUILTIN" };
-const ObjectType ObjectType::ARRAY_OBJ     = { NextObjectType++, "ARRAY" };
-const ObjectType ObjectType::HASH_OBJ      = { NextObjectType++, "HASH" };
-const ObjectType ObjectType::IDENT_OBJ     = { NextObjectType++, "IDENT" };
-
-const ObjectType ObjectType::FUNCTION_COMPILED_OBJ = { NextObjectType++, "FUNCTION_COMPILED" };
-const ObjectType ObjectType::CLOSURE_OBJ = { NextObjectType++, "CLOSURE" };
-
-const ObjectType ObjectType::BREAK_OBJ     = { NextObjectType++, "BREAK" };
-const ObjectType ObjectType::CONTINUE_OBJ  = { NextObjectType++, "CONTINUE" };
-
-
-std::shared_ptr<BooleanObj> BooleanObj::TRUE_OBJ_REF =  BooleanObj::New(true);
-std::shared_ptr<BooleanObj> BooleanObj::FALSE_OBJ_REF = BooleanObj::New(false);
-
-
-std::shared_ptr<NullObj> NullObj::NULL_OBJ_REF = NullObj::New();
-
-std::shared_ptr<NullObj> NullObj::New()
+IObject* NullObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<NullObj>();
+	return NULL_OBJ_REF;
 }
 
-std::shared_ptr<VoidObj> VoidObj::VOID_OBJ_REF = VoidObj::New();
-
-std::shared_ptr<VoidObj> VoidObj::New()
+IObject* VoidObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<VoidObj>();
+	return VOID_OBJ_REF;
 }
 
-std::shared_ptr<BreakObj> BreakObj::BREAK_OBJ_REF = BreakObj::New();
-
-std::shared_ptr<BreakObj> BreakObj::New()
+IObject* BooleanObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<BreakObj>();
+	return Value ? TRUE_OBJ_REF : FALSE_OBJ_REF;
 }
 
-std::shared_ptr<ContinueObj> ContinueObj::CONTINUE_OBJ_REF = ContinueObj::New();
-
-std::shared_ptr<ContinueObj> ContinueObj::New()
+IObject* IntegerObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<ContinueObj>();
+	return factory->New<IntegerObj>(Value);
 }
 
-std::shared_ptr<IntegerObj> IntegerObj::New(int value)
+IObject* DecimalObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<IntegerObj>(value);
+	return factory->New<DecimalObj>(Value);
 }
 
-std::shared_ptr<DecimalObj> DecimalObj::New(float value)
+IObject* StringObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<DecimalObj>(value);
+	return factory->New<StringObj>(Value);
 }
 
-std::shared_ptr<StringObj> StringObj::New(const std::string& value)
+IObject* ArrayObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<StringObj>(value);
+	std::vector<const IObject*> clonedElements;
+	std::transform(Elements.begin(), Elements.end(), std::back_inserter(clonedElements), [factory](const auto& elem) { return elem->Clone(factory); });
+	return factory->New<ArrayObj>(clonedElements);
 }
 
-std::shared_ptr<BooleanObj> BooleanObj::New(bool value)
+IObject* HashObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<BooleanObj>(value);
+	std::unordered_map<HashKey, HashEntry> clonedElements;
+	std::transform(Elements.begin(), Elements.end(), std::inserter(clonedElements, clonedElements.end()), [factory](const auto& elem)
+		{
+			auto [key, value] = elem;
+			return std::make_pair(key, HashEntry{ value.Key->Clone(factory), value.Value->Clone(factory) });
+		});
+	return factory->New<HashObj>(clonedElements);
 }
 
-std::shared_ptr<ArrayObj> ArrayObj::New(const std::vector<std::shared_ptr<IObject>>& elements)
+IObject* FunctionObj::Clone(const ObjectFactory* factory) const
 {
-	return std::make_shared<ArrayObj>(elements);
+	return factory->New<FunctionObj>(Parameters, Body); //shallow copy is fine
 }
 
-std::shared_ptr<IObject> ArrayObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
+IObject* BuiltInObj::Clone(const ObjectFactory* factory) const
 {
-	if (key->Type() != ObjectType::INTEGER_OBJ)
+	return Idx != -1 ? factory->New<BuiltInObj>(Idx) : factory->New<BuiltInObj>(Name);
+}
+
+IObject* IdentifierObj::Clone(const ObjectFactory* factory) const
+{
+	return factory->New<IdentifierObj>(Name, Value->Clone(factory));
+}
+
+IObject* FunctionCompiledObj::Clone(const ObjectFactory* factory) const
+{
+	return factory->New<FunctionCompiledObj>(FuncInstructions, NumLocals, NumParameters);
+}
+
+IObject* ReturnObj::Clone(const ObjectFactory* factory) const
+{
+	return factory->New<ReturnObj>(Value->Clone(factory));
+}
+
+IObject* ErrorObj::Clone(const ObjectFactory* factory) const
+{
+	return factory->New<ErrorObj>(Message, Token);
+}
+
+IObject* ContinueObj::Clone(const ObjectFactory* factory) const
+{
+	return CONTINUE_OBJ_REF;
+}
+
+IObject* BreakObj::Clone(const ObjectFactory* factory) const
+{
+	return BREAK_OBJ_REF;
+}
+
+IObject* ClosureObj::Clone(const ObjectFactory* factory) const
+{
+	std::vector<const IObject*> clonedFrees;
+	std::transform(Frees.begin(), Frees.end(), std::back_inserter(clonedFrees), [factory](const auto& free) { return free->Clone(factory); });
+	return factory->New<ClosureObj>(Function, clonedFrees);
+}
+
+const IObject* ArrayObj::Set(const IObject* key, const IObject* value)
+{
+	if (!key->IsThisA<IntegerObj>())
 	{
-		return ErrorObj::New("index must be an integer", ::Token::New(TokenType::TOKEN_ILLEGAL, ""));
+		throw std::runtime_error("index must be an integer");
 	}
 
-	auto index = std::dynamic_pointer_cast<IntegerObj>(key);
+	auto index = dynamic_cast<const IntegerObj*>(key);
 	if (index->Value < 0 || index->Value >= Elements.size())
 	{
-		return ErrorObj::New("index out of bounds", ::Token::New(TokenType::TOKEN_ILLEGAL, ""));
+		throw std::runtime_error("index out of bounds");
 	}
 
 	Elements[index->Value] = value;
 	return value;
 }
 
-std::shared_ptr<HashObj> HashObj::New(const std::unordered_map<HashKey, HashEntry>& pairs)
-{
-	return std::make_shared<HashObj>(pairs);
-}
-
-std::shared_ptr<IObject> HashObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
+const IObject* HashObj::Set(const IObject* key, const IObject* value)
 {
 	auto hashKey = HashKey(key->Type(), key->Inspect());
 		
@@ -111,33 +128,13 @@ std::shared_ptr<IObject> HashObj::Set(const std::shared_ptr<IObject>& key, const
 	return value;
 }
 
-std::shared_ptr<IdentifierObj> IdentifierObj::New(const std::string& name, const std::shared_ptr<IObject>& value)
-{
-	return std::make_shared<IdentifierObj>(name, value);
-}
-
-std::shared_ptr<IObject> IdentifierObj::Set(const std::shared_ptr<IObject>& key, const std::shared_ptr<IObject>& value)
+const IObject* IdentifierObj::Set(const IObject* key, const IObject* value)
 {
 	Value = value;
 	return Value;
 }
 
-std::shared_ptr<ErrorObj> ErrorObj::New(const std::string& message, const ::Token& token)
-{
-	return std::make_shared<ErrorObj>(message, token);
-}
-
-std::shared_ptr<ReturnObj> ReturnObj::New(const std::shared_ptr<IObject>& value)
-{
-	return std::make_shared<ReturnObj>(value);
-}
-
-std::shared_ptr<FunctionObj> FunctionObj::New(const std::vector<std::shared_ptr<IExpression>>& parameters, const std::shared_ptr<IStatement>& body)
-{
-	return std::make_shared<FunctionObj>(parameters, body);
-}
-
-std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject>>& args)> BuiltInObj::Resolve(std::shared_ptr<BuiltIn> externals) const
+std::function<IObject*(const std::vector<const IObject*>& args)> BuiltInObj::Resolve(std::shared_ptr<BuiltIn> externals) const
 {
 	if (Idx != -1)
 	{
@@ -146,23 +143,6 @@ std::function<std::shared_ptr<IObject>(const std::vector<std::shared_ptr<IObject
 	return externals->GetBuiltInFunction(Name);
 }
 
-std::shared_ptr<BuiltInObj> BuiltInObj::New(const std::string& name)
-{
-	return std::make_shared<BuiltInObj>(name);
-}
 
-std::shared_ptr<BuiltInObj> BuiltInObj::New(const int idx)
-{
-	return std::make_shared<BuiltInObj>(idx);
-}
 
-std::shared_ptr<FunctionCompiledObj> FunctionCompiledObj::New(const Instructions& instructions, int numLocals, int numParameters)
-{
-	return std::make_shared<FunctionCompiledObj>(instructions, numLocals, numParameters);
-}
-
-std::shared_ptr<ClosureObj> ClosureObj::New(const std::shared_ptr<FunctionCompiledObj>& function, const std::vector<std::shared_ptr<IObject>>& free)
-{
-	return std::make_shared<ClosureObj>(function, free);
-}
 

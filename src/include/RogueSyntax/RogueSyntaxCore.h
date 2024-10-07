@@ -22,11 +22,14 @@
 
 #pragma once 
 
+#include "Identifiable.h"
 #include "Token.h"
 #include "Lexer.h"
 #include "AstNode.h"
+#include "AstNodeStore.h"
 #include "Parser.h"
 #include "IObject.h"
+#include "ObjectStore.h"
 #include "Environment.h"
 #include "Builtin.h"
 #include "TypeCoercer.h"

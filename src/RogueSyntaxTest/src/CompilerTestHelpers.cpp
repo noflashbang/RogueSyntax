@@ -4,12 +4,13 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
+#include <RogueSyntax.h>
 
-bool TestIObjects(std::shared_ptr<IObject> expected, std::shared_ptr<IObject> actual)
+bool TestIObjects(const IObject* expected, const IObject* actual)
 {
-	if (typeid(*(expected.get())) != typeid(*(actual.get())))
+	if (expected->Type() != actual->Type())
 	{
-		throw std::runtime_error(std::format("Expected and actual object types are not the same. Expected={} Actual={}", typeid(*(expected.get())).name(), typeid(*(actual.get())).name()));
+		throw std::runtime_error(std::format("Expected and actual object types are not the same. Expected={} Actual={}", expected->TypeName(), actual->TypeName()));
 	}
 	if (expected->Inspect() != actual->Inspect())
 	{
@@ -18,7 +19,7 @@ bool TestIObjects(std::shared_ptr<IObject> expected, std::shared_ptr<IObject> ac
 	return true;
 }
 
-bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>& actual)
+bool TestConstant(const ConstantValue& expected, const IObject* actual)
 {
 	if (std::holds_alternative<int>(expected))
 	{
@@ -38,7 +39,7 @@ bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>&
 	}
 	else if (std::holds_alternative<NullObj>(expected))
 	{
-		if (typeid(*(actual.get())) != typeid(NullObj))
+		if (actual->Type() != typeid(NullObj).hash_code())
 		{
 			throw std::runtime_error(std::format("Expected and actual constant values are not the same. Expected={} Actual={}", "null", actual->Inspect()));
 		}
@@ -46,7 +47,7 @@ bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>&
 	else if (std::holds_alternative<std::shared_ptr<ArrayObj>>(expected))
 	{
 		auto arr = std::get<std::shared_ptr<ArrayObj>>(expected);
-		auto actualArr = std::dynamic_pointer_cast<ArrayObj>(actual);
+		auto actualArr = dynamic_cast<const ArrayObj*>(actual);
 
 		for (int i = 0; i < arr->Elements.size(); i++)
 		{
@@ -58,18 +59,25 @@ bool TestConstant(const ConstantValue& expected, const std::shared_ptr<IObject>&
 	else if (std::holds_alternative<std::shared_ptr<HashObj>>(expected))
 	{
 		auto hash = std::get<std::shared_ptr<HashObj>>(expected);
-		auto actualHash = std::dynamic_pointer_cast<HashObj>(actual);
+		auto actualHash = dynamic_cast<const HashObj*>(actual);
 
 		for (const auto& [key, value] : hash->Elements)
 		{
-			auto actualValue = actualHash->Elements[key];
-			TestIObjects(value.Value, actualValue.Value);
+			const IObject* actualValue = NullObj::NULL_OBJ_REF;
+
+			auto entry = actualHash->Elements.find(key);
+			if (entry != actualHash->Elements.end())
+			{
+				actualValue = entry->second.Value;
+			}
+
+			TestIObjects(value.Value, actualValue);
 		}
 	}
 	else if (std::holds_alternative<std::shared_ptr<FunctionCompiledObj>>(expected))
 	{
 		auto expectedValue = std::get<std::shared_ptr<FunctionCompiledObj>>(expected);
-		auto actualValue = std::dynamic_pointer_cast<FunctionCompiledObj>(actual);
+		auto actualValue = dynamic_cast<const FunctionCompiledObj*>(actual);
 
 		TestInstructions(expectedValue->FuncInstructions, actualValue->FuncInstructions);
 	}
@@ -99,7 +107,7 @@ bool TestInstructions(const Instructions& expected, const Instructions& actual)
 	return true;
 }
 
-bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<std::shared_ptr<IObject>>& actual)
+bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<const IObject*>& actual)
 {
 	if (expected.size() != actual.size())
 	{
@@ -131,74 +139,21 @@ bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std
 
 bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
 {
-	auto builtIn = BuiltIn::New();
-	Compiler compiler;
-	Lexer lexer(input);
-	Parser parser(lexer);
-
-	auto node = parser.ParseProgram();
-	auto errors = parser.Errors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-
-	compiler.Compile(node, builtIn);
-	errors = compiler.GetErrors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	auto byteCode = compiler.GetByteCode();
+	RogueSyntax syn;
+	auto byteCode = syn.Compile(input);
 	return TestByteCode(expectedConstants, expectedInstructions, byteCode);
 }
 
 bool VmTest(std::string input, ConstantValue expected)
 {
-	auto builtIn = BuiltIn::New();
-	Compiler compiler;
-	Lexer lexer(input);
-	Parser parser(lexer);
-
-	auto node = parser.ParseProgram();
-	auto errors = parser.Errors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	compiler.Compile(node, builtIn);
-	errors = compiler.GetErrors();
-	if (errors.size() > 0)
-	{
-		for (const auto& error : errors)
-		{
-			UNSCOPED_INFO(error);
-		}
-	}
-	REQUIRE(errors.size() == 0);
-
-	auto byteCode = compiler.GetByteCode();
-	RogueVM vm(byteCode, builtIn);
+	RogueSyntax syn;
+	auto byteCode = syn.Compile(input);
+	auto vm = syn.MakeVM(byteCode);
 
 	try
 	{
-		vm.Run();
-		auto actual = vm.LastPoppped();
+		vm->Run();
+		auto actual = vm->LastPoppped();
 		REQUIRE(actual != nullptr);
 		return TestConstant(expected, actual);
 	}
