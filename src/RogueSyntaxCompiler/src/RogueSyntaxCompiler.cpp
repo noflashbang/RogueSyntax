@@ -54,5 +54,14 @@ void InteractiveCompiler::PrintDecompile()
 	RogueSyntax syntax;
 	auto compile = syntax.Compile(_input);;
 	std::cout << OpCode::PrintInstructions(compile.Instructions) << std::endl;
+
+	for (const auto& constant : compile.Constants)
+	{
+		if (constant->IsThisA<FunctionCompiledObj>())
+		{
+			auto closure = dynamic_cast<const FunctionCompiledObj*>(constant);
+			std::cout << closure->Inspect() << std::endl;
+		}
+	}
 }
 

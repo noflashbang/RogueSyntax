@@ -282,11 +282,7 @@ void RogueVM::Run()
 				auto fn = builtin->Resolve(_externals);
 				auto result = fn(args);
 				_sp = calleeIdx;
-
-				if (result != nullptr && !result->IsThisA<VoidObj>())
-				{
-					Push(result);
-				}
+				Push(result);
 			}
 			else
 			{
