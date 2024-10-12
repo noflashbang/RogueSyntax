@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "RogueSyntax.h"
-
+#include "Compiler.h"
 
 RogueSyntax::RogueSyntax() : _objectStore(std::make_shared<ObjectStore>()), _builtIn(std::make_shared<BuiltIn>(_objectStore->Factory()))
 {

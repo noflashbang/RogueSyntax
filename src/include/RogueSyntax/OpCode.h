@@ -79,4 +79,19 @@ struct OpCode
 	static std::string PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions);
 };
 
+class IObject;
 
+struct ByteCode
+{
+	Instructions Instructions;
+	std::vector<const IObject*> Constants;
+};
+
+enum class ScopeType : uint8_t
+{
+	SCOPE_GLOBAL,
+	SCOPE_LOCAL,
+	SCOPE_EXTERN,
+	SCOPE_FREE,
+	SCOPE_FUNCTION,
+};

@@ -20,7 +20,6 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
     ${PARENT_DIR}/include/RogueSyntax/OpCode.h
-    ${PARENT_DIR}/include/RogueSyntax/Compiler.h
     ${PARENT_DIR}/include/RogueSyntax/VirtualMachine.h
 )
 
@@ -28,6 +27,10 @@ set( libHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Util.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/StackEvaluator.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RecursiveEvaluator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Decorator.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/SymbolTable.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/CompilationUnit.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Compiler.h
  )
 
 set( libSource
@@ -45,6 +48,9 @@ set( libSource
  "src/StackEvaluator.cpp"
  "src/RecursiveEvaluator.cpp"
  "src/OpCode.cpp"
+ "src/Decorator.cpp"
+ "src/SymbolTable.cpp"
+ "src/CompilationUnit.cpp"
  "src/Compiler.cpp"
  "src/VirtualMachine.cpp"
  "src/RogueSyntax.cpp"

@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Evaluator.h"
+#include "Compiler.h"
 
 std::string Program::ToString() const
 {

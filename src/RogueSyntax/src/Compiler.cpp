@@ -1,158 +1,5 @@
 #include "Compiler.h"
-#include "Compiler.h"
 #include <pch.h>
-
-uint32_t Symbol::EncodedIdx()
-{
-	if (Type == ScopeType::SCOPE_GLOBAL)
-	{
-		return (Index & 0x3FFF);
-	}
-	else if (Type == ScopeType::SCOPE_LOCAL)
-	{
-		return ((Index & 0x3FFF)) | 0x8000;
-	}
-	else if (Type == ScopeType::SCOPE_EXTERN)
-	{
-		return ((Index & 0x3FFF)) | 0x4000;
-	}
-	else if (Type == ScopeType::SCOPE_FREE)
-	{
-		return ((Index & 0x3FFF)) | 0xC000;
-	}
-	else
-	{
-		throw std::runtime_error("Invalid symbol scope");
-	}
-}
-
-Symbol CompilationUnit::Define(const std::string& name)
-{
-	int index = -1;
-	for (int i = _store.size() - 1; i >= 0; i--)
-	{
-		if (_store[i].Name == name)
-		{
-			index = i;
-		}
-	}
-
-	if (index != -1)
-	{
-		return _store[index];
-	}
-	index = _nextSymIndex++;
-
-	auto symbol = Symbol{ _type, name, "", index };
-	_store.push_back(symbol);
-	return symbol;
-}
-
-Symbol CompilationUnit::DefineFunctionName(const std::string& name)
-{
-	int index = 0; //not used
-	auto symbol = Symbol{ ScopeType::SCOPE_FUNCTION, name, "", index};
-	_store.push_back(symbol);
-	return symbol;
-}
-
-Symbol CompilationUnit::DefineExternal(const std::string& name, int idx)
-{
-	auto symbol = Symbol{ ScopeType::SCOPE_EXTERN, name, "", idx  };
-	_store.push_back(symbol);
-	return symbol;
-}
-
-Symbol CompilationUnit::Resolve(const std::string& name)
-{
-	int index = -1;
-	for (int i = _store.size() - 1; i >= 0; i--)
-	{
-		if (_store[i].Name == name)
-		{
-			index = i;
-		}
-	}
-
-	if (index == -1 && _outer != nullptr)
-	{
-		auto upval = _outer->Resolve(name);
-
-		if (upval.Type == ScopeType::SCOPE_GLOBAL || upval.Type == ScopeType::SCOPE_EXTERN)
-		{
-			return upval;
-		}
-
-		return DefineFree(upval);
-	}
-
-	if (index == -1)
-	{
-		throw std::runtime_error("Symbol not found");
-	}
-	return _store[index];
-}
-
-Symbol CompilationUnit::DefineFree(const Symbol& symbol)
-{
-	int index = _nextFreeIdx++;
-	auto freeSym = Symbol{ ScopeType::SCOPE_FREE, symbol.Name, "", index};
-	_store.push_back(freeSym);
-	return freeSym;
-}
-
-int CompilationUnit::AddInstruction(Instructions instructions)
-{
-	auto position = UnitInstructions.size();
-	UnitInstructions.insert(UnitInstructions.end(), instructions.begin(), instructions.end());
-
-	SetLastInstruction(instructions);
-	return position;
-}
-
-void CompilationUnit::RemoveLastPop()
-{
-	if (LastInstructionIs(OpCode::Constants::OP_POP))
-	{
-		RemoveLastInstruction();
-	}
-}
-
-bool CompilationUnit::LastInstructionIs(OpCode::Constants opcode)
-{
-	if (LastInstruction.empty())
-	{
-		return false;
-	}
-
-	return LastInstruction[0] == static_cast<uint8_t>(opcode);
-}
-
-void CompilationUnit::RemoveLastInstruction()
-{
-	UnitInstructions.resize(UnitInstructions.size() - LastInstruction.size());
-	SetLastInstruction(PreviousLastInstruction);
-}
-
-void CompilationUnit::ChangeOperand(int position, uint32_t operand)
-{
-	auto instruction = OpCode::Make(static_cast<OpCode::Constants>(UnitInstructions[position]), { operand });
-	ReplaceInstruction(position, instruction);
-}
-
-void CompilationUnit::ReplaceInstruction(int position, Instructions instructions)
-{
-	for (const auto& instr : instructions)
-	{
-		UnitInstructions[position++] = instr;
-	}
-}
-
-void CompilationUnit::SetLastInstruction(const Instructions& instruction)
-{
-	PreviousLastInstruction = LastInstruction;
-	LastInstruction = instruction;
-}
 
 Compiler::Compiler(const std::shared_ptr<ObjectFactory> factory) : _factory(factory)
 {
@@ -183,23 +30,26 @@ CompilerError Compiler::Compile(INode* node)
 
 int Compiler::EnterUnit(const std::string& context)
 {
-	if (_CompilationUnits.empty())
-	{
-		_CompilationUnits.push(CompilationUnit(context, _externals));
-	}
-	else
-	{
-		auto outer = _CompilationUnits.top().SymbolTable;
-		_CompilationUnits.push(CompilationUnit(context, outer));
-	}
+	EnterScope(context);
+	_CompilationUnits.push(CompilationUnit());	
 	return _CompilationUnits.size() - 1;
 }
 
 CompilationUnit Compiler::ExitUnit()
 {
+	ExitScope();
 	auto unit = _CompilationUnits.top();
 	_CompilationUnits.pop();
 	return unit;
+}
+
+void Compiler::EnterScope(const std::string& scope)
+{
+	_symbolTable.PushContext(scope);
+}
+void Compiler::ExitScope()
+{
+	_symbolTable.PopContext();
 }
 
 uint32_t Compiler::AddConstant(const IObject* obj)
@@ -253,6 +103,8 @@ void Compiler::NodeCompile(const Program* program)
 
 void Compiler::NodeCompile(const BlockStatement* block)
 {
+	int ln = block->BaseToken.Location.Line;
+	EnterScope(std::format("BLOCK@{}",ln) ); // enter block unit
 	for (auto& stmt : block->Statements)
 	{
 		stmt->Compile(this);
@@ -261,6 +113,7 @@ void Compiler::NodeCompile(const BlockStatement* block)
 			return;
 		}
 	}
+	ExitScope();
 }
 
 void Compiler::NodeCompile(const ExpressionStatement* expression)
@@ -289,7 +142,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 	if (let->Name->IsThisA<Identifier>())
 	{
 		auto* ident = dynamic_cast<const Identifier*>(let->Name);
-		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
+		auto symbol = _symbolTable.Define(ident->Value);
 		let->Value->Compile(this);
 		if (HasErrors())
 		{
@@ -307,7 +160,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 		auto* ident = dynamic_cast<const Identifier*>(index->Left);
-		auto symbol = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
+		auto symbol = _symbolTable.Resolve(ident->Value);
 
 		//get the lvalue
 		index->Compile(this);
@@ -336,7 +189,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 
 void Compiler::NodeCompile(const Identifier* ident)
 {
-	auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
+	auto sym = _symbolTable.Resolve(ident->Value);
 	EmitGet(sym);
 }
 
@@ -527,7 +380,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 
 	if (!function->Name.empty())
 	{
-		auto fnSymbol = _CompilationUnits.top().SymbolTable->DefineFunctionName(function->Name);
+		auto fnSymbol = _symbolTable.DefineFunctionName(function->Name);
 	}
 
 	for (auto* param : function->Parameters)
@@ -538,7 +391,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 			_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownError, "Expected identifier"));
 			return;
 		}
-		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
+		auto symbol = _symbolTable.Define(ident->Value);
 	}
 
 	function->Body->Compile(this);

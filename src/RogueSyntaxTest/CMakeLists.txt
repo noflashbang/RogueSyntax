@@ -10,8 +10,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-
-
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
@@ -28,7 +26,6 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
     ${PARENT_DIR}/include/RogueSyntax/OpCode.h
-    ${PARENT_DIR}/include/RogueSyntax/Compiler.h
     ${PARENT_DIR}/include/RogueSyntax/VirtualMachine.h
 
 )
