@@ -9,6 +9,8 @@ struct Symbol
 	ScopeType Type;
 	std::string Name;
 	std::string MangledName;
+	std::string Context;
+	uint32_t stackContext;
 	int Index;
 
 	uint32_t EncodedIdx();
@@ -31,6 +33,8 @@ struct ContextMap
 		return _contexts[key];
 	};
 
+
+
 private:
 	std::map<std::string, SymbolIndex> _contexts;
 };
@@ -41,8 +45,13 @@ public:
 	SymbolTable() = default;
 	~SymbolTable() = default;
 
-	void PushContext(const std::string& context);
-	void PopContext();
+	void PushScopeContext(const std::string& context);
+	void PopScopeContext();
+	std::string CurrentScopeContext();
+
+	void PushStackContext();
+	void PopStackContext();
+	uint32_t CurrentStackContext();
 
 	Symbol Define(const std::string& name);
 	Symbol DefineFunctionName(const std::string& name);
@@ -50,10 +59,16 @@ public:
 	Symbol Resolve(const std::string& name);
 	Symbol DefineFree(const Symbol& symbol);
 
-	inline int NumberOfSymbols() const { return _store.size(); };
+	uint32_t NumberOfSymbolsInContext(uint32_t stackContext);
+	std::vector<Symbol> SymbolsInContext(uint32_t stackContext);
+	std::vector<Symbol> FreeSymbolsInContext(uint32_t stackContext);
 
 private:
 	Decorator _decorator;
 	ContextMap _contexts;
 	std::vector<Symbol> _store;
+	std::vector<Symbol> _free;
+
+	std::stack<uint32_t> _stack;
+	uint32_t _stackIndex = 0;
 };

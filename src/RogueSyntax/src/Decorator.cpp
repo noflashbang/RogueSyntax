@@ -32,12 +32,13 @@ std::string Decorator::Decorate(const std::string& name, std::stack<std::string>
 }
 std::string Decorator::GetDecoratedFromStack(std::stack<std::string> stack)
 {
-	std::string result = "";
+	std::string result = stack.top();
+	stack.pop();
 	while (!stack.empty())
 	{
 		auto top = stack.top();
 		stack.pop();
-		result = Formater(result, top);
+		result = Formater(top, result);
 	}
 	return result;
 }

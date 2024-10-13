@@ -15,6 +15,8 @@ ByteCode Compiler::Compile(const std::shared_ptr<Program>& program, const std::s
 	_constants.reserve(128);
 	_externals = externs;
 
+	
+
 	Compile(program.get());
 	return ByteCode{ _CompilationUnits.top().UnitInstructions, _constants };
 }
@@ -30,6 +32,7 @@ CompilerError Compiler::Compile(INode* node)
 
 int Compiler::EnterUnit(const std::string& context)
 {
+	_symbolTable.PushStackContext();
 	EnterScope(context);
 	_CompilationUnits.push(CompilationUnit());	
 	return _CompilationUnits.size() - 1;
@@ -37,6 +40,7 @@ int Compiler::EnterUnit(const std::string& context)
 
 CompilationUnit Compiler::ExitUnit()
 {
+	_symbolTable.PopStackContext();
 	ExitScope();
 	auto unit = _CompilationUnits.top();
 	_CompilationUnits.pop();
@@ -45,11 +49,11 @@ CompilationUnit Compiler::ExitUnit()
 
 void Compiler::EnterScope(const std::string& scope)
 {
-	_symbolTable.PushContext(scope);
+	_symbolTable.PushScopeContext(scope);
 }
 void Compiler::ExitScope()
 {
-	_symbolTable.PopContext();
+	_symbolTable.PopScopeContext();
 }
 
 uint32_t Compiler::AddConstant(const IObject* obj)
@@ -90,7 +94,7 @@ int Compiler::EmitSet(Symbol symbol)
 
 void Compiler::NodeCompile(const Program* program)
 {
-	EnterUnit("MAIN"); // enter global unit
+	EnterUnit("PRG"); // enter global unit
 	for (auto& stmt : program->Statements)
 	{
 		stmt->Compile(this);
@@ -378,6 +382,8 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 {
 	EnterUnit(function->Name);
 
+	auto stackContext = _symbolTable.CurrentStackContext();
+
 	if (!function->Name.empty())
 	{
 		auto fnSymbol = _symbolTable.DefineFunctionName(function->Name);
@@ -399,10 +405,9 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	{
 		return;
 	}
-
 	auto unit = ExitUnit();
 
-	auto frees = unit.SymbolTable->FreeSymbols();
+	auto frees = _symbolTable.FreeSymbolsInContext(stackContext);
 	for (auto& sym : frees)
 	{
 		EmitGet(sym);
@@ -418,7 +423,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	{
 		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN, {}));
 	}
-	auto obj = _factory->New<FunctionCompiledObj>(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), static_cast<int>(function->Parameters.size()));
+	auto obj = _factory->New<FunctionCompiledObj>(unit.UnitInstructions, _symbolTable.NumberOfSymbolsInContext(stackContext), static_cast<int>(function->Parameters.size()));
 	auto index = AddConstant(obj);
 	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<uint32_t>(frees.size())});
 }

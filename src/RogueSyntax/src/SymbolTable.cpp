@@ -25,15 +25,37 @@ uint32_t Symbol::EncodedIdx()
 	}
 }
 
-void SymbolTable::PushContext(const std::string& context)
+void SymbolTable::PushScopeContext(const std::string& context)
 {
 	_decorator.Push(context);
 }
 
-void SymbolTable::PopContext()
+void SymbolTable::PopScopeContext()
 {
 	_decorator.Pop();
 }
+
+std::string SymbolTable::CurrentScopeContext()
+{
+	return _decorator.DecoratedContext();
+}
+
+void SymbolTable::PushStackContext()
+{
+	_stackIndex++;
+	_stack.push(_stackIndex);
+}
+
+void SymbolTable::PopStackContext()
+{
+	_stack.pop();
+}
+
+uint32_t SymbolTable::CurrentStackContext()
+{
+	return _stack.top();
+}
+
 
 Symbol SymbolTable::Define(const std::string& name)
 {
@@ -55,17 +77,18 @@ Symbol SymbolTable::Define(const std::string& name)
 	}
 
 	index = idxMap.NextSymIndex++;
-	auto type = context.empty() ? ScopeType::SCOPE_GLOBAL : ScopeType::SCOPE_LOCAL;
-	auto symbol = Symbol{ type, name, decorated, index };
+	auto type = _stack.size() <= 1 ? ScopeType::SCOPE_GLOBAL : ScopeType::SCOPE_LOCAL;
+	auto symbol = Symbol{ type, name, decorated, context, _stack.top(), index };
 	_store.push_back(symbol);
 	return symbol;
 }
 
 Symbol SymbolTable::DefineFunctionName(const std::string& name)
 {
+	auto context = _decorator.DecoratedContext();
 	auto decorated = _decorator.DecorateWithCurrentContex(name);
 	int index = 0; //not used
-	auto symbol = Symbol{ ScopeType::SCOPE_FUNCTION, name, decorated, index};
+	auto symbol = Symbol{ ScopeType::SCOPE_FUNCTION, name, decorated, context, _stack.top(), index};
 	_store.push_back(symbol);
 	return symbol;
 }
@@ -73,7 +96,7 @@ Symbol SymbolTable::DefineFunctionName(const std::string& name)
 Symbol SymbolTable::DefineExternal(const std::string& name, int idx)
 {
 	auto decorated = _decorator.DecorateExternal(name);
-	auto symbol = Symbol{ ScopeType::SCOPE_EXTERN, name, decorated, idx  };
+	auto symbol = Symbol{ ScopeType::SCOPE_EXTERN, name, decorated, "EXTERN", _stack.top(), idx};
 	_store.push_back(symbol);
 	return symbol;
 }
@@ -114,7 +137,7 @@ Symbol SymbolTable::Resolve(const std::string& name)
 		}
 
 		auto upval = _store[index];
-		if (upval.Type == ScopeType::SCOPE_GLOBAL || upval.Type == ScopeType::SCOPE_EXTERN)
+		if (upval.Type == ScopeType::SCOPE_GLOBAL || upval.Type == ScopeType::SCOPE_EXTERN || upval.stackContext == _stack.top())
 		{
 			return upval;
 		}
@@ -127,11 +150,56 @@ Symbol SymbolTable::Resolve(const std::string& name)
 
 Symbol SymbolTable::DefineFree(const Symbol& symbol)
 {
+	auto symCpy = symbol;
+	symCpy.stackContext = _stack.top();
+	_free.push_back(symCpy);
+
 	auto context = _decorator.DecoratedContext();
 	auto& idxMap = _contexts[context];
 	int index = idxMap.NextFreeIdx++;
-	auto freeSym = Symbol{ ScopeType::SCOPE_FREE, symbol.Name, symbol.MangledName, index};
+	auto freeSym = Symbol{ ScopeType::SCOPE_FREE, symbol.Name, symbol.MangledName, context, _stack.top(), index};
 	_store.push_back(freeSym);
 	return freeSym;
 }
+
+uint32_t SymbolTable::NumberOfSymbolsInContext(uint32_t stackContext)
+{
+	uint32_t cnt = 0;
+	for (auto& it : _store)
+	{
+		if (it.stackContext == stackContext)
+		{
+			cnt++;
+		}
+	}
+	return cnt;
+}
+
+std::vector<Symbol> SymbolTable::SymbolsInContext(uint32_t stackContext)
+{
+	std::vector<Symbol> symbols;
+	for (auto& it : _store)
+	{
+		if (it.stackContext == stackContext)
+		{
+			symbols.push_back(it);
+		}
+	}
+	return symbols;
+}
+
+std::vector<Symbol> SymbolTable::FreeSymbolsInContext(uint32_t stackContext)
+{
+	std::vector<Symbol> symbols;
+	for (auto& it : _free)
+	{
+		if (it.stackContext == stackContext)
+		{
+			symbols.push_back(it);
+		}
+	}
+	return symbols;
+}
+
+
 
