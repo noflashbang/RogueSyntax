@@ -22,6 +22,8 @@ std::vector<std::string> Decorator::DecorateWithAllContexts(const std::string& n
 		result.push_back(Formater(GetDecoratedFromStack(stack), name));
 		stack.pop();
 	}
+
+	result.push_back(DecorateExternal(name));
 	return result;
 }
 

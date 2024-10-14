@@ -63,19 +63,17 @@ Symbol SymbolTable::Define(const std::string& name)
 	auto context = _decorator.DecoratedContext();
 	auto& idxMap = _contexts[context];
 	int index = -1;
-	for (int i = _store.size() - 1; i >= 0; i--)
-	{
-		if (_store[i].MangledName == decorated)
-		{
-			index = i;
-		}
-	}
-
+	index = FindInCurrentContextName(name);
 	if (index != -1)
 	{
 		return _store[index];
 	}
 
+	index = FindInAllContexts(name);
+	if (index != -1)
+	{
+		return _store[index];
+	}
 	index = idxMap.NextSymIndex++;
 	auto type = _stack.size() <= 1 ? ScopeType::SCOPE_GLOBAL : ScopeType::SCOPE_LOCAL;
 	auto symbol = Symbol{ type, name, decorated, context, _stack.top(), index };
@@ -96,7 +94,7 @@ Symbol SymbolTable::DefineFunctionName(const std::string& name)
 Symbol SymbolTable::DefineExternal(const std::string& name, int idx)
 {
 	auto decorated = _decorator.DecorateExternal(name);
-	auto symbol = Symbol{ ScopeType::SCOPE_EXTERN, name, decorated, "EXTERN", _stack.top(), idx};
+	auto symbol = Symbol{ ScopeType::SCOPE_EXTERN, name, decorated, "EXTERN", 0, idx};
 	_store.push_back(symbol);
 	return symbol;
 }
@@ -105,37 +103,15 @@ Symbol SymbolTable::Resolve(const std::string& name)
 {
 	auto decorated = _decorator.DecorateWithCurrentContex(name);
 	int index = -1;
-	for (int i = _store.size() - 1; i >= 0; i--)
+	index = FindInCurrentContextName(name);
+	if (index != -1)
 	{
-		if (_store[i].MangledName == decorated)
-		{
-			index = i;
-		}
+		return _store[index];
 	}
 
-	if (index == -1)
+	index = FindInAllContexts(name);
+	if (index != -1)
 	{
-		auto allNames = _decorator.DecorateWithAllContexts(name);
-		for (auto& name : allNames)
-		{
-			for (int i = _store.size() - 1; i >= 0; i--)
-			{
-				if (_store[i].MangledName == name)
-				{
-					index = i;
-				}
-			}
-			if (index != -1)
-			{
-				break;
-			}
-		}
-
-		if (index == -1)
-		{
-			throw std::runtime_error("Symbol not found");
-		}
-
 		auto upval = _store[index];
 		if (upval.Type == ScopeType::SCOPE_GLOBAL || upval.Type == ScopeType::SCOPE_EXTERN || upval.stackContext == _stack.top())
 		{
@@ -143,9 +119,9 @@ Symbol SymbolTable::Resolve(const std::string& name)
 		}
 
 		return DefineFree(upval);
+		return _store[index];
 	}
-
-	return _store[index];
+	throw std::runtime_error("Symbol not found");
 }
 
 Symbol SymbolTable::DefineFree(const Symbol& symbol)
@@ -199,6 +175,41 @@ std::vector<Symbol> SymbolTable::FreeSymbolsInContext(uint32_t stackContext)
 		}
 	}
 	return symbols;
+}
+
+int SymbolTable::FindInCurrentContextName(const std::string& name)
+{
+	auto decorated = _decorator.DecorateWithCurrentContex(name);
+	int index = -1;
+	for (int i = _store.size() - 1; i >= 0; i--)
+	{
+		if (_store[i].MangledName == decorated)
+		{
+			index = i;
+		}
+	}
+	return index;
+}
+
+int SymbolTable::FindInAllContexts(const std::string& name)
+{
+	auto allNames = _decorator.DecorateWithAllContexts(name);
+	int index = -1;
+	for (auto& name : allNames)
+	{
+		for (int i = _store.size() - 1; i >= 0; i--)
+		{
+			if (_store[i].MangledName == name)
+			{
+				index = i;
+			}
+		}
+		if (index != -1)
+		{
+			break;
+		}
+	}
+	return index;
 }
 
 

@@ -15,7 +15,11 @@ ByteCode Compiler::Compile(const std::shared_ptr<Program>& program, const std::s
 	_constants.reserve(128);
 	_externals = externs;
 
-	
+	auto& builtins = _externals->GetBuiltInNames();
+	for (auto& name : builtins)
+	{
+		_symbolTable.DefineExternal(name, _externals->BuiltInIdx(name));
+	}
 
 	Compile(program.get());
 	return ByteCode{ _CompilationUnits.top().UnitInstructions, _constants };
@@ -108,7 +112,7 @@ void Compiler::NodeCompile(const Program* program)
 void Compiler::NodeCompile(const BlockStatement* block)
 {
 	int ln = block->BaseToken.Location.Line;
-	EnterScope(std::format("BLOCK@{}",ln) ); // enter block unit
+	//EnterScope(std::format("BLOCK@{}",ln) ); // enter block unit
 	for (auto& stmt : block->Statements)
 	{
 		stmt->Compile(this);
@@ -117,7 +121,7 @@ void Compiler::NodeCompile(const BlockStatement* block)
 			return;
 		}
 	}
-	ExitScope();
+	//ExitScope();
 }
 
 void Compiler::NodeCompile(const ExpressionStatement* expression)

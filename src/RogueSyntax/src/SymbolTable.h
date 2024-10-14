@@ -64,6 +64,9 @@ public:
 	std::vector<Symbol> FreeSymbolsInContext(uint32_t stackContext);
 
 private:
+	int FindInCurrentContextName(const std::string& name);
+	int FindInAllContexts(const std::string& name);
+
 	Decorator _decorator;
 	ContextMap _contexts;
 	std::vector<Symbol> _store;
