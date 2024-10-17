@@ -164,17 +164,18 @@ TEST_CASE("Array instructions")
 {
 	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
 		{
+			{ "let array = [1,2,3,4,5]; array[1] = 5; array[1];", 5 },
 			{ "[1,2,3,4];", Array({1,2,3,4})},
 			{ "[1 + 2, 3 * 4, 5 + 6];", Array({3,12,11})},
 			{ "[1, 2 * 2, 3 + 3];", Array({1,4,6})},
-			{ "[1, 2, 3][0]", 1 },
-			{ "[1, 2, 3][1]", 2 },
-			{ "[1, 2, 3][2]", 3 },
+			{ "[1, 2, 3][0];", 1 },
+			{ "[1, 2, 3][1];", 2 },
+			{ "[1, 2, 3][2];", 3 },
 			{ "let i = 0; [1][i];", 1 },
 			{ "[1, 2, 3][1 + 1];", 3 },
 			{ "let myArray = [1, 2, 3]; myArray[2];", 3 },
 			{ "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];", 6 },
-			{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]", 2 },
+			{ "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i];", 2 },
 		}));
 
 	CAPTURE(input);
@@ -205,7 +206,8 @@ TEST_CASE("Function instructions")
 			{ "fn() { 5; }()", 5 },
 			{ "fn() { let a = 5; let b = a; let c = a + b + 5; c; }()", 15 },
 			{ "let a = 5; let b = 10; let c = 15; fn() { let a = 20; let b = 25; let c = 30; a + b + c; }()", 75 },
-			{ "let a = 5; let b = 10; let c = 15; let test = fn() { let a = 20; let b = 25; let c = 30; a + b + c; }; test() + b;", 85 },
+			{ "let a = 5; let b = 10; let c = 15; fn() { a + b + c; }()", 30 },
+			{ "let a = 5; let b = 10; let c = 15; let test = fn() { let a = 20; let b = 25; let c = 30; a + b + c; }; test() + b;", 100 },
 			{ "let identity = fn(x) { x; }; identity(5);", 5 },
 			{ "fn(x) { x + 2; }(2)", 4 },
 			{ "let double = fn(x) { x * 2; }; double(5);", 10 },

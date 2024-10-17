@@ -148,6 +148,7 @@ bool VmTest(std::string input, ConstantValue expected)
 {
 	RogueSyntax syn;
 	auto byteCode = syn.Compile(input);
+	auto str = OpCode::PrintInstructions(byteCode.Instructions);
 	auto vm = syn.MakeVM(byteCode);
 
 	try

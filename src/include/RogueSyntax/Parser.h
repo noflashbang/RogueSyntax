@@ -91,7 +91,6 @@ protected:
 
 	IStatement* ParseBlockStatement();
 	IStatement* ParseLetStatement();
-	IStatement* ParseAssignStatement();
 	IStatement* ParseReturnStatement();
 	IStatement* ParseBreakStatement();
 	IStatement* ParseContinueStatement();

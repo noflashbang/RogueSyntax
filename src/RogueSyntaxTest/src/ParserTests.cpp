@@ -462,7 +462,7 @@ TEST_CASE("Test postfix statements")
 		REQUIRE(errors.size() == 0);
 
 		REQUIRE(program->Statements.size() == 1);
-		auto assignStatement = dynamic_cast<ExpressionStatement*>(program->Statements[0]);
+		auto assignStatement = dynamic_cast<LetStatement*>(program->Statements[0]);
 		REQUIRE(assignStatement != nullptr);
 		REQUIRE(assignStatement->ToString() == test.expected);
 	}
@@ -986,7 +986,7 @@ TEST_CASE("Test assignemnt")
 
 TEST_CASE("Test function assignemnt")
 {
-	std::string input = "x = fn(x) { return x * x;}";
+	std::string input = "x = fn(x) { return x * x;};";
 	Lexer lexer(input);
 	Parser parser(lexer);
 
@@ -1017,10 +1017,10 @@ TEST_CASE("Test for parsing")
 	};
 
 	std::vector<Test> tests = {
+		{"for (let x = 6; (x < 60); let x = (x + 1)) {x}" , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
 		{"for(x=6; x<60;x++){ x; }"                       , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
 		{"for(let x=6; x<60;x = x+1){ x; }"               , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
 		{"for(x=6; x!=60; x = t(x)){ x; }"                     , "for (let x = 6; (x != 60); let x = t(x)) {x}"},
-		{"for (let x = 6; (x < 60); let x = (x + 1)) {x}" , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
 		{"for (let x = 6; (x < 60); let x = (x + 1)) {x}" , "for (let x = 6; (x < 60); let x = (x + 1)) {x}"},
 		{"for (let x = 6; (x != 60); x = t(x)) {x}"           , "for (let x = 6; (x != 60); let x = t(x)) {x}"},
 
