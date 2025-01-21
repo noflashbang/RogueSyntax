@@ -1031,6 +1031,7 @@ TEST_CASE("Test for parsing")
 		Lexer lexer(test.input);
 		Parser parser(lexer);
 
+		UNSCOPED_INFO(test.input);
 		auto program = parser.ParseProgram();
 		auto errors = parser.Errors();
 		if (errors.size() != 0)
@@ -1085,12 +1086,10 @@ TEST_CASE("TEST ASSIGN OPERATORS")
 
 		CAPTURE(test.input);
 		REQUIRE(program->Statements.size() == 1);
-		auto stmt = dynamic_cast<ExpressionStatement*>(program->Statements[0]);
-		REQUIRE(stmt != nullptr);
-		auto assignStatement = dynamic_cast<const LetStatement*>(stmt->Expression);
+		auto stmt = dynamic_cast<LetStatement*>(program->Statements[0]);
 
-		REQUIRE(assignStatement != nullptr);
-		REQUIRE(assignStatement->ToString() == test.expectedValue);
+		REQUIRE(stmt != nullptr);
+		REQUIRE(stmt->ToString() == test.expectedValue);
 	}
 
 }

@@ -434,11 +434,22 @@ IExpression* Parser::ParseAssignExpression(const IExpression* left)
 
 	auto right = ParseExpression(Precedence::LOWEST);
 
-	//if (!ExpectPeek(TokenType::TOKEN_SEMICOLON))
-	//{
-	//	return nullptr;
-	//}
-
+	if (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	{
+		NextToken();
+	}
+	else
+	{
+		if (PeekTokenIs(TokenType::TOKEN_RPAREN))
+		{
+			NextToken();
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+	
 	return _currentStore->New_LetStatement(token, left, right);
 }
 
@@ -581,6 +592,13 @@ IExpression* Parser::ParseCallExpression(const IExpression* function)
 
 	std::vector<IExpression*> arguments;
 
+	if (function == nullptr)
+	{
+		std::string error = "CallExpression can not have NULL function; Token :" + token.Literal + "";
+		AddError(error);
+		return nullptr;
+	}
+
 	while (!PeekTokenIs(TokenType::TOKEN_RPAREN))
 	{
 		NextToken();
@@ -628,20 +646,20 @@ IStatement* Parser::ParseLetStatement()
 	
 	auto value = ParseExpression(Precedence::LOWEST);
 
-	if (!PeekTokenIs(TokenType::TOKEN_SEMICOLON))
+	if (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
 	{
-		if (!PeekTokenIs(TokenType::TOKEN_RPAREN))
-		{
-			return nullptr;
-		}
-		else
-		{
-			NextToken();
-		}
+		NextToken();
 	}
 	else
 	{
-		NextToken();
+		if (PeekTokenIs(TokenType::TOKEN_RPAREN))
+		{
+			NextToken();
+		}
+		else
+		{
+			return nullptr;
+		}
 	}
 
 	if (value->Type() == TokenType::TOKEN_FUNCTION)
@@ -706,6 +724,10 @@ IStatement* Parser::ParseExpressionStatement()
 
 	//parse the expression
 	auto expression = ParseExpression(Precedence::LOWEST);
+	if (expression == nullptr)
+	{
+		return nullptr;
+	}
 
 	//if the next token is a semicolon, consume it
 	while (PeekTokenIs(TokenType::TOKEN_SEMICOLON))
