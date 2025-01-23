@@ -67,10 +67,10 @@ void Parser::NextToken()
 	_nextToken = _lexer.NextToken();
 }
 
-std::shared_ptr<Program> Parser::ParseProgram()
+std::shared_ptr<Program> Parser::ParseProgram(const std::string& sourceName)
 {
 	_currentStore = std::make_shared<AstNodeStore>();
-	auto program = Program::New(_currentStore);
+	auto program = Program::New(_currentStore, sourceName);
 
 	while (_currentToken.Type != TokenType::TOKEN_EOF)
 	{

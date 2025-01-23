@@ -267,7 +267,7 @@ TEST_CASE("Test Identifier")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
@@ -284,7 +284,7 @@ TEST_CASE("Test Integer Literal")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
@@ -302,7 +302,7 @@ TEST_CASE("Test Decimal Literal")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -327,7 +327,7 @@ TEST_CASE("Test String Literal")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -351,7 +351,7 @@ TEST_CASE("Test Boolean Literal")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
@@ -368,7 +368,7 @@ TEST_CASE("Test Array Literal")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
@@ -385,7 +385,7 @@ TEST_CASE("Test Hash Literal")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 
 	if (errors.size() != 0)
@@ -411,7 +411,7 @@ TEST_CASE("Test Prefix Expression BANG")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
@@ -428,7 +428,7 @@ TEST_CASE("Test Prefix Expression MINUS")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
@@ -457,7 +457,7 @@ TEST_CASE("Test postfix statements")
 		Lexer lexer(test.input);
 		Parser parser(lexer);
 
-		auto program = parser.ParseProgram();
+		auto program = parser.ParseProgram("TESTPRG");
 		auto errors = parser.Errors();
 		REQUIRE(errors.size() == 0);
 
@@ -474,7 +474,7 @@ TEST_CASE("Test Infix Expression")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	REQUIRE(errors.size() == 0);
 
@@ -529,7 +529,7 @@ TEST_CASE("Test Operator Precedence Parsing")
 		
 		INFO(test.input);
 
-		auto program = parser.ParseProgram();
+		auto program = parser.ParseProgram("TESTPRG");
 		auto errors = parser.Errors();
 		if (errors.size() != 0)
 		{
@@ -580,7 +580,7 @@ TEST_CASE("Test Parsing Infix Expressions")
 		Lexer lexer(test.input);
 		Parser parser(lexer);
 
-		auto program = parser.ParseProgram();
+		auto program = parser.ParseProgram("TESTPRG");
 		auto errors = parser.Errors();
 
 		INFO(test.input);
@@ -622,7 +622,7 @@ TEST_CASE("Test Let Statement")
 		Lexer lexer(test.input);
 		Parser parser(lexer);
 
-		auto program = parser.ParseProgram();
+		auto program = parser.ParseProgram("TESTPRG");
 		auto errors = parser.Errors();
 
 		INFO(test.input);
@@ -652,7 +652,7 @@ TEST_CASE("Test Errors")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -683,7 +683,7 @@ TEST_CASE("Test Return Statement")
 		Lexer lexer(test.input);
 		Parser parser(lexer);
 
-		auto program = parser.ParseProgram();
+		auto program = parser.ParseProgram("TESTPRG");
 		auto errors = parser.Errors();
 		if (errors.size() != 0)
 		{
@@ -709,7 +709,7 @@ TEST_CASE("Test If Expression")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -742,7 +742,7 @@ TEST_CASE("Test If Else Expression")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -783,7 +783,7 @@ TEST_CASE("Test Function Literal")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -828,7 +828,7 @@ TEST_CASE("Test Call Expression")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -860,7 +860,7 @@ TEST_CASE("Test Index expression")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -887,7 +887,7 @@ TEST_CASE("Test While expression")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -920,7 +920,7 @@ TEST_CASE("Test Break Statement")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -943,7 +943,7 @@ TEST_CASE("Test Continue Statement")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -966,7 +966,7 @@ TEST_CASE("Test assignemnt")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -990,7 +990,7 @@ TEST_CASE("Test function assignemnt")
 	Lexer lexer(input);
 	Parser parser(lexer);
 
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram("TESTPRG");
 	auto errors = parser.Errors();
 	if (errors.size() != 0)
 	{
@@ -1032,7 +1032,7 @@ TEST_CASE("Test for parsing")
 		Parser parser(lexer);
 
 		UNSCOPED_INFO(test.input);
-		auto program = parser.ParseProgram();
+		auto program = parser.ParseProgram("TESTPRG");
 		auto errors = parser.Errors();
 		if (errors.size() != 0)
 		{
@@ -1073,7 +1073,7 @@ TEST_CASE("TEST ASSIGN OPERATORS")
 		Lexer lexer(test.input);
 		Parser parser(lexer);
 
-		auto program = parser.ParseProgram();
+		auto program = parser.ParseProgram("TESTPRG");
 		auto errors = parser.Errors();
 		if (errors.size() != 0)
 		{

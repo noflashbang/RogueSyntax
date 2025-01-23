@@ -10,25 +10,25 @@ RogueSyntax::~RogueSyntax()
 {
 }
 
-std::shared_ptr<Program> RogueSyntax::Parse(const std::string& input) const
+std::shared_ptr<Program> RogueSyntax::Parse(const std::string& input, const std::string& unit) const
 {
 	Lexer lexer(input);
 	Parser parser(lexer);
-	return parser.ParseProgram();
+	return parser.ParseProgram(unit);
 }
 
-ByteCode RogueSyntax::Compile(const std::string& input) const
+ByteCode RogueSyntax::Compile(const std::string& input, const std::string& unit) const
 {
 	Lexer lexer(input);
 	Parser parser(lexer);
-	auto program = parser.ParseProgram();
+	auto program = parser.ParseProgram(unit);
 	if (!parser.Errors().empty())
 	{
 		throw std::runtime_error("Parser error"); //TODO: better error handling
 	}
 
 	Compiler compiler(_objectStore->Factory());
-	return compiler.Compile(program, _builtIn);
+	return compiler.Compile(program, _builtIn, "PRG");
 }
 
 std::shared_ptr<Evaluator> RogueSyntax::MakeEvaluator(EvaluatorType type) const
@@ -43,7 +43,7 @@ std::shared_ptr<RogueVM> RogueSyntax::MakeVM(ByteCode code) const
 
 const IObject* RogueSyntax::QuickEval(EvaluatorType type, const std::string& input) const
 {
-	auto program = Parse(input);
+	auto program = Parse(input, "QUICKEVAL");
 	if (program == nullptr)
 	{
 		return nullptr;

@@ -140,14 +140,14 @@ bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std
 bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
 {
 	RogueSyntax syn;
-	auto byteCode = syn.Compile(input);
+	auto byteCode = syn.Compile(input, "COMPILETEST");
 	return TestByteCode(expectedConstants, expectedInstructions, byteCode);
 }
 
 bool VmTest(std::string input, ConstantValue expected)
 {
 	RogueSyntax syn;
-	auto byteCode = syn.Compile(input);
+	auto byteCode = syn.Compile(input, "");
 	auto str = OpCode::PrintInstructions(byteCode.Instructions);
 	auto vm = syn.MakeVM(byteCode);
 

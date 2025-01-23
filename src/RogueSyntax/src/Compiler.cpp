@@ -9,7 +9,7 @@ Compiler::~Compiler()
 {
 }
 
-ByteCode Compiler::Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs)
+ByteCode Compiler::Compile(const std::shared_ptr<Program>&program, const std::shared_ptr<BuiltIn>& externs, const std::string& unitName)
 {
 	_constants.clear();
 	_constants.reserve(128);
@@ -96,9 +96,9 @@ int Compiler::EmitSet(Symbol symbol)
 	}
 }
 
-void Compiler::NodeCompile(const Program* program)
+void Compiler::NodeCompile(const Program* program, const std::string& unitName)
 {
-	EnterUnit("PRG"); // enter global unit
+	EnterUnit(unitName); // enter global unit
 	for (auto& stmt : program->Statements)
 	{
 		stmt->Compile(this);

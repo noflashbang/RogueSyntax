@@ -58,7 +58,7 @@ class Parser
 public:
 	Parser(const Lexer& lexer);
 	~Parser() = default;
-	std::shared_ptr<Program> ParseProgram();
+	std::shared_ptr<Program> ParseProgram(const std::string& sourceName);
 	std::vector<std::string> Errors() const;
 protected:
 

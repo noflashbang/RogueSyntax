@@ -23,7 +23,7 @@ void InteractiveCompiler::Start()
 void InteractiveCompiler::Run()
 {
 	RogueSyntax syntax;
-	auto vm = syntax.MakeVM(syntax.Compile(_input));
+	auto vm = syntax.MakeVM(syntax.Compile(_input, "INPUTSRC"));
 	vm->Run();
 	//auto top = vm->LastPoppped();
 	auto top = vm->Top();
@@ -52,7 +52,7 @@ void InteractiveCompiler::Run()
 void InteractiveCompiler::PrintDecompile()
 {
 	RogueSyntax syntax;
-	auto compile = syntax.Compile(_input);;
+	auto compile = syntax.Compile(_input, "DECOMPILE");
 	std::cout << OpCode::PrintInstructions(compile.Instructions) << std::endl;
 
 	for (const auto& constant : compile.Constants)

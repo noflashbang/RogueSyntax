@@ -29,11 +29,11 @@ class Compiler
 public:
 	Compiler(const std::shared_ptr<ObjectFactory> factory);
 	~Compiler();
-	ByteCode Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs);
+	ByteCode Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs, const std::string& unitName);
 	inline bool HasErrors() const { return !_errors.empty(); };
 	std::vector<std::string> GetErrors() const { return _errors; };
 
-	void NodeCompile(const Program* program);
+	void NodeCompile(const Program* program, const std::string& unitName);
 	void NodeCompile(const BlockStatement* block);
 	void NodeCompile(const ExpressionStatement* expression);
 	void NodeCompile(const ReturnStatement* ret);
