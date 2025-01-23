@@ -6,9 +6,7 @@ const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_CONST_INT, Definition{ "OP_CONST_INT", { 2 } } },
 	{ OpCode::Constants::OP_CONST_DECIMAL, Definition{ "OP_CONST_DECIMAL", { 2 } } },
 	{ OpCode::Constants::OP_CONST_STRING, Definition{ "OP_CONST_STRING", { 2 } } },
-	{ OpCode::Constants::OP_CONST_FUNCTION, Definition{ "OP_CONST_FUNCTION", { 2 } } },
-	{ OpCode::Constants::OP_CONST_ARRAY, Definition{ "OP_CONST_ARRAY", { 2 } } },
-	{ OpCode::Constants::OP_CONST_HASH, Definition{ "OP_CONST_HASH", { 2 } } },
+	{ OpCode::Constants::OP_CONST_FUNCTION, Definition{ "OP_CONST_FUNCTION", { 2, 2, 2 } } },
 	{ OpCode::Constants::OP_FALSE,    Definition{ "OP_FALSE", {} } },
 	{ OpCode::Constants::OP_TRUE,     Definition{ "OP_TRUE", {} } },
 	{ OpCode::Constants::OP_NULL,     Definition{ "OP_NULL", {} } },
@@ -126,6 +124,33 @@ std::tuple<OpCode::Constants, std::vector<uint32_t>, size_t> OpCode::ReadOperand
 	return { opcode, operands, read };
 }
 
+bool OpCode::HasData(OpCode::Constants opcode)
+{
+	return opcode == OpCode::Constants::OP_CONST_STRING || opcode == OpCode::Constants::OP_CONST_FUNCTION;
+}
+
+std::vector<uint8_t> OpCode::ReadData(std::tuple<OpCode::Constants, std::vector<uint32_t>, size_t> data, const Instructions& instructions)
+{
+	auto [opcode, operands, readOffset] = data;
+	std::vector<uint8_t> result;
+	if (opcode == OpCode::Constants::OP_CONST_STRING)
+	{
+		for (size_t i = readOffset; i < readOffset + operands[0]; i++)
+		{
+			result.push_back(instructions[i]);
+		}
+	}
+	else if (opcode == OpCode::Constants::OP_CONST_FUNCTION)
+	{
+		auto size = operands[2];
+		for (size_t i = readOffset; i < readOffset + size; i++)
+		{
+			result.push_back(instructions[i]);
+		}
+	}
+	return result;
+}
+
 OpCode::Constants OpCode::GetOpcode(const Instructions& instructions, size_t offset)
 {
 	if (instructions.size() < 2)
@@ -157,12 +182,26 @@ std::string OpCode::PrintInstructions(const Instructions& instructions)
 			result += std::format("{: <4}", operands[1]);
 
 		}
+		else if (operands.size() == 3)
+		{
+			result += std::format("{: <2}", operands[0]);
+			result += std::format("{: <2}", operands[1]);
+			result += std::format("{: <2}", operands[2]);
+		}
 		else
 		{
 			for (const auto& operand : operands)
 			{
 				result += std::format("{: <2}", operand);
 			}
+		}
+
+		if (HasData(op))
+		{
+			auto data = OpCode::ReadData({ op, operands, readOffset }, instructions);
+			result += std::format("{: <2}", data);
+			readOffset += data.size();
+			continue;
 		}
 
 		result += "\n";

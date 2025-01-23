@@ -85,20 +85,6 @@ void RogueVM::Run()
 			Push(string);
 			break;
 		}
-		case OpCode::Constants::OP_CONST_BOOL:
-		{
-			auto value = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
-			if (value == 0)
-			{
-				Push(BooleanObj::FALSE_OBJ_REF);
-			}
-			else
-			{
-				Push(BooleanObj::TRUE_OBJ_REF);
-			}
-			break;
-		}
 		case OpCode::Constants::OP_CONST_FUNCTION:
 		{
 			auto numLocals = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];

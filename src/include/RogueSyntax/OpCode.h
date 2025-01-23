@@ -78,6 +78,8 @@ struct OpCode
 	static std::variant<Definition, std::string> Lookup(const Constants opcode);
 	static Instructions Make(Constants opcode, std::vector<uint32_t> operands);
 	static std::tuple<Constants, std::vector<uint32_t>, size_t> ReadOperand(const Instructions& instructions, size_t offset);
+	static bool HasData(Constants opcode);
+	static std::vector<uint8_t> ReadData(std::tuple<Constants, std::vector<uint32_t>, size_t>, const Instructions& instructions);
 	static Constants GetOpcode(const Instructions& instructions, size_t offset);
 	static std::string PrintInstructions(const Instructions& instructions);
 
