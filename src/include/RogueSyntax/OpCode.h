@@ -16,8 +16,13 @@ struct OpCode
 
 	enum class Constants : Opcode
 	{
+		//literals
+		OP_CONSTANT,       //this is really a placeholder for the actual type
+		OP_CONST_INT,      //integer literal
+		OP_CONST_DECIMAL,  //decimal literal
+		OP_CONST_STRING,   //string literal
+		OP_CONST_FUNCTION, //function obj
 		//types
-		OP_CONSTANT,
 		OP_TRUE,
 		OP_FALSE,
 		OP_NULL,
@@ -81,12 +86,6 @@ struct OpCode
 
 class IObject;
 
-struct ByteCode
-{
-	Instructions Instructions;
-	std::vector<const IObject*> Constants;
-};
-
 enum class ScopeType : uint8_t
 {
 	SCOPE_GLOBAL,
@@ -94,4 +93,29 @@ enum class ScopeType : uint8_t
 	SCOPE_EXTERN,
 	SCOPE_FREE,
 	SCOPE_FUNCTION,
+};
+
+struct Symbol
+{
+	ScopeType Type;
+	std::string Name;
+	std::string MangledName;
+	std::string Context;
+	uint32_t stackContext;
+	int Index;
+
+	uint32_t EncodedIdx();
+};
+
+struct ObjectCode
+{
+	Instructions Instructions;
+	std::vector<const IObject*> Constants;
+	std::vector<Symbol> Symbols;
+};
+
+struct ByteCode
+{
+	Instructions Instructions;
+	std::vector<const IObject*> Constants;
 };

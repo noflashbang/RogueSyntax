@@ -31,6 +31,7 @@ set( libHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/SymbolTable.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/CompilationUnit.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/Compiler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/Linker.h
  )
 
 set( libSource
@@ -52,6 +53,7 @@ set( libSource
  "src/SymbolTable.cpp"
  "src/CompilationUnit.cpp"
  "src/Compiler.cpp"
+ "src/Linker.cpp"
  "src/VirtualMachine.cpp"
  "src/RogueSyntax.cpp"
 )

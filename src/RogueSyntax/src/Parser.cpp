@@ -1,11 +1,4 @@
 #include "Parser.h"
-#include "Parser.h"
-#include "Parser.h"
-#include "Parser.h"
-#include "Parser.h"
-#include "Parser.h"
-#include "Parser.h"
-#include "Parser.h"
 #include "pch.h"
 
 Parser::Parser(const Lexer& lexer) : _lexer(lexer)

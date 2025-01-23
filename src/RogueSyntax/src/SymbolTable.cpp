@@ -177,6 +177,11 @@ std::vector<Symbol> SymbolTable::FreeSymbolsInContext(uint32_t stackContext)
 	return symbols;
 }
 
+std::vector<Symbol> SymbolTable::GetSymbols()
+{
+	return _store;
+}
+
 int SymbolTable::FindInCurrentContextName(const std::string& name)
 {
 	auto decorated = _decorator.DecorateWithCurrentContex(name);

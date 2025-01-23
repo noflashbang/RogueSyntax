@@ -52,6 +52,73 @@ void RogueVM::Run()
 			Push(constant);
 			break;
 		}
+		case OpCode::Constants::OP_CONST_INT:
+		{
+			auto value = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			auto integer = _factory->New<IntegerObj>(value);
+			Push(integer);
+			break;
+		}
+		case OpCode::Constants::OP_CONST_DECIMAL:
+		{
+			auto value = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			// reinterpret the value as a float using a memcpy
+			float f;
+			std::memcpy(&f, &value, sizeof(f));
+			auto decimal = _factory->New<DecimalObj>(f);
+			Push(decimal);
+			break;
+		}
+		case OpCode::Constants::OP_CONST_STRING:
+		{
+			auto strLen = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			std::string str;
+			for (int i = 0; i < strLen; i++)
+			{
+				str.push_back(instructions[CurrentFrame().Ip()]);
+				IncrementFrameIp(1);
+			}
+			auto string = _factory->New<StringObj>(str);
+			Push(string);
+			break;
+		}
+		case OpCode::Constants::OP_CONST_BOOL:
+		{
+			auto value = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			if (value == 0)
+			{
+				Push(BooleanObj::FALSE_OBJ_REF);
+			}
+			else
+			{
+				Push(BooleanObj::TRUE_OBJ_REF);
+			}
+			break;
+		}
+		case OpCode::Constants::OP_CONST_FUNCTION:
+		{
+			auto numLocals = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			auto numParameters = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+			auto numInstructions = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			IncrementFrameIp(2);
+
+			std::vector<uint8_t> fnInstructions;
+			for (int i = 0; i < numInstructions; i++)
+			{
+				fnInstructions.push_back(instructions[CurrentFrame().Ip()]);
+				IncrementFrameIp(1);
+			}
+			auto function = _factory->New<FunctionCompiledObj>(fnInstructions, numLocals, numParameters);
+			auto closure = _factory->New<ClosureObj>(function, std::vector<const IObject*>{});
+			Push(closure);
+			break;
+		}
 		case OpCode::Constants::OP_ARRAY:
 		{
 			auto numElements = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];

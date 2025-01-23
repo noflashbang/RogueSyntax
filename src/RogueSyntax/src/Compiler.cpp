@@ -9,7 +9,7 @@ Compiler::~Compiler()
 {
 }
 
-ByteCode Compiler::Compile(const std::shared_ptr<Program>&program, const std::shared_ptr<BuiltIn>& externs, const std::string& unitName)
+ObjectCode Compiler::Compile(const std::shared_ptr<Program>&program, const std::shared_ptr<BuiltIn>& externs, const std::string& unitName)
 {
 	_constants.clear();
 	_constants.reserve(128);
@@ -22,7 +22,7 @@ ByteCode Compiler::Compile(const std::shared_ptr<Program>&program, const std::sh
 	}
 
 	Compile(program.get());
-	return ByteCode{ _CompilationUnits.top().UnitInstructions, _constants };
+	return ObjectCode{ _CompilationUnits.top().UnitInstructions, _constants, _symbolTable.GetSymbols()};
 }
 
 CompilerError Compiler::Compile(INode* node)

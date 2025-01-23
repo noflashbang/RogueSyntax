@@ -23,7 +23,7 @@ void InteractiveCompiler::Start()
 void InteractiveCompiler::Run()
 {
 	RogueSyntax syntax;
-	auto vm = syntax.MakeVM(syntax.Compile(_input, "INPUTSRC"));
+	auto vm = syntax.MakeVM(syntax.Link(syntax.Compile(_input, "INPUTSRC")));
 	vm->Run();
 	//auto top = vm->LastPoppped();
 	auto top = vm->Top();

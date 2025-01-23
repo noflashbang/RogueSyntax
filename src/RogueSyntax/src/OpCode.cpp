@@ -3,6 +3,12 @@
 
 const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
 	{ OpCode::Constants::OP_CONSTANT, Definition{ "OP_CONSTANT", { 2 } } },
+	{ OpCode::Constants::OP_CONST_INT, Definition{ "OP_CONST_INT", { 2 } } },
+	{ OpCode::Constants::OP_CONST_DECIMAL, Definition{ "OP_CONST_DECIMAL", { 2 } } },
+	{ OpCode::Constants::OP_CONST_STRING, Definition{ "OP_CONST_STRING", { 2 } } },
+	{ OpCode::Constants::OP_CONST_FUNCTION, Definition{ "OP_CONST_FUNCTION", { 2 } } },
+	{ OpCode::Constants::OP_CONST_ARRAY, Definition{ "OP_CONST_ARRAY", { 2 } } },
+	{ OpCode::Constants::OP_CONST_HASH, Definition{ "OP_CONST_HASH", { 2 } } },
 	{ OpCode::Constants::OP_FALSE,    Definition{ "OP_FALSE", {} } },
 	{ OpCode::Constants::OP_TRUE,     Definition{ "OP_TRUE", {} } },
 	{ OpCode::Constants::OP_NULL,     Definition{ "OP_NULL", {} } },

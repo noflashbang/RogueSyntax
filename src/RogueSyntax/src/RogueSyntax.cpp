@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "RogueSyntax.h"
 #include "Compiler.h"
+#include "Linker.h"
 
 RogueSyntax::RogueSyntax() : _objectStore(std::make_shared<ObjectStore>()), _builtIn(std::make_shared<BuiltIn>(_objectStore->Factory()))
 {
@@ -17,7 +18,7 @@ std::shared_ptr<Program> RogueSyntax::Parse(const std::string& input, const std:
 	return parser.ParseProgram(unit);
 }
 
-ByteCode RogueSyntax::Compile(const std::string& input, const std::string& unit) const
+ObjectCode RogueSyntax::Compile(const std::string& input, const std::string& unit) const
 {
 	Lexer lexer(input);
 	Parser parser(lexer);
@@ -29,6 +30,12 @@ ByteCode RogueSyntax::Compile(const std::string& input, const std::string& unit)
 
 	Compiler compiler(_objectStore->Factory());
 	return compiler.Compile(program, _builtIn, "PRG");
+}
+
+ByteCode RogueSyntax::Link(const ObjectCode& objectCode) const
+{
+	Linker linker;
+	return linker.Link(objectCode);
 }
 
 std::shared_ptr<Evaluator> RogueSyntax::MakeEvaluator(EvaluatorType type) const

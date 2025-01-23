@@ -131,7 +131,7 @@ Instructions ConcatInstructions(const std::vector<Instructions>& instructions)
 	return result;
 }
 
-bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ByteCode& actual)
+bool TestObjectCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ObjectCode& actual)
 {
 	auto flattened = ConcatInstructions(expectedInstructions);
 	return TestInstructions(flattened, actual.Instructions) && TestConstants(expectedConstants, actual.Constants);
@@ -141,14 +141,17 @@ bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std
 {
 	RogueSyntax syn;
 	auto byteCode = syn.Compile(input, "COMPILETEST");
-	return TestByteCode(expectedConstants, expectedInstructions, byteCode);
+	return TestObjectCode(expectedConstants, expectedInstructions, byteCode);
 }
 
 bool VmTest(std::string input, ConstantValue expected)
 {
 	RogueSyntax syn;
-	auto byteCode = syn.Compile(input, "");
-	auto str = OpCode::PrintInstructions(byteCode.Instructions);
+	auto objCode = syn.Compile(input, "");
+	auto str = OpCode::PrintInstructions(objCode.Instructions);
+
+	auto byteCode = syn.Link(objCode);
+
 	auto vm = syn.MakeVM(byteCode);
 
 	try

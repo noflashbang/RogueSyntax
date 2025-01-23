@@ -2,20 +2,6 @@
 #include <StandardLib.h>
 #include "Decorator.h"
 
-
-
-struct Symbol
-{
-	ScopeType Type;
-	std::string Name;
-	std::string MangledName;
-	std::string Context;
-	uint32_t stackContext;
-	int Index;
-
-	uint32_t EncodedIdx();
-};
-
 struct SymbolIndex
 {
 	uint32_t NextSymIndex = 0;
@@ -62,6 +48,8 @@ public:
 	uint32_t NumberOfSymbolsInContext(uint32_t stackContext);
 	std::vector<Symbol> SymbolsInContext(uint32_t stackContext);
 	std::vector<Symbol> FreeSymbolsInContext(uint32_t stackContext);
+
+	std::vector<Symbol> GetSymbols();
 
 private:
 	int FindInCurrentContextName(const std::string& name);

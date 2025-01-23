@@ -24,12 +24,14 @@ struct CompilerErrorInfo
 	}
 };
 
+
+
 class Compiler
 {
 public:
 	Compiler(const std::shared_ptr<ObjectFactory> factory);
 	~Compiler();
-	ByteCode Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs, const std::string& unitName);
+	ObjectCode Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs, const std::string& unitName);
 	inline bool HasErrors() const { return !_errors.empty(); };
 	std::vector<std::string> GetErrors() const { return _errors; };
 
