@@ -46,6 +46,7 @@ set( testSource
 )
 
 #add_compile_definitions(DO_BENCHMARK)
+#add_compile_definitions(CATCH_CONFIG_CONSOLE_WIDTH=200)
 
 add_executable(RogueSyntaxTest ${testSource} ${externHeaders} ${testHeaders})
 target_link_libraries(RogueSyntaxTest PRIVATE Catch2::Catch2WithMain)

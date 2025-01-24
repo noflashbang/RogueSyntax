@@ -84,6 +84,57 @@ Instructions OpCode::Make(OpCode::Constants opcode, std::vector<uint32_t> operan
 	return instructions;
 }
 
+Instructions OpCode::Make(OpCode::Constants opcode, std::vector<uint32_t> operands, Instructions data)
+{
+	auto def = Lookup(opcode);
+	if (std::holds_alternative<std::string>(def))
+	{
+		throw std::runtime_error(std::get<std::string>(def));
+	}
+	auto definition = std::get<Definition>(def);
+	Instructions instructions;
+	instructions.push_back(static_cast<uint8_t>(opcode));
+	for (size_t i = 0; i < definition.OperandWidths.size(); i++)
+	{
+		auto operand = operands[i];
+		auto width = definition.OperandWidths[i];
+		switch (width)
+		{
+		case 2:
+			instructions.push_back((operand >> 8) & 0xFF);
+			instructions.push_back(operand & 0xFF);
+			break;
+		default:
+			throw std::runtime_error("Invalid operand width");
+		}
+	}
+	instructions.insert(instructions.end(), data.begin(), data.end());
+	return instructions;
+}
+
+Instructions OpCode::MakeIntegerLiteral(int value)
+{
+	auto val = reinterpret_cast<uint32_t&>(value);
+	return Make(OpCode::Constants::OP_CONST_INT, { val });
+}
+
+Instructions OpCode::MakeDecimalLiteral(float value)
+{
+	auto val = reinterpret_cast<uint32_t&>(value);
+	return Make(OpCode::Constants::OP_CONST_DECIMAL, { val });
+}
+
+Instructions OpCode::MakeStringLiteral(const std::string& value)
+{
+	unsigned len = value.size();
+	Instructions data;
+	for (auto c : value)
+	{
+		data.push_back(c);
+	}
+	return Make(OpCode::Constants::OP_CONST_STRING, { len }, data);
+}
+
 std::tuple<OpCode::Constants, std::vector<uint32_t>, size_t> OpCode::ReadOperand(const Instructions& instructions, size_t offset)
 {
 	if (instructions.size() < 2)
@@ -199,9 +250,16 @@ std::string OpCode::PrintInstructions(const Instructions& instructions)
 		if (HasData(op))
 		{
 			auto data = OpCode::ReadData({ op, operands, readOffset }, instructions);
-			result += std::format("{: <2}", data);
-			readOffset += data.size();
-			continue;
+			if (op == OpCode::Constants::OP_CONST_STRING)
+			{
+				std::string str(data.begin(), data.end());
+				result += std::format(" -> {: <16}", str);
+				readOffset += data.size();
+			}
+			else
+			{
+
+			}
 		}
 
 		result += "\n";
@@ -222,6 +280,11 @@ std::string OpCode::PrintInstuctionsCompared(const Instructions& instructions, c
 	auto leftLines = std::views::split(left, delimiter);
 	auto rightLines = std::views::split(right, delimiter);
 
+	auto lengths = std::views::transform([](const auto&& line) { return std::ranges::distance(line); });
+	auto maxLengthLeft = std::ranges::max(lengths(leftLines));
+	auto maxLengthRight = std::ranges::max(lengths(rightLines));
+	auto maxLength = std::max(maxLengthLeft, maxLengthRight);
+
 	auto leftIt = leftLines.begin();
 	auto rightIt = rightLines.begin();
 
@@ -230,12 +293,12 @@ std::string OpCode::PrintInstuctionsCompared(const Instructions& instructions, c
 		if (leftIt != leftLines.end())
 		{
 			std::string leftLine((*leftIt).begin(), (*leftIt).end());
-			result += std::format("{: <35}", leftLine);
+			result += std::format("{: <{}}", leftLine, maxLength);
 			++leftIt;
 		}
 		else
 		{
-			result += std::format("{:->35}", "");
+			result += std::format("{:->{}}", "", maxLength);
 		}
 
 		result += " | ";
@@ -243,12 +306,12 @@ std::string OpCode::PrintInstuctionsCompared(const Instructions& instructions, c
 		if (rightIt != rightLines.end())
 		{
 			std::string rightLine((*rightIt).begin(), (*rightIt).end());
-			result += std::format("{: <35}", rightLine);
+			result += std::format("{: <{}}", rightLine, maxLength);
 			++rightIt;
 		}
 		else
 		{
-			result += std::format("{:->35}", "");
+			result += std::format("{:->{}}", "", maxLength);
 		}
 		result += "\n";
 	}

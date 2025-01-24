@@ -77,6 +77,12 @@ struct OpCode
 	static const std::unordered_map<Constants, Definition> Definitions;
 	static std::variant<Definition, std::string> Lookup(const Constants opcode);
 	static Instructions Make(Constants opcode, std::vector<uint32_t> operands);
+	static Instructions Make(Constants opcode, std::vector<uint32_t> operands, Instructions data);
+
+	static Instructions MakeIntegerLiteral(int value);
+	static Instructions MakeDecimalLiteral(float value);
+	static Instructions MakeStringLiteral(const std::string& value);
+
 	static std::tuple<Constants, std::vector<uint32_t>, size_t> ReadOperand(const Instructions& instructions, size_t offset);
 	static bool HasData(Constants opcode);
 	static std::vector<uint8_t> ReadData(std::tuple<Constants, std::vector<uint32_t>, size_t>, const Instructions& instructions);

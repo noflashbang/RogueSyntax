@@ -72,6 +72,13 @@ int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands)
 	return _CompilationUnits.top().AddInstruction(instructions);
 }
 
+int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands, Instructions data)
+{
+	auto instructions = OpCode::Make(opcode, operands);
+	instructions.insert(instructions.end(), data.begin(), data.end());
+	return _CompilationUnits.top().AddInstruction(instructions);
+}
+
 int Compiler::EmitGet(Symbol symbol)
 {
 	if (symbol.Type == ScopeType::SCOPE_FUNCTION)
@@ -203,9 +210,12 @@ void Compiler::NodeCompile(const Identifier* ident)
 
 void Compiler::NodeCompile(const IntegerLiteral* integer)
 {
-	auto obj = _factory->New<IntegerObj>(integer->Value);
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	//auto obj = _factory->New<IntegerObj>(integer->Value);
+	//auto index = AddConstant(obj);
+	//Emit(OpCode::Constants::OP_CONSTANT, { index });
+	int intVal = integer->Value;
+	uint32_t val = reinterpret_cast<uint32_t&>(intVal);
+	Emit(OpCode::Constants::OP_CONST_INT, { val });
 }
 
 void Compiler::NodeCompile(const BooleanLiteral* boolean)
@@ -215,16 +225,28 @@ void Compiler::NodeCompile(const BooleanLiteral* boolean)
 
 void Compiler::NodeCompile(const StringLiteral* string)
 {
-	auto obj = _factory->New<StringObj>(string->Value);
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	//auto obj = _factory->New<StringObj>(string->Value);
+	//auto index = AddConstant(obj);
+	//Emit(OpCode::Constants::OP_CONSTANT, { index });
+	std::string str = string->Value;
+	uint32_t len = str.size();
+	Instructions data;
+	for (auto c : str)
+	{
+		data.push_back(c);
+	}
+	Emit(OpCode::Constants::OP_CONST_STRING, { len }, data);
 }
 
 void Compiler::NodeCompile(const DecimalLiteral* decimal)
 {
-	auto obj = _factory->New<DecimalObj>(decimal->Value);
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	//auto obj = _factory->New<DecimalObj>(decimal->Value);
+	//auto index = AddConstant(obj);
+	//Emit(OpCode::Constants::OP_CONSTANT, { index });
+
+	float decVal = decimal->Value;
+	uint32_t val = reinterpret_cast<uint32_t&>(decVal);
+	Emit(OpCode::Constants::OP_CONST_DECIMAL, { val });
 }
 
 void Compiler::NodeCompile(const PrefixExpression* prefix)

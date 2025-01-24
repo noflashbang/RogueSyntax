@@ -64,9 +64,8 @@ void RogueVM::Run()
 		{
 			auto value = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
-			// reinterpret the value as a float using a memcpy
-			float f;
-			std::memcpy(&f, &value, sizeof(f));
+			// reinterpret the value as a float
+			float f = reinterpret_cast<float&>(value);
 			auto decimal = _factory->New<DecimalObj>(f);
 			Push(decimal);
 			break;
