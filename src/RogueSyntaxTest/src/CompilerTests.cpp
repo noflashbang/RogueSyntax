@@ -6,40 +6,19 @@
 #include <catch2/benchmark/catch_benchmark.hpp>
 
 
-std::shared_ptr<FunctionCompiledObj> MakeFunction(Instructions instructions, int numParam, int numFree)
+std::shared_ptr<FunctionCompiledObj> MakeFunction(Instructions instructions, int numLocals, int numParameters)
 {
-	auto fn = std::make_shared<FunctionCompiledObj>(instructions, numParam, numFree);
+	auto fn = std::make_shared<FunctionCompiledObj>(instructions, numLocals, numParameters);
 	return fn;
 };
 
-TEST_CASE("Instruction String")
+Instructions MakeFunctionLiteral(const FunctionCompiledObj* pFun)
 {
-	std::vector<Instructions> instructions = {
-		{ OpCode::MakeIntegerLiteral(1) },
-		{ OpCode::MakeIntegerLiteral(2) },
-		{ OpCode::MakeIntegerLiteral(65535) },
-	};
-
-	std::string expected = { "0000:  OP_CONST_INT    1       \n0003:  OP_CONST_INT    2       \n0006:  OP_CONST_INT    65535   " };
-
-	auto flattened = ConcatInstructions(instructions);
-	auto actual = OpCode::PrintInstructions(flattened);
-	REQUIRE(actual == expected);
-}
-
-TEST_CASE("Instruction String 2")
-{
-	std::vector<Instructions> instructions = {
-		{ OpCode::Make(OpCode::Constants::OP_ADD, {})  },
-		{ OpCode::MakeIntegerLiteral(2)  },
-		{ OpCode::MakeIntegerLiteral(3)  }
-	};
-
-	std::string expected = { "0000:  OP_ADD          \n0001:  OP_CONST_INT    2       \n0004:  OP_CONST_INT    3       " };
-
-	auto flattened = ConcatInstructions(instructions);
-	auto actual = OpCode::PrintInstructions(flattened);
-	REQUIRE(actual == expected);
+	uint32_t numLocals = pFun->NumLocals;
+	uint32_t numParameters = pFun->NumParameters;
+	uint32_t numInstructions = pFun->FuncInstructions.size();
+	auto instructions = pFun->FuncInstructions;
+	return OpCode::Make(OpCode::Constants::OP_LFUN, { numLocals, numParameters, numInstructions }, instructions);
 }
 
 TEST_CASE("OpCode::Make tests")
@@ -52,12 +31,12 @@ TEST_CASE("OpCode::Make tests")
 			{ OpCode::Constants::OP_POP,      { },       { static_cast<uint8_t>(OpCode::Constants::OP_POP) } },
 			{ OpCode::Constants::OP_TRUE,     { },       { static_cast<uint8_t>(OpCode::Constants::OP_TRUE) } },
 			{ OpCode::Constants::OP_FALSE,    { },       { static_cast<uint8_t>(OpCode::Constants::OP_FALSE) } },
-			{ OpCode::Constants::OP_EQUAL,    { },       { static_cast<uint8_t>(OpCode::Constants::OP_EQUAL) } },
-			{ OpCode::Constants::OP_NOT_EQUAL,{ },       { static_cast<uint8_t>(OpCode::Constants::OP_NOT_EQUAL) } },
-			{ OpCode::Constants::OP_GREATER_THAN, { },   { static_cast<uint8_t>(OpCode::Constants::OP_GREATER_THAN) } },
-			{ OpCode::Constants::OP_LESS_THAN, { },      { static_cast<uint8_t>(OpCode::Constants::OP_LESS_THAN) } },
-			{ OpCode::Constants::OP_GREATER_THAN_EQUAL, { }, { static_cast<uint8_t>(OpCode::Constants::OP_GREATER_THAN_EQUAL) } },
-			{ OpCode::Constants::OP_LESS_THAN_EQUAL, { }, { static_cast<uint8_t>(OpCode::Constants::OP_LESS_THAN_EQUAL) } },
+			{ OpCode::Constants::OP_EQ,    { },       { static_cast<uint8_t>(OpCode::Constants::OP_EQ) } },
+			{ OpCode::Constants::OP_NEQ,{ },       { static_cast<uint8_t>(OpCode::Constants::OP_NEQ) } },
+			{ OpCode::Constants::OP_GT, { },   { static_cast<uint8_t>(OpCode::Constants::OP_GT) } },
+			{ OpCode::Constants::OP_LT, { },      { static_cast<uint8_t>(OpCode::Constants::OP_LT) } },
+			{ OpCode::Constants::OP_GTE, { }, { static_cast<uint8_t>(OpCode::Constants::OP_GTE) } },
+			{ OpCode::Constants::OP_LTE, { }, { static_cast<uint8_t>(OpCode::Constants::OP_LTE) } },
 			{ OpCode::Constants::OP_SUB, { }, { static_cast<uint8_t>(OpCode::Constants::OP_SUB) } },
 			{ OpCode::Constants::OP_MUL, { }, { static_cast<uint8_t>(OpCode::Constants::OP_MUL) } },
 			{ OpCode::Constants::OP_DIV, { }, { static_cast<uint8_t>(OpCode::Constants::OP_DIV) } },
@@ -100,7 +79,7 @@ TEST_CASE("Greaterthan Comparison Complier test")
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::MakeIntegerLiteral(2),
-					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_GT, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -118,7 +97,7 @@ TEST_CASE("LessThan Comparison Complier test")
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::MakeIntegerLiteral(2),
-					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
+					OpCode::Make(OpCode::Constants::OP_LT, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -136,7 +115,7 @@ TEST_CASE("Equal Comparison Complier test")
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::MakeIntegerLiteral(2),
-					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_EQ, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -154,7 +133,7 @@ TEST_CASE("NotEqual Comparison Complier test")
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::MakeIntegerLiteral(2),
-					OpCode::Make(OpCode::Constants::OP_NOT_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_NEQ, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -172,7 +151,7 @@ TEST_CASE("GreaterThanOrEqual Comparison Complier test")
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::MakeIntegerLiteral(2),
-					OpCode::Make(OpCode::Constants::OP_GREATER_THAN_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_GTE, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -190,7 +169,7 @@ TEST_CASE("LessThanOrEqual Comparison Complier test")
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::MakeIntegerLiteral(2),
-					OpCode::Make(OpCode::Constants::OP_LESS_THAN_EQUAL, {}),
+					OpCode::Make(OpCode::Constants::OP_LTE, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -447,7 +426,7 @@ TEST_CASE("Boolean AND test")
 				{
 					OpCode::Make(OpCode::Constants::OP_TRUE, {}),
 					OpCode::Make(OpCode::Constants::OP_FALSE, {}),
-					OpCode::Make(OpCode::Constants::OP_BOOL_AND, {}),
+					OpCode::Make(OpCode::Constants::OP_AND, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -465,7 +444,7 @@ TEST_CASE("Boolean OR test")
 				{
 					OpCode::Make(OpCode::Constants::OP_TRUE, {}),
 					OpCode::Make(OpCode::Constants::OP_FALSE, {}),
-					OpCode::Make(OpCode::Constants::OP_BOOL_OR, {}),
+					OpCode::Make(OpCode::Constants::OP_OR, {}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -499,7 +478,7 @@ TEST_CASE("Conditional Test")
 			{ "if (true) { 10 }; 3333;", { },
 				{
 					OpCode::Make(OpCode::Constants::OP_TRUE, {}),             //0000
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 8 }), //0001
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 10 }), //0001
 					OpCode::MakeIntegerLiteral(10),                           //0004
 					OpCode::Make(OpCode::Constants::OP_POP, {}),              //0007
 					OpCode::MakeIntegerLiteral(3333),                         //0008
@@ -519,10 +498,10 @@ TEST_CASE("Conditional with Else Test")
 			{ "if (true) { 10 } else { 20 }; 3333;", {  },
 				{
 					OpCode::Make(OpCode::Constants::OP_TRUE, {}),             //0000
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 11}), //0001
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 13}), //0001
 					OpCode::MakeIntegerLiteral(10),                           //0004
 					OpCode::Make(OpCode::Constants::OP_POP, {}),              //0007
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 15 }),         //0008
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 19 }),         //0008
 					OpCode::MakeIntegerLiteral(20),                           //0011
 					OpCode::Make(OpCode::Constants::OP_POP, {}),		      //0014
 					OpCode::MakeIntegerLiteral(3333),                         //0015
@@ -547,7 +526,7 @@ TEST_CASE("Let statement")
 					OpCode::Make(OpCode::Constants::OP_SET, {1})
 				}
 			},
-			{ "let one = 1; one;", { 1 },
+			{ "let one = 1; one;", { },
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
@@ -555,7 +534,7 @@ TEST_CASE("Let statement")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "let one = 1; let two = one; two;", { 1 },
+			{ "let one = 1; let two = one; two;", {  },
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
@@ -716,79 +695,150 @@ TEST_CASE("Function Tests")
 {
 	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{ "fn() { return 5 + 10; }", { MakeFunction(ConcatInstructions({
-					OpCode::MakeIntegerLiteral(5),
-					OpCode::MakeIntegerLiteral(10),
-					OpCode::Make(OpCode::Constants::OP_ADD, {}),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,0)},
+			{ "fn() { return 5 + 10; }", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::MakeIntegerLiteral(5),
+									OpCode::MakeIntegerLiteral(10),
+									OpCode::Make(OpCode::Constants::OP_ADD, {}),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),0,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { 5 + 10; }", { MakeFunction(ConcatInstructions({
-					OpCode::MakeIntegerLiteral(5),
-					OpCode::MakeIntegerLiteral(10),
-					OpCode::Make(OpCode::Constants::OP_ADD, {}),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,0)},
+			{ "fn() { 5 + 10; }", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::MakeIntegerLiteral(5),
+									OpCode::MakeIntegerLiteral(10),
+									OpCode::Make(OpCode::Constants::OP_ADD, {}),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),0,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { 1; 2; }", { MakeFunction(ConcatInstructions({
-					OpCode::MakeIntegerLiteral(1),
-					OpCode::Make(OpCode::Constants::OP_POP, {}),
-					OpCode::MakeIntegerLiteral(2),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,0)},
+
+			{ "fn() { 1; 2; }", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::MakeIntegerLiteral(1),
+									OpCode::Make(OpCode::Constants::OP_POP, {}),
+									OpCode::MakeIntegerLiteral(2),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),0,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { }", { MakeFunction(ConcatInstructions({
-					OpCode::Make(OpCode::Constants::OP_RETURN, {}),
-				}),0,0)},
+			{ "fn() { }", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::Make(OpCode::Constants::OP_RETURN, {}),
+								}
+							),0,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { 25; }()", {  MakeFunction(ConcatInstructions({
-					OpCode::MakeIntegerLiteral(25),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,0)},
+			{ "fn() { 25; }()", {  },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::MakeIntegerLiteral(25),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),0,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "let noArg = fn() { 24; }; noArg();", { MakeFunction(ConcatInstructions({
-					OpCode::MakeIntegerLiteral(24),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,0)},
+			{ "let noArg = fn() { 24; }; noArg();", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::MakeIntegerLiteral(24),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),1,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_CALL, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "let manyArg = fn(x,y,z) { return x+y+z;}; manyArg(1,2,3);", { MakeFunction(ConcatInstructions({
-				OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
-				OpCode::Make(OpCode::Constants::OP_GET, {1 | 0x8000}),
-				OpCode::Make(OpCode::Constants::OP_ADD, {}),
-				OpCode::Make(OpCode::Constants::OP_GET, {2 | 0x8000}),
-				OpCode::Make(OpCode::Constants::OP_ADD, {}),
-				OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,3)},
+			{ "let manyArg = fn(x,y,z) { return x+y+z;}; manyArg(1,2,3);", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_GET, {1 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_ADD, {}),
+									OpCode::Make(OpCode::Constants::OP_GET, {2 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_ADD, {}),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),4,3
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(1),
@@ -808,40 +858,70 @@ TEST_CASE("Let statement scopes tests")
 {
 	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{ "let x = 5; fn() { x; }", { MakeFunction(ConcatInstructions({
-					OpCode::Make(OpCode::Constants::OP_GET, {0}),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,0)},
+			{ "let x = 5; fn() { x; }", { },
 				{
 					OpCode::MakeIntegerLiteral(5),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::Make(OpCode::Constants::OP_GET, {0}),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),0,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { let x = 5; x; }", {MakeFunction(ConcatInstructions({
-					OpCode::MakeIntegerLiteral(5),
-					OpCode::Make(OpCode::Constants::OP_SET, {0 | 0x8000}),
-					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),1,0)},
+			{ "fn() { let x = 5; x; }", {},
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1,0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::MakeIntegerLiteral(5),
+									OpCode::Make(OpCode::Constants::OP_SET, {0 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),1,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "fn() { let x = 5; let y = 10; x + y; }", {MakeFunction(ConcatInstructions({
-					OpCode::MakeIntegerLiteral(5),
-					OpCode::Make(OpCode::Constants::OP_SET, {0 | 0x8000}),
-					OpCode::MakeIntegerLiteral(10),
-					OpCode::Make(OpCode::Constants::OP_SET, {1 | 0x8000}),
-					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
-					OpCode::Make(OpCode::Constants::OP_GET, {1 | 0x8000}),
-					OpCode::Make(OpCode::Constants::OP_ADD, {}),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),2,0)},
+			{ "fn() { let x = 5; let y = 10; x + y; }", {},
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {2,0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::MakeIntegerLiteral(5),
+									OpCode::Make(OpCode::Constants::OP_SET, {0 | 0x8000}),
+									OpCode::MakeIntegerLiteral(10),
+									OpCode::Make(OpCode::Constants::OP_SET, {1 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_GET, {1 | 0x8000}),
+									OpCode::Make(OpCode::Constants::OP_ADD, {}),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),2,0
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			}
@@ -861,13 +941,13 @@ TEST_CASE("While test")
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(0),
-					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
+					OpCode::Make(OpCode::Constants::OP_GT, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 35 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_SUB, {}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 8 }),
 				}
 			},
 		{ "let x = 10; while (x > 0) { x = x - 1; if(x == 5) {break;} }; x;", { },
@@ -876,18 +956,18 @@ TEST_CASE("While test")
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(0),
-					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_GT, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 50 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_SUB, {}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(5),
-					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 39 }),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 42 }),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_EQ, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 47 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 50 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 8 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
 				}
@@ -898,18 +978,18 @@ TEST_CASE("While test")
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(0),
-					OpCode::Make(OpCode::Constants::OP_GREATER_THAN, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_GT, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 50 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_SUB, {}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(5),
-					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 39 }),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_EQ, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 47 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 8 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 8 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
 				}
@@ -930,15 +1010,15 @@ TEST_CASE("For loop test")
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(10),
-					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 33 }),
+					OpCode::Make(OpCode::Constants::OP_LT, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 39 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::Make(OpCode::Constants::OP_POP, {}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 8 }),
 				}
 			},
 			{ "for (let i = 0; i < 10; i = i + 1) { if(i == 5) {break;} }", { },
@@ -947,18 +1027,18 @@ TEST_CASE("For loop test")
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(10),
-					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_LT, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 50 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(5),
-					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_EQ, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 35 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 50 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 8 }),
 				}
 			},
 			{ "for (let i = 0; i < 10; i = i + 1) { if(i == 5) {continue;} }", {  },
@@ -967,18 +1047,18 @@ TEST_CASE("For loop test")
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(10),
-					OpCode::Make(OpCode::Constants::OP_LESS_THAN, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 42 }),
+					OpCode::Make(OpCode::Constants::OP_LT, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 50 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(5),
-					OpCode::Make(OpCode::Constants::OP_EQUAL, {}),
-					OpCode::Make(OpCode::Constants::OP_JUMP_IF_FALSE, { 29 }),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 29 }),
+					OpCode::Make(OpCode::Constants::OP_EQ, {}),
+					OpCode::Make(OpCode::Constants::OP_JUMPIFZ, { 35 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 35 }),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::Make(OpCode::Constants::OP_ADD, {}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
-					OpCode::Make(OpCode::Constants::OP_JUMP, { 6 }),
+					OpCode::Make(OpCode::Constants::OP_JUMP, { 8 }),
 				}
 			}
 		}));
@@ -1009,20 +1089,38 @@ TEST_CASE("Closure Test")
 {
 		auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
 		{
-			{ "let newClosure = fn(a) { fn(b) { a + b; }; }; let closure = newClosure(2); closure(3);", { 
-				MakeFunction(ConcatInstructions({
-					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0xC000}),
-					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
-					OpCode::Make(OpCode::Constants::OP_ADD, {}),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),1,1), 
-				MakeFunction(ConcatInstructions({
-					OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0, 1}),
-					OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}),
-				}),0,0) },
+			{ "let newClosure = fn(a) { fn(b) { a + b; }; }; let closure = newClosure(2); closure(3);", { },
 				{
-					OpCode::Make(OpCode::Constants::OP_CLOSURE, {1, 0}),
+					MakeFunctionLiteral
+					(
+						MakeFunction
+						(
+							ConcatInstructions
+							(
+								{
+									OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
+									MakeFunctionLiteral
+									(
+										MakeFunction
+										(
+											ConcatInstructions
+											(
+												{
+													OpCode::Make(OpCode::Constants::OP_GET, {0 | 0xC000}),
+													OpCode::Make(OpCode::Constants::OP_GET, {0 | 0x8000}),
+													OpCode::Make(OpCode::Constants::OP_ADD, {}),
+													OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+												}
+											),2,1
+										).get()
+									),
+									OpCode::Make(OpCode::Constants::OP_CLOSURE, {1}),
+									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
+								}
+							),2,1
+						).get()
+					),
+					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
 					OpCode::Make(OpCode::Constants::OP_SET, {0}),
 					OpCode::Make(OpCode::Constants::OP_GET, {0}),
 					OpCode::MakeIntegerLiteral(2),

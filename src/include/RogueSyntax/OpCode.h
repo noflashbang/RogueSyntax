@@ -18,10 +18,10 @@ struct OpCode
 	{
 		//literals
 		OP_CONSTANT,       //this is really a placeholder for the actual type
-		OP_CONST_INT,      //integer literal
-		OP_CONST_DECIMAL,  //decimal literal
-		OP_CONST_STRING,   //string literal
-		OP_CONST_FUNCTION, //function obj
+		OP_LINT,      //integer literal
+		OP_LDECIMAL,  //decimal literal
+		OP_LSTRING,   //string literal
+		OP_LFUN, //function obj
 		//types
 		OP_TRUE,
 		OP_FALSE,
@@ -42,21 +42,21 @@ struct OpCode
 		OP_BLSHIFT,
 		OP_BRSHIFT,
 		//comparison
-		OP_EQUAL,
-		OP_NOT_EQUAL,
-		OP_GREATER_THAN,
-		OP_GREATER_THAN_EQUAL,
-		OP_LESS_THAN,
-		OP_LESS_THAN_EQUAL,
-		OP_BOOL_AND,
-		OP_BOOL_OR,
+		OP_EQ,
+		OP_NEQ,
+		OP_GT,
+		OP_GTE,
+		OP_LT,
+		OP_LTE,
+		OP_AND,
+		OP_OR,
 		//prefix
 		OP_NEGATE,
 		OP_NOT,
 		OP_BNOT,
 		//jump
 		OP_JUMP,
-		OP_JUMP_IF_FALSE,
+		OP_JUMPIFZ,
 		//mem
 		OP_GET,
 		OP_SET,
@@ -70,8 +70,8 @@ struct OpCode
 		OP_CALL,
 		OP_CLOSURE,
 		OP_RETURN,
-		OP_RETURN_VALUE,
-		OP_CURRENT_CLOSURE,
+		OP_RET_VAL,
+		OP_CUR_CLOSURE,
 	};
 
 	static const std::unordered_map<Constants, Definition> Definitions;
@@ -90,6 +90,8 @@ struct OpCode
 	static std::string PrintInstructions(const Instructions& instructions);
 
 	static std::string PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions);
+	static std::string InstructionsToHex(std::span<const uint8_t> bytes);
+	
 };
 
 class IObject;
@@ -102,6 +104,36 @@ enum class ScopeType : uint8_t
 	SCOPE_FREE,
 	SCOPE_FUNCTION,
 };
+
+static inline ScopeType GetTypeFromIdx(int idx)
+{
+	auto flags = idx & 0xC000;
+	if (flags == 0x0000)
+	{
+		return ScopeType::SCOPE_GLOBAL;
+	}
+	else if (flags == 0x8000)
+	{
+		return ScopeType::SCOPE_LOCAL;
+	}
+	else if (flags == 0x4000)
+	{
+		return ScopeType::SCOPE_EXTERN;
+	}
+	else if (flags == 0xC000)
+	{
+		return ScopeType::SCOPE_FREE;
+	}
+	else
+	{
+		throw std::runtime_error("Invalid index");
+	}
+}
+
+static inline int AdjustIdx(int idx)
+{
+	return idx & 0x3FFF;
+}
 
 struct Symbol
 {
@@ -118,12 +150,10 @@ struct Symbol
 struct ObjectCode
 {
 	Instructions Instructions;
-	std::vector<const IObject*> Constants;
 	std::vector<Symbol> Symbols;
 };
 
 struct ByteCode
 {
 	Instructions Instructions;
-	std::vector<const IObject*> Constants;
 };

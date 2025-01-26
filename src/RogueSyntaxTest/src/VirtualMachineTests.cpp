@@ -307,6 +307,20 @@ TEST_CASE("Recursive function call")
 	REQUIRE(VmTest(input, expected));
 }
 
+TEST_CASE("Many function calls")
+{
+	auto [input, expected] = GENERATE(table<std::string, ConstantValue>(
+		{
+			{"let f = fn() { return 1; }; f(); f();", 1},
+			{"let f = fn() { return 1; }; f() + f();", 2},
+			{"let f = fn() { return 1; }; f() + f() + f()", 3},
+			{"let one = fn() {return 1;}; let two = fn() {return one() + one();}; two() + two();", 4},
+			{"let one = fn() {return 1;}; let two = fn() {return one() + one();}; two() + one() + two();", 5 }
+		}));
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expected));
+}
+
 #ifdef DO_BENCHMARK
 
 TEST_CASE("BENCHMARK VM")

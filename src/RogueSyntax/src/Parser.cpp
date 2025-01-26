@@ -57,7 +57,7 @@ Parser::Parser(const Lexer& lexer) : _lexer(lexer)
 void Parser::NextToken()
 {
 	_currentToken = _nextToken;
-	_nextToken = _lexer.NextToken();
+	_nextToken = _lexer.NextToken(true);
 }
 
 std::shared_ptr<Program> Parser::ParseProgram(const std::string& sourceName)

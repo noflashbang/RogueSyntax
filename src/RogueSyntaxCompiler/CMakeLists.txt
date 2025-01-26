@@ -1,6 +1,35 @@
 
+# Adding Raylib
+include(FetchContent)
+set(FETCHCONTENT_QUIET FALSE)
+set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
+set(BUILD_GAMES    OFF CACHE BOOL "" FORCE) # don't build the supplied example games
 
+FetchContent_Declare(
+    raylib
+    GIT_REPOSITORY "https://github.com/raysan5/raylib.git"
+    GIT_TAG "master"
+    GIT_PROGRESS TRUE
+    GIT_SHALLOW TRUE
+)
 
+FetchContent_MakeAvailable(raylib)
+
+set(CLAY_INCLUDE_ALL_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CLAY_INCLUDE_DEMOS OFF CACHE BOOL "" FORCE)
+set(CLAY_INCLUDE_CPP_EXAMPLE OFF CACHE BOOL "" FORCE)
+set(CLAY_INCLUDE_RAYLIB_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CLAY_INCLUDE_SDL2_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(CLAY_INCLUDE_SDL3_EXAMPLES OFF CACHE BOOL "" FORCE)
+
+#check to see when the repo gets updated to include this pr: https://github.com/nicbarker/clay/pull/216
+#FetchContent_Declare(
+#  Clay
+#  GIT_REPOSITORY https://github.com/nicbarker/clay.git
+#  GIT_TAG        main
+#)
+#
+#FetchContent_MakeAvailable(Clay)
 
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
@@ -19,17 +48,21 @@ set( externHeaders
 
 set( compilerHeaders 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/clay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.h
  )
 
 set( compilerSource 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.cpp
 )
 if(CMAKE_TIDY_ENABLED)
     set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,modernize-*,bugprone-*,cppcoreguidelines-*,performance-*)
 endif()
 
 add_executable(RogueSyntaxCompiler ${testSource} ${externHeaders} ${compilerHeaders})
+target_link_libraries(RogueSyntaxCompiler PRIVATE raylib)
 target_link_libraries(RogueSyntaxCompiler PUBLIC RogueSyntax)
 
 add_dependencies(RogueSyntaxCompiler RogueSyntax)

@@ -21,24 +21,10 @@ ByteCode Linker::Link(const std::vector<ObjectCode>& objectCodes)
 	
 	for (auto& obj : objectCodes)
 	{
-		LinkConstants(code, obj);
 		LinkInstructions(code, obj);
 	}
 
 	return code;
-}
-
-void Linker::LinkConstants(ByteCode& code, const ObjectCode& objectCode)
-{
-
-	for (auto& constant : objectCode.Constants)
-	{
-		std::string sym = "CONST_" + constant->Id();
-
-		
-		
-
-	}
 }
 
 void Linker::LinkInstructions(ByteCode& code, const ObjectCode& objectCode)
@@ -46,6 +32,3 @@ void Linker::LinkInstructions(ByteCode& code, const ObjectCode& objectCode)
 	code.Instructions.reserve(objectCode.Instructions.size());
 	code.Instructions = objectCode.Instructions;
 }
-
-
-

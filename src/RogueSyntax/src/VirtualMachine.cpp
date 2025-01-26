@@ -23,17 +23,7 @@ RogueVM::~RogueVM()
 }
 
 void RogueVM::Run()
-{
-	//make a local copy of the constants
-	auto pgrmConstants = _byteCode.Constants;	
-	std::vector<const IObject*> constants;
-	constants.reserve(pgrmConstants.size());
-	for (auto& c : pgrmConstants)
-	{
-		auto copy = _factory->Clone(c);
-		constants.push_back(copy);
-	}
-
+{	
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
 		const auto& instructions = CurrentFrame().Instructions();
@@ -42,38 +32,25 @@ void RogueVM::Run()
 
 		switch (opcode)
 		{
-		case OpCode::Constants::OP_CONSTANT:
+		case OpCode::Constants::OP_LINT:
 		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			auto constant = constants[idx];
-			//std::cout << constant->Inspect() << std::endl;
-			IncrementFrameIp(2);
-
-			Push(constant);
-			break;
-		}
-		case OpCode::Constants::OP_CONST_INT:
-		{
-			auto value = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
+			auto value = ReadOperand<int>(4);
 			auto integer = _factory->New<IntegerObj>(value);
 			Push(integer);
 			break;
 		}
-		case OpCode::Constants::OP_CONST_DECIMAL:
+		case OpCode::Constants::OP_LDECIMAL:
 		{
-			auto value = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
+			auto value = ReadOperand<int>(4);
 			// reinterpret the value as a float
 			float f = reinterpret_cast<float&>(value);
 			auto decimal = _factory->New<DecimalObj>(f);
 			Push(decimal);
 			break;
 		}
-		case OpCode::Constants::OP_CONST_STRING:
+		case OpCode::Constants::OP_LSTRING:
 		{
-			auto strLen = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
+			auto strLen = ReadOperand<int>(4);
 			std::string str;
 			for (int i = 0; i < strLen; i++)
 			{
@@ -84,14 +61,11 @@ void RogueVM::Run()
 			Push(string);
 			break;
 		}
-		case OpCode::Constants::OP_CONST_FUNCTION:
+		case OpCode::Constants::OP_LFUN:
 		{
-			auto numLocals = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
-			auto numParameters = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
-			auto numInstructions = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
+			auto numLocals = ReadOperand<int>(2);
+			auto numParameters = ReadOperand<int>(2);
+			auto numInstructions = ReadOperand<int>(4);
 
 			std::vector<uint8_t> fnInstructions;
 			for (int i = 0; i < numInstructions; i++)
@@ -100,8 +74,8 @@ void RogueVM::Run()
 				IncrementFrameIp(1);
 			}
 			auto function = _factory->New<FunctionCompiledObj>(fnInstructions, numLocals, numParameters);
-			auto closure = _factory->New<ClosureObj>(function, std::vector<const IObject*>{});
-			Push(closure);
+			//auto closure = _factory->New<ClosureObj>(function, std::vector<const IObject*>{});
+			Push(function);
 			break;
 		}
 		case OpCode::Constants::OP_ARRAY:
@@ -152,14 +126,14 @@ void RogueVM::Run()
 			ExecuteArithmeticInfix(opcode);
 			break;
 		}
-		case OpCode::Constants::OP_EQUAL:
-		case OpCode::Constants::OP_NOT_EQUAL:
-		case OpCode::Constants::OP_GREATER_THAN:
-		case OpCode::Constants::OP_GREATER_THAN_EQUAL:
-		case OpCode::Constants::OP_LESS_THAN:
-		case OpCode::Constants::OP_LESS_THAN_EQUAL:
-		case OpCode::Constants::OP_BOOL_AND:
-		case OpCode::Constants::OP_BOOL_OR:
+		case OpCode::Constants::OP_EQ:
+		case OpCode::Constants::OP_NEQ:
+		case OpCode::Constants::OP_GT:
+		case OpCode::Constants::OP_GTE:
+		case OpCode::Constants::OP_LT:
+		case OpCode::Constants::OP_LTE:
+		case OpCode::Constants::OP_AND:
+		case OpCode::Constants::OP_OR:
 		{
 			ExecuteComparisonInfix(opcode);
 			break;
@@ -192,7 +166,7 @@ void RogueVM::Run()
 			SetFrameIp(pos);
 			break;
 		}
-		case OpCode::Constants::OP_JUMP_IF_FALSE:
+		case OpCode::Constants::OP_JUMPIFZ:
 		{
 			auto pos = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
@@ -344,12 +318,13 @@ void RogueVM::Run()
 		}
 		case OpCode::Constants::OP_CLOSURE:
 		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
+			//auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			//IncrementFrameIp(2);
 			auto numFree = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 
-			auto fn = dynamic_cast<const FunctionCompiledObj*>(constants[idx]);
+			//auto fn = dynamic_cast<const FunctionCompiledObj*>(constants[idx]);
+			auto fn = dynamic_cast<const FunctionCompiledObj*>(Pop());
 			
 			std::vector<const IObject*> free;
 			free.reserve(numFree);
@@ -363,7 +338,7 @@ void RogueVM::Run()
 			Push(closure);
 			break;
 		}
-		case OpCode::Constants::OP_CURRENT_CLOSURE:
+		case OpCode::Constants::OP_CUR_CLOSURE:
 		{
 			auto closure = CurrentFrame().ClosureRef();
 			Push(closure);
@@ -376,7 +351,7 @@ void RogueVM::Run()
 			Pop();
 			break;
 		}
-		case OpCode::Constants::OP_RETURN_VALUE:
+		case OpCode::Constants::OP_RET_VAL:
 		{
 			auto result = Pop();
 			auto frame = PopFrame();
@@ -652,37 +627,37 @@ void RogueVM::ExecuteIntegerComparisonInfix(OpCode::Constants opcode, const Inte
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN:
+	case OpCode::Constants::OP_GT:
 	{
 		auto result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
+	case OpCode::Constants::OP_GTE:
 	{
 		auto result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN:
+	case OpCode::Constants::OP_LT:
 	{
 		auto result = left->Value < right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN_EQUAL:
+	case OpCode::Constants::OP_LTE:
 	{
 		auto result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -697,37 +672,37 @@ void RogueVM::ExecuteDecimalComparisonInfix(OpCode::Constants opcode, const Deci
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = std::abs(left->Value - right->Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = std::abs(left->Value - right->Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN:
+	case OpCode::Constants::OP_GT:
 	{
 		auto result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
+	case OpCode::Constants::OP_GTE:
 	{
 		auto result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN:
+	case OpCode::Constants::OP_LT:
 	{
 		auto result = left->Value < right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN_EQUAL:
+	case OpCode::Constants::OP_LTE:
 	{
 		auto result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -742,13 +717,13 @@ void RogueVM::ExecuteStringComparisonInfix(OpCode::Constants opcode, const Strin
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -763,12 +738,12 @@ void RogueVM::ExecuteNullComparisonInfix(OpCode::Constants opcode, const NullObj
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		Push(BooleanObj::TRUE_OBJ_REF);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		Push(BooleanObj::FALSE_OBJ_REF);
 		break;
@@ -782,25 +757,25 @@ void RogueVM::ExecuteBooleanComparisonInfix(OpCode::Constants opcode, const Bool
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_BOOL_AND:
+	case OpCode::Constants::OP_AND:
 	{
 		auto result = left->Value && right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_BOOL_OR:
+	case OpCode::Constants::OP_OR:
 	{
 		auto result = left->Value || right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -970,27 +945,27 @@ void RogueVM::ExecuteGetInstruction(int idx)
 	{
 		case ScopeType::SCOPE_GLOBAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto global = _globals[adjustedIdx];
 			Push(global);
 			break;
 		}
 		case ScopeType::SCOPE_LOCAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto local = CurrentFrame().BasePointer() + adjustedIdx;
 			Push(_stack[local]);
 			break;
 		}
 		case ScopeType::SCOPE_EXTERN:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			Push(_factory->New<BuiltInObj>(adjustedIdx));
 			break;
 		}
 		case ScopeType::SCOPE_FREE:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto free = CurrentFrame().Closure()->Frees[adjustedIdx];
 			Push(free);
 			break;
@@ -1005,7 +980,7 @@ void RogueVM::ExecuteSetInstruction(int idx)
 	{
 		case ScopeType::SCOPE_GLOBAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto global = Pop();
 			auto cloned = _factory->Clone(global);
 			_globals[adjustedIdx] = cloned;
@@ -1013,7 +988,7 @@ void RogueVM::ExecuteSetInstruction(int idx)
 		}
 		case ScopeType::SCOPE_LOCAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto local = Pop();
 			auto localIdx = CurrentFrame().BasePointer() + adjustedIdx;
 			auto cloned =  _factory->Clone(local);
@@ -1023,28 +998,5 @@ void RogueVM::ExecuteSetInstruction(int idx)
 	}
 }
 
-ScopeType RogueVM::GetTypeFromIdx(int idx)
-{
-	auto flags = idx & 0xC000;
-	if (flags == 0x0000)
-	{
-		return ScopeType::SCOPE_GLOBAL;
-	}
-	else if (flags == 0x8000)
-	{
-		return ScopeType::SCOPE_LOCAL;
-	}
-	else if (flags == 0x4000)
-	{
-		return ScopeType::SCOPE_EXTERN;
-	}
-	else if (flags == 0xC000)
-	{
-		return ScopeType::SCOPE_FREE;
-	}
-	else
-	{
-		throw std::runtime_error("Invalid index");
-	}
-}
+
 

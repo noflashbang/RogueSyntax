@@ -43,7 +43,7 @@ TEST_CASE("Test Location Information 1")
 
 	for (const auto& expectedLocation : expectedLocations)
 	{
-		Token nt = lexer.NextToken();
+		Token nt = lexer.NextToken(true);
 		CHECK(nt.Location == expectedLocation);
 	}
 }
@@ -59,7 +59,7 @@ TEST_CASE("Test Location Information 2")
 
 	for (const auto& expectedLocation : expectedLocations)
 	{
-		Token nt = lexer.NextToken();
+		Token nt = lexer.NextToken(true);
 		CHECK(nt.Location == expectedLocation);
 	}
 }
@@ -75,7 +75,7 @@ TEST_CASE("Test NextToken 1")
 
 	for (const auto& expected : expectedTokens)
 	{
-		Token nt = lexer.NextToken();
+		Token nt = lexer.NextToken(true);
 		CHECK(nt == expected);
 	}
 }
@@ -91,7 +91,22 @@ TEST_CASE("Test NextToken 2")
 
 	for (const auto& expected : expectedTokens)
 	{
-		Token nt = lexer.NextToken();
+		Token nt = lexer.NextToken(true);
+		CHECK(nt == expected);
+	}
+}
+
+TEST_CASE("Test NextToken With Comment")
+{
+	auto test = std::tuple<std::string, std::vector<Token>>{ "let x = 5; //test comment \n //extra comment \nlet y = 10; //another comment \n", { {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "5"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "y"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "10"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_EOF, ""} } };
+	auto [input, expectedTokens] = test;
+	Lexer lexer(input);
+
+	INFO(input);
+
+	for (const auto& expected : expectedTokens)
+	{
+		Token nt = lexer.NextToken(true);
 		CHECK(nt == expected);
 	}
 }
@@ -99,7 +114,7 @@ TEST_CASE("Test NextToken 2")
 TEST_CASE("Test NextToken 3")
 {
 
-	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar $ while break continue for 23d 2.3 \"some string\" [ ] : ~ <= >= += -= /= *= % %= || | && & ^",
+	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar $ while break continue for 23d 2.3 \"some string\" [ ] : ~ <= >= += -= /= *= % %= || | && & ^ //Some Comment",
 		{
 			{TokenType::TOKEN_LET, "let"},
 			{TokenType::TOKEN_RETURN, "return"},
@@ -152,6 +167,7 @@ TEST_CASE("Test NextToken 3")
 			{TokenType::TOKEN_AND, "&&"},
 			{TokenType::TOKEN_BITWISE_AND, "&"},
 			{TokenType::TOKEN_BITWISE_XOR, "^"},
+			{TokenType::TOKEN_COMMENT, "//Some Comment"},
 			{TokenType::TOKEN_EOF, ""}
 		} };
 
@@ -162,7 +178,7 @@ TEST_CASE("Test NextToken 3")
 
 	for (const auto& expected : expectedTokens)
 	{
-		Token nt = lexer.NextToken();
+		Token nt = lexer.NextToken(false);
 		CHECK(nt == expected);
 	}
 }

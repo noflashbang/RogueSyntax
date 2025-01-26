@@ -22,7 +22,7 @@ ObjectCode Compiler::Compile(const std::shared_ptr<Program>&program, const std::
 	}
 
 	Compile(program.get());
-	return ObjectCode{ _CompilationUnits.top().UnitInstructions, _constants, _symbolTable.GetSymbols()};
+	return ObjectCode{ _CompilationUnits.top().UnitInstructions, _symbolTable.GetSymbols()};
 }
 
 CompilerError Compiler::Compile(INode* node)
@@ -83,7 +83,7 @@ int Compiler::EmitGet(Symbol symbol)
 {
 	if (symbol.Type == ScopeType::SCOPE_FUNCTION)
 	{
-		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
+		return Emit(OpCode::Constants::OP_CUR_CLOSURE, {});
 	}
 	else
 	{
@@ -95,7 +95,7 @@ int Compiler::EmitSet(Symbol symbol)
 {
 	if (symbol.Type == ScopeType::SCOPE_FUNCTION)
 	{
-		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
+		return Emit(OpCode::Constants::OP_CUR_CLOSURE, {});
 	}
 	else
 	{
@@ -149,7 +149,7 @@ void Compiler::NodeCompile(const ReturnStatement* ret)
 	{
 		return;
 	}
-	Emit(OpCode::Constants::OP_RETURN_VALUE, {});
+	Emit(OpCode::Constants::OP_RET_VAL, {});
 }
 
 void Compiler::NodeCompile(const LetStatement* let)
@@ -215,7 +215,7 @@ void Compiler::NodeCompile(const IntegerLiteral* integer)
 	//Emit(OpCode::Constants::OP_CONSTANT, { index });
 	int intVal = integer->Value;
 	uint32_t val = reinterpret_cast<uint32_t&>(intVal);
-	Emit(OpCode::Constants::OP_CONST_INT, { val });
+	Emit(OpCode::Constants::OP_LINT, { val });
 }
 
 void Compiler::NodeCompile(const BooleanLiteral* boolean)
@@ -235,7 +235,7 @@ void Compiler::NodeCompile(const StringLiteral* string)
 	{
 		data.push_back(c);
 	}
-	Emit(OpCode::Constants::OP_CONST_STRING, { len }, data);
+	Emit(OpCode::Constants::OP_LSTRING, { len }, data);
 }
 
 void Compiler::NodeCompile(const DecimalLiteral* decimal)
@@ -246,7 +246,7 @@ void Compiler::NodeCompile(const DecimalLiteral* decimal)
 
 	float decVal = decimal->Value;
 	uint32_t val = reinterpret_cast<uint32_t&>(decVal);
-	Emit(OpCode::Constants::OP_CONST_DECIMAL, { val });
+	Emit(OpCode::Constants::OP_LDECIMAL, { val });
 }
 
 void Compiler::NodeCompile(const PrefixExpression* prefix)
@@ -331,35 +331,35 @@ void Compiler::NodeCompile(const InfixExpression* infix)
 	}
 	else if (infix->Operator == "==")
 	{
-		Emit(OpCode::Constants::OP_EQUAL, {});
+		Emit(OpCode::Constants::OP_EQ, {});
 	}
 	else if (infix->Operator == "!=")
 	{
-		Emit(OpCode::Constants::OP_NOT_EQUAL, {});
+		Emit(OpCode::Constants::OP_NEQ, {});
 	}
 	else if (infix->Operator == ">")
 	{
-		Emit(OpCode::Constants::OP_GREATER_THAN, {});
+		Emit(OpCode::Constants::OP_GT, {});
 	}
 	else if (infix->Operator == ">=")
 	{
-		Emit(OpCode::Constants::OP_GREATER_THAN_EQUAL, {});
+		Emit(OpCode::Constants::OP_GTE, {});
 	}
 	else if (infix->Operator == "<")
 	{
-		Emit(OpCode::Constants::OP_LESS_THAN, {});
+		Emit(OpCode::Constants::OP_LT, {});
 	}
 	else if (infix->Operator == "<=")
 	{
-		Emit(OpCode::Constants::OP_LESS_THAN_EQUAL, {});
+		Emit(OpCode::Constants::OP_LTE, {});
 	}
 	else if (infix->Operator == "&&")
 	{
-		Emit(OpCode::Constants::OP_BOOL_AND, {});
+		Emit(OpCode::Constants::OP_AND, {});
 	}
 	else if (infix->Operator == "||")
 	{
-		Emit(OpCode::Constants::OP_BOOL_OR, {});
+		Emit(OpCode::Constants::OP_OR, {});
 	}
 	else
 	{
@@ -375,7 +375,7 @@ void Compiler::NodeCompile(const IfStatement* ifExpr)
 		return;
 	}
 
-	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	//
 	ifExpr->Consequence->Compile(this);
 	if (HasErrors())
@@ -442,16 +442,18 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	if (unit.LastInstructionIs(OpCode::Constants::OP_POP))
 	{
 		unit.RemoveLastPop();
-		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}));
+		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RET_VAL, {}));
 	}
 
-	if (!unit.LastInstructionIs(OpCode::Constants::OP_RETURN_VALUE))
+	if (!unit.LastInstructionIs(OpCode::Constants::OP_RET_VAL))
 	{
 		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN, {}));
 	}
-	auto obj = _factory->New<FunctionCompiledObj>(unit.UnitInstructions, _symbolTable.NumberOfSymbolsInContext(stackContext), static_cast<int>(function->Parameters.size()));
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<uint32_t>(frees.size())});
+	//auto obj = _factory->New<FunctionCompiledObj>(unit.UnitInstructions, _symbolTable.NumberOfSymbolsInContext(stackContext), static_cast<int>(function->Parameters.size()));
+	//auto index = AddConstant(obj);
+
+	Emit(OpCode::Constants::OP_LFUN, { static_cast<uint32_t>(_symbolTable.NumberOfSymbolsInContext(stackContext)), static_cast<uint32_t>(function->Parameters.size()), static_cast<uint32_t>(unit.UnitInstructions.size()) }, unit.UnitInstructions);
+	Emit(OpCode::Constants::OP_CLOSURE, { static_cast<uint32_t>(frees.size())});
 }
 
 void Compiler::NodeCompile(const CallExpression* call)
@@ -534,7 +536,7 @@ void Compiler::NodeCompile(const WhileStatement* whileExp)
 		return;
 	}
 
-	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	//
 	whileExp->Action->Compile(this);
 	if (HasErrors())
@@ -578,7 +580,7 @@ void Compiler::NodeCompile(const ForStatement* forExp)
 		return;
 	}
 
-	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	forExp->Action->Compile(this);
 	if (HasErrors())
 	{

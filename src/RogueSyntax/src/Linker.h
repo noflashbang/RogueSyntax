@@ -17,7 +17,6 @@ public:
 	ByteCode Link(const std::vector<ObjectCode>& objectCodes);
 
 private:
-	void LinkConstants(ByteCode& code, const ObjectCode& objectCode);
 	void LinkInstructions(ByteCode& code, const ObjectCode& objectCode);
 
 	std::unordered_map<std::string, uint32_t> _symbolOffsets;

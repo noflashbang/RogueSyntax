@@ -56,6 +56,33 @@ public:
 	void PushFrame(Frame frame);
 	Frame PopFrame();
 
+	template<std::integral T>
+	T ReadOperand(uint8_t width)
+	{
+		T operand = 0;
+		int currentOffset = CurrentFrame().Ip();
+		const auto& instructions = CurrentFrame().Instructions();
+		//use switch case to handle different operand widths - fallthrough is intentional
+		switch (width)
+		{
+		case 4:
+			operand = instructions[currentOffset] << 24;
+			currentOffset++;
+		case 3:
+			operand |= instructions[currentOffset] << 16;
+			currentOffset++;
+		case 2:
+			operand |= instructions[currentOffset] << 8;
+			currentOffset++;
+		case 1:
+			operand |= instructions[currentOffset];
+			currentOffset++;
+		}
+		IncrementFrameIp(width);
+		return operand;
+	}
+
+
 protected:
 	void ExecuteArithmeticInfix(OpCode::Constants opcode);
 	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right);
@@ -81,7 +108,6 @@ protected:
 
 	void ExecuteGetInstruction(int idx);
 	void ExecuteSetInstruction(int idx);
-	ScopeType GetTypeFromIdx(int idx);
 
 private:
 	int _frameIndex = 0;

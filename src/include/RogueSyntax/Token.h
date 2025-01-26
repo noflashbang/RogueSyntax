@@ -125,6 +125,9 @@ struct TokenType
 	static const TokenType TOKEN_CONTINUE;
 	static const TokenType TOKEN_FOR;
 
+	// Comments
+	static const TokenType TOKEN_COMMENT;
+
 	static TokenType LookupIdent(const std::string& ident)
 	{
 		auto it = KEYWORD_TOKEN_MAP.find(ident);
