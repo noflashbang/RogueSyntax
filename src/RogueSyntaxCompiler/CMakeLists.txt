@@ -33,6 +33,8 @@ set(CLAY_INCLUDE_SDL3_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
+set(FONT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/resources/anonymous_pro_bold.ttf")
+
 set( externHeaders 
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
     ${PARENT_DIR}/include/RogueSyntax/Lexer.h
@@ -76,6 +78,7 @@ target_sources( RogueSyntaxCompiler PRIVATE
  install(TARGETS RogueSyntaxCompiler
         RUNTIME           
           COMPONENT Runtime
-          DESTINATION test
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCompiler
 )
-install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxCompiler> DESTINATION test)
+install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxCompiler> DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCompiler)
+install(FILES ${FONT_FILE} DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCompiler/resources)

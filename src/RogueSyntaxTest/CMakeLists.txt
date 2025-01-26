@@ -63,6 +63,6 @@ target_sources( RogueSyntaxTest PRIVATE
  install(TARGETS RogueSyntaxTest
         RUNTIME           
           COMPONENT Runtime
-          DESTINATION test
+          DESTINATION RogueSyntaxTest
 )
-install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxTest> DESTINATION test)
+install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxTest> DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxTest)
