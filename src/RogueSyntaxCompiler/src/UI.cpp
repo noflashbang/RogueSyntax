@@ -7,14 +7,16 @@ UI::UI(Palette colors, uint32_t fontId, uint32_t fontsize)
 	_menu.push_back(std::make_pair(MenuId{ "ID_VIEW_MAIN", "View" }, std::vector<MenuId>{{"ID_ZOOMIN", "Zoom In"}, { "ID_ZOOMOUT","Zoom Out" }, { "ID_FULLSCREEN","Full Screen" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_HELP_MAIN", "Help" }, std::vector<MenuId>{{"ID_ABOUT", "About"}, { "ID_HELP","Help" }}));
 
-	_details = "Details";
-	_output = "Output";
-	_editor = "Editor";
-	_info = "Info";
+	_details = "";
+	_output = ":>";
+	_editor = "let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ";
+	_info = "";
 
 	_colors = colors;
 	_fontSize = fontsize;
 	_fontId = fontId;
+
+	_formFocus = "Editor";
 }
 
 UI::~UI()
@@ -29,7 +31,79 @@ void UI::DoLayout()
 	}
 	SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
+	//handle cursor blink
+	_blinkAccumulatedTime += GetFrameTime();
+	if (_blinkAccumulatedTime > 0.5)
+	{
+		_blinkAccumulatedTime = 0.0;
+		_cursorBlink = !_cursorBlink;
+	}
+	if (_formFocus == "Editor")
+	{
+		if (_cursorBlink)
+		{
+			_output = ":>";
+		}
+		else
+		{
+			_output = ":>_";
+		}
+	}
+	else
+	{
+		_output = ":>";
+	}
 	CreateRoot();
+}
+
+LineEnumerator UI::EnumerateLines(const std::string& text)
+{
+	std::string current_line;
+	for (const auto& [index, line] : enumerate_lines(text))
+	{
+		co_yield std::make_pair(index, line);
+	}
+}
+
+CharEnumerator UI::EnumerateChars(size_t line_number, const std::string_view& line)
+{
+	for (const auto& [index, character] : enumerate_chars(line))
+	{
+		co_yield std::make_tuple(line_number, index, character);
+	}
+}
+
+void UI::CreateLine(size_t line_number, const std::string_view& line)
+{
+	CLAY(
+		CLAY_IDI_LOCAL("LINE", line_number),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(16)} }),
+		CLAY_RECTANGLE({ .color = _colors.background })
+	)
+	{
+		auto char_enumerator = EnumerateChars(line_number, line);
+		do
+		{
+			auto [line_number, index, character] = char_enumerator.current_value();
+			if (character != nullptr && *character != '\0')
+			{
+				CreateChar(line_number, index, character);
+			}
+		} while (char_enumerator.move_next());
+	}
+}
+
+void UI::CreateChar(size_t line_number, size_t index, const char* character)
+{
+	auto strContent = Clay_String{ .length = 1, .chars = character };
+	CLAY(
+		CLAY_IDI_LOCAL("COL", index),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(8), .height = CLAY_SIZING_FIXED(16)} }),
+		CLAY_RECTANGLE({ .color = _colors.background })
+	)
+	{
+		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _colors.text, .fontId = _fontId, .fontSize = _fontSize }));
+	}
 }
 
 void UI::CreateRoot()
@@ -266,40 +340,55 @@ void UI::CreateIDEFormSpliter()
 
 void UI::CreateEditor()
 {
-	auto strContent = Clay_StringFromStdString(_editor);
 	CLAY(
 		CLAY_ID("Editor"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_editorHeight)} }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_editorHeight)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _colors.accentText })
 	)
 	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _colors.text, .fontId = _fontId, .fontSize = _fontSize}));
+		auto line_enumerator = EnumerateLines(_editor);
+		do
+		{
+			auto [line_number, line] = line_enumerator.current_value();
+			CreateLine(line_number, line);
+
+		} while (line_enumerator.move_next());
 	}
 }
 
 void UI::CreateOutput()
 {
-	auto strContent = Clay_StringFromStdString(_output);
 	CLAY(
 		CLAY_ID("Output"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)} }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _colors.background })
 	)
 	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _colors.text, .fontId = _fontId, .fontSize = _fontSize }));
+		auto line_enumerator = EnumerateLines(_output);
+		do
+		{
+			auto [line_number, line] = line_enumerator.current_value();
+			CreateLine(line_number, line);
+
+		} while (line_enumerator.move_next());
 	}
 }
 
 void UI::CreateInfo()
 {
-	auto strContent = Clay_StringFromStdString(_info);
 	CLAY(
 		CLAY_ID("InfoWindow"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(200), .height = CLAY_SIZING_GROW(0)} }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(200), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _colors.background })
 	)
 	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _colors.text, .fontId = _fontId, .fontSize = _fontSize }));
+		auto line_enumerator = EnumerateLines(_info);
+		do
+		{
+			auto [line_number, line] = line_enumerator.current_value();
+			CreateLine(line_number, line);
+
+		} while (line_enumerator.move_next());
 	}
 }
 

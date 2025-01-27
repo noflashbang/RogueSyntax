@@ -105,12 +105,22 @@ void Clay_RayLib_Render::Clay_Raylib_Render(Clay_RenderCommandArray renderComman
             case CLAY_RENDER_COMMAND_TYPE_TEXT: {
                 // Raylib uses standard C strings so isn't compatible with cheap slices, we need to clone the string to append null terminator
                 Clay_String text = renderCommand->text;
-                char *cloned = (char *)malloc(text.length + 1);
-                memcpy(cloned, text.chars, text.length);
-                cloned[text.length] = '\0';
-                Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
-                DrawTextEx(fontToUse, cloned, {boundingBox.x, boundingBox.y}, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));
-                free(cloned);
+                if (text.length == 1)
+                {
+					char singleChar[2] = { text.chars[0], '\0' };
+                    Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
+                    DrawTextEx(fontToUse, singleChar, { boundingBox.x, boundingBox.y }, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));
+                }
+                else
+                {
+                    char* cloned = (char*)malloc(text.length + 1);
+                    memcpy(cloned, text.chars, text.length);
+                    cloned[text.length] = '\0';
+                    Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
+                    DrawTextEx(fontToUse, cloned, { boundingBox.x, boundingBox.y }, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));
+                    free(cloned);
+                }
+                
                 break;
             }
             case CLAY_RENDER_COMMAND_TYPE_IMAGE: {

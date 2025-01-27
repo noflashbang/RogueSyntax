@@ -22,11 +22,27 @@ Clay_RenderCommandArray CreateLayout(UI& ui) {
 
 bool debugEnabled = false;
 
+double accumulatedTime = 0.0;
+bool cursorBlink = false;
+
 void UpdateDrawFrame(UI& ui)
 {
     Vector2 mouseWheelDelta = GetMouseWheelMoveV();
     float mouseWheelX = mouseWheelDelta.x;
     float mouseWheelY = mouseWheelDelta.y;
+
+	accumulatedTime += GetFrameTime();
+
+	
+    if (accumulatedTime > 0.5)
+    {
+		accumulatedTime = 0.0;
+		cursorBlink = !cursorBlink;
+    }
+
+	auto cursor = cursorBlink ? ":>_" : ":>";
+
+    ui.SetOutput(cursor);
 
     if (IsKeyPressed(KEY_D)) {
         debugEnabled = !debugEnabled;
@@ -60,7 +76,8 @@ bool reinitializeClay = false;
 
 int main(int argc, char *argv[])
 {
-    uint64_t totalMemorySize = Clay_MinMemorySize();
+    Clay_SetMaxElementCount(8192 * 4);
+    uint64_t totalMemorySize = Clay_MinMemorySize() * 2;
     Clay_Arena clayMemory = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
     Clay_Initialize(clayMemory, { (float)GetScreenWidth(), (float)GetScreenHeight() }, { HandleClayErrors });
     Clay_SetMeasureTextFunction(Clay_RayLib_Render::Raylib_MeasureText, 0);
@@ -90,6 +107,8 @@ int main(int argc, char *argv[])
     };
 
 	UI ui(DEFAULT_PALETTE, FONT_ID_BODY_16, 16);
+    
+    
 
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
