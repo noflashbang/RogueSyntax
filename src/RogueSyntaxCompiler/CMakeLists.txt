@@ -34,6 +34,13 @@ set(CLAY_INCLUDE_SDL3_EXAMPLES OFF CACHE BOOL "" FORCE)
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set(FONT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/resources/anonymous_pro_bold.ttf")
+set(EXAMPLE_FILE 
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/example/bubble.mk"
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/example/factorial.mk"
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/example/fibonacci.mk"
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/example/heap.mk"
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/example/isPrime.mk"
+)
 
 set( externHeaders 
     ${PARENT_DIR}/include/RogueSyntax/RogueSyntaxCore.h
@@ -50,12 +57,16 @@ set( externHeaders
 
 set( compilerHeaders 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.h
  )
 
 set( compilerSource 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.cpp
 )
@@ -82,3 +93,4 @@ target_sources( RogueSyntaxCompiler PRIVATE
 )
 install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxCompiler> DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCompiler)
 install(FILES ${FONT_FILE} DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCompiler/resources)
+install(FILES ${EXAMPLE_FILE} DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCompiler/example)
