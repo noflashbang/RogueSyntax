@@ -146,6 +146,7 @@ void UI::CreateMenuButton(const MenuId& name, const std::vector<MenuId>& items)
 			if (IsMouseButtonDown(0))
 			{
 				_menuIdActive = name.id;
+				_formFocus = "";
 			}
 		}
 		
