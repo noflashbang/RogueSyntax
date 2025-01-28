@@ -29,3 +29,44 @@ constexpr Clay_String Clay_StringFromStdString(const std::string& str)
 {
 	return { .length = (int32_t)str.length(), .chars = str.c_str() };
 };
+
+template <typename T>
+class IntervalTimer
+{
+public:
+	IntervalTimer(T interval) : _interval(interval) {}
+	bool Update(T dt)
+	{
+		_time += dt;
+		if (_time >= _interval)
+		{
+			_time = 0;
+			return true;
+		}
+		return false;
+	}
+
+private:
+	T _time = 0;
+	T _interval;
+};
+
+class Blinker
+{
+public:
+	Blinker(double interval) : _timer(interval) {};
+	void Update(double dt)
+	{
+		if (_timer.Update(dt))
+		{
+			State = !State;
+		}
+	}
+
+	bool State = false;
+
+	operator bool() const { return State; }
+
+private:
+	IntervalTimer<double> _timer;
+};

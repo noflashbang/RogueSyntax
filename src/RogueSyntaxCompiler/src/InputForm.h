@@ -3,6 +3,7 @@
 #include "clayex.h"
 #include "InputCmd.h"
 #include "UIConfig.h"
+#include <raylib.h> //timer
 #include <string>
 #include <ranges>
 #include <vector>
@@ -29,6 +30,9 @@ protected:
 	void CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
 private:
+
+	//cursor blinker
+	Blinker _cursorBlinker = Blinker(0.5);
 
 	//ui font and colors, sizes
 	UIConfig _config;

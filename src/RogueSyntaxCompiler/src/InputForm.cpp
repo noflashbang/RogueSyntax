@@ -15,9 +15,8 @@ std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor
 	return lines;
 }
 
-InputForm::InputForm(const std::string& name, UIConfig config)
+InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
 {
-	_config = config;
 	_name = name;
 
 	for (size_t i = 0; i < 99; i++)
@@ -267,7 +266,14 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 
 void InputForm::Layout(bool hasFocus)
 {
+	_cursorBlinker.Update(GetFrameTime());
 
+	size_t line_number = 0;
+	for (auto& line : _inputFormLines)
+	{
+		CreateLine(hasFocus, line_number, line, true);
+		line_number++;
+	}
 }
 
 void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_view line, bool lineNumbers)
@@ -368,7 +374,7 @@ void InputForm::CreateChar(bool hasFocus, size_t line_number, size_t index, cons
 				if (_cursorColumn == index)
 				{
 					hasCursor = true;
-					if (_cursorBlink)
+					if (_cursorBlinker)
 					{
 						CLAY(
 							CLAY_ID("CURSOR"),

@@ -24,13 +24,34 @@ struct UIConfig
 		config.colors.foreground = Clay_ColorFromInt(0x3e4452);
 		config.colors.highlight =  Clay_ColorFromInt(0x3e4452);
 		config.fontId = FONT_ID_BODY_24;
-		config.fontSize = 32;
+		config.fontSize = 24;
 
 		uint16_t half = config.fontSize / 2;
 		config.padding = { config.fontSize, config.fontSize, half, half };
 
 		return config;
 	}
+
+	UIConfig& operator=(const UIConfig& other)
+	{
+		colors = other.colors;
+		fontId = other.fontId;
+		fontSize = other.fontSize;
+		padding = other.padding;
+		return *this;
+	}
+
+	UIConfig(const UIConfig& other)
+	{
+		colors = other.colors;
+		fontId = other.fontId;
+		fontSize = other.fontSize;
+		padding = other.padding;
+	}
+
+	~UIConfig() = default;
+
 private:
+	//private so that the factory method is the only way to create a UIConfig (other than copy/assign)
 	UIConfig() = default;
 };

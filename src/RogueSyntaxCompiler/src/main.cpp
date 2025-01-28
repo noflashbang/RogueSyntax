@@ -95,10 +95,9 @@ int main(int argc, char *argv[])
     .highlight = Clay_ColorFromInt(0xffd60a)
     };
 
-	UI ui(DEFAULT_PALETTE, FONT_ID_BODY_24, 24);
+	auto config = UIConfig::MakeDefault();
+	UI ui(config);
     
-    
-
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         if (reinitializeClay) {
