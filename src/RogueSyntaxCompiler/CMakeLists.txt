@@ -60,6 +60,8 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/InputCmd.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.h
  )
 
@@ -67,6 +69,7 @@ set( compilerSource
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.cpp
 )

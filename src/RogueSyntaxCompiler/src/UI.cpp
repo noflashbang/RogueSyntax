@@ -1,38 +1,21 @@
 #include "UI.h"
 
-std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor)
-{
-	std::vector<std::string> lines;
-	size_t start = 0;
-	size_t end = text.find(splitor);
-	while (end != std::string::npos)
-	{
-		lines.push_back(text.substr(start, end - start));
-		start = end + 1;
-		end = text.find(splitor, start);
-	}
-	lines.push_back(text.substr(start, end - start));
-	return lines;
-}
 
-UI::UI(Palette colors, uint32_t fontId, uint32_t fontsize)
+
+UI::UI(Palette colors, uint32_t fontId, uint32_t fontsize) : _editorForm("Editor")
 {
 	_menu.push_back(std::make_pair(MenuId{ "ID_FILE_MAIN", "File" }, std::vector<MenuId>{{"ID_NEW", "New"}, { "ID_OPEN","Open" }, { "ID_SAVE","Save" }, { "ID_SAVEAS","Save As" }, { "ID_EXIT","Exit" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_EDIT_MAIN", "Edit" }, std::vector<MenuId>{{"ID_UNDO", "Undo"}, { "ID_REDO","Redo" }, { "ID_CUT","Cut" }, { "ID_COPY","Copy" }, { "ID_PASTE","Paste" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_VIEW_MAIN", "View" }, std::vector<MenuId>{{"ID_ZOOMIN", "Zoom In"}, { "ID_ZOOMOUT","Zoom Out" }, { "ID_FULLSCREEN","Full Screen" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_HELP_MAIN", "Help" }, std::vector<MenuId>{{"ID_ABOUT", "About"}, { "ID_HELP","Help" }}));
 
-	_clipBoardText = "";
 	_details = "";
 	_output = ":>";
 	_editor = "let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ";
 	_info = "";
 
 	
-	for (size_t i = 0; i < 99; i++)
-	{
-		_lineNumbers.push_back(std::format("{:0>2}", i));
-	}
+	
 
 	_colors = colors;
 	_fontSize = fontsize;
@@ -42,11 +25,6 @@ UI::UI(Palette colors, uint32_t fontId, uint32_t fontsize)
 	_padding = { _fontSize, _fontSize, half, half };
 
 	_formFocus = "Editor";
-
-	//update the string views
-	_editorLines = GetLinesBySplitor(_editor, '\n');
-	_outputLines = GetLinesBySplitor(_output, '\n');
-	_infoLines = GetLinesBySplitor(_info, '\n');
 }
 
 UI::~UI()
@@ -55,23 +33,38 @@ UI::~UI()
 
 void UI::DoLayout()
 {
+	//_hoverColumn = 0;
+	//_hoverLine = 0;
+
 	CreateInputCommands();
-	ProcessInputCommands();
 
-	if (_highlighting)
+	if (_formFocus == "Editor")
 	{
-		auto startLine = std::min(_cursorLine, _highlightLine);
-		auto endLine = std::max(_cursorLine, _highlightLine);
-
-		auto startColumn = std::min(_cursorColumn, _highlightColumn);
-		auto endColumn = std::max(_cursorColumn, _highlightColumn);
-
-		_details = std::format("Ln:{} Col: {} - Ln:{} Col: {}", startLine, startColumn, endLine, endColumn);
+		_editorForm.ProcessInputCommands(_inputCmds);
 	}
-	else
+	else if (_formFocus == "Output")
 	{
-		_details = std::format("Ln:{:0>2} Col: {:0>2}", _cursorLine, _cursorColumn);
+		
 	}
+	else if (_formFocus == "Info")
+	{
+		
+	}
+
+	//if (_highlighting)
+	//{
+	//	auto startLine = std::min(_cursorLine, _highlightLine);
+	//	auto endLine = std::max(_cursorLine, _highlightLine);
+	//
+	//	auto startColumn = std::min(_cursorColumn, _highlightColumn);
+	//	auto endColumn = std::max(_cursorColumn, _highlightColumn);
+	//
+	//	_details = std::format("Ln:{:0>2} Col: {:0>2} - Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", startLine, startColumn, endLine, endColumn, _hoverLine, _hoverColumn);
+	//}
+	//else
+	//{
+	//	_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", _cursorLine, _cursorColumn, _hoverLine, _hoverColumn);
+	//}
 
 	if (IsMouseButtonDown(0))
 	{
@@ -90,132 +83,7 @@ void UI::DoLayout()
 	CreateRoot();
 }
 
-void UI::CreateLine(const std::string& context, size_t line_number, const std::string_view line, bool lineNumbers)
-{
-	CLAY(
-		CLAY_IDI_LOCAL("LINE", line_number),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-		CLAY_RECTANGLE({ .color = _colors.background })
-	)
-	{
-		if (lineNumbers)
-		{
-			CLAY(
-				CLAY_IDI_LOCAL("LINENUM", line_number),
-				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_fontSize*2)), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-				CLAY_RECTANGLE({ .color = _colors.background })
-			)
-			{
-				if (_lineNumbers.size() > line_number)
-				{
-					auto strContent = Clay_StringFromStdString(_lineNumbers.at(line_number));
-					CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _colors.text, .fontId = _fontId, .fontSize = _fontSize }));
-				}
-			}
-		}
-		for (auto index = 0; index < line.length(); index++)
-		{
-			char* character = (char*)line.data() + index;
-			if (character != nullptr && *character != '\0')
-			{
-				CreateChar(context, line_number, index, character);
-			}
-		}
-		//draw a cursor at the end of the line
-		if (_cursorLine == line_number)
-		{
-			if (_cursorColumn == line.length())
-			{
-				CreateChar(context, line_number, line.length(), &_cursorPlaceholder);
-			}
-		}
-	}
-}
 
-void UI::CreateChar(const std::string& context, size_t line_number, size_t index, const char* character)
-{
-	auto strContent = Clay_String{ .length = 1, .chars = character };
-	Clay_Color textColor = _colors.text;
-	Clay_Color backgroundColor = _colors.background;
-
-	if (_highlighting)
-	{
-		auto startLine = std::min(_cursorLine, _highlightLine);
-		auto endLine = std::max(_cursorLine, _highlightLine);
-
-		auto startColumn = std::min(_cursorColumn, _highlightColumn);
-		auto endColumn = std::max(_cursorColumn, _highlightColumn);
-
-		if (startLine <= line_number && line_number <= endLine) 
-		{
-			if (startLine == endLine)
-			{
-				if (startColumn <= index && index < endColumn)
-				{
-					backgroundColor = _colors.foreground;
-					textColor = _colors.accentText;
-				}
-			}
-			else if (startLine == line_number && index >= startColumn)
-			{
-				backgroundColor = _colors.foreground;
-				textColor = _colors.accentText;
-			}
-			else if (endLine == line_number && index < endColumn)
-			{
-				backgroundColor = _colors.foreground;
-				textColor = _colors.accentText;
-			}
-			else if (startLine < line_number && line_number < endLine)
-			{
-				backgroundColor = _colors.foreground;
-				textColor = _colors.accentText;
-			}
-		}
-	}
-
-	CLAY(
-		CLAY_IDI_LOCAL("COL", index),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_fontSize / 2)), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-		CLAY_RECTANGLE({ .color = backgroundColor })
-	)
-	{
-		bool hasCursor = false;
-		if (_formFocus == context)
-		{
-			if (_cursorLine == line_number)
-			{
-				if (_cursorColumn == index)
-				{
-					hasCursor = true;
-					if (_cursorBlink)
-					{
-						CLAY(
-							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-							CLAY_FLOATING({ .attachment = { .element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-							CLAY_RECTANGLE({ .color = _colors.highlight })
-						)
-						{
-						}
-					}
-					else
-					{
-						CLAY(
-							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-							CLAY_RECTANGLE({  })
-						)
-						{
-						}
-					}
-				}
-			}
-		}
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _fontId, .fontSize = _fontSize }));
-	}
-}
 
 void UI::CreateRoot()
 {
@@ -457,6 +325,11 @@ void UI::CreateEditor()
 		CLAY_RECTANGLE({ .color = _colors.background })
 	)
 	{
+		if (Clay_Hovered() && IsMouseButtonDown(0))
+		{
+			_formFocus = "Editor";
+		}
+
 		auto line_number = 0;
 		for (auto& line : _editorLines)
 		{
@@ -474,6 +347,11 @@ void UI::CreateOutput()
 		CLAY_RECTANGLE({ .color = _colors.background })
 	)
 	{
+		if (Clay_Hovered() && IsMouseButtonDown(0))
+		{
+			_formFocus = "Output";
+		}
+
 		auto line_number = 0;
 		for (auto& line : _outputLines)
 		{
@@ -491,6 +369,11 @@ void UI::CreateInfo()
 		CLAY_RECTANGLE({ .color = _colors.background })
 	)
 	{
+		if (Clay_Hovered() && IsMouseButtonDown(0))
+		{
+			_formFocus = "Info";
+		}
+
 		auto line_number = 0;
 		for (auto& line : _infoLines)
 		{
@@ -576,6 +459,26 @@ void UI::CreateInputCommands()
 	if (IsKeyPressed(KEY_DELETE))
 	{
 		_inputCmds.push_back(InputCmd{ INPUT_DELETE, FLAG_DELETE_FWD });
+	}
+	
+	if (IsMouseButtonDown(0))
+	{
+		_mouseBtnOneDownTime += GetFrameTime();
+	}
+	if (IsMouseButtonReleased(0))
+	{
+		_mouseBtnOneDownTime = 0;
+	}
+	if (IsMouseButtonPressed(0) || IsMouseButtonDown(0))
+	{
+		if (_mouseBtnOneDownTime > 0.05)
+		{
+			_inputCmds.push_back(InputCmd{ INPUT_CURSOR_DRAG, FLAG_DRAG });
+		}
+		else
+		{
+			_inputCmds.push_back(InputCmd{ INPUT_CURSOR_MOVE, shiftDown ? FLAG_HIGHLIGHT : FLAG_NORMAL });
+		}
 	}
 
 	//handle text input
@@ -908,297 +811,45 @@ void UI::CreateInputCommands()
 		}
 		key = GetKeyPressed();
 	}
-}
-void UI::ProcessInputCommands()
-{
-	for (auto& cmd : _inputCmds)
-	{
-		switch (cmd.type)
-		{
-			case INPUT_CURSOR_LEFT:
-			{
-				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-				if (_cursorColumn > 0)
-				{
-					_cursorColumn--;
-				}
-				break;
-			}
-			case INPUT_CURSOR_RIGHT:
-			{
-				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-				if (_cursorColumn < _editorLines.at(_cursorLine).length())
-				{
-					_cursorColumn++;
-				}
-				break;
-			}
-			case INPUT_CURSOR_UP:
-			{
-				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-				if (_cursorLine > 0)
-				{
-					_cursorLine--;
-				}
-				break;
-			}
-			case INPUT_CURSOR_DOWN:
-			{
-				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-				if (_cursorLine < _editorLines.size() - 1)
-				{
-					_cursorLine++;
-				}
-				break;
-			}
-			case INPUT_INSERT:
-			{
-				if (_highlighting)
-				{
-					DeleteHighlightedText();
-					_highlighting = false;
-				}
-				char character = (char)cmd.flags;
-				_editorLines.at(_cursorLine).insert(_cursorColumn, 1, character);
-				_cursorColumn++;
-				break;
-			}
 
-			case INPUT_DELETE:
+	if (IsKeyPressedRepeat(KEY_BACKSPACE))
+	{
+		_inputCmds.push_back(InputCmd{ INPUT_DELETE, FLAG_DELETE_BWD });
+	}
+	if (IsKeyPressedRepeat(KEY_DELETE))
+	{
+		_inputCmds.push_back(InputCmd{ INPUT_DELETE, FLAG_DELETE_FWD });
+	}
+	if (IsKeyPressedRepeat(KEY_ENTER) || IsKeyPressedRepeat(KEY_KP_ENTER))
+	{
+		_inputCmds.push_back(InputCmd{ INPUT_NEWLINE, FLAG_NORMAL });
+	}
+	if (IsKeyPressedRepeat(KEY_SPACE))
+	{
+		_inputCmds.push_back(InputCmd{ INPUT_INSERT, (uint32_t)' ' });
+	}
+
+	const std::vector<uint32_t> keyList{ KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J, KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z, KEY_APOSTROPHE, KEY_COMMA, KEY_MINUS, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_EQUAL, KEY_LEFT_BRACKET, KEY_BACKSLASH, KEY_RIGHT_BRACKET, KEY_GRAVE, KEY_SPACE, KEY_TAB, KEY_ZERO, KEY_ONE, KEY_TWO, KEY_THREE, KEY_FOUR, KEY_FIVE, KEY_SIX, KEY_SEVEN, KEY_EIGHT, KEY_NINE, KEY_KP_0, KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4, KEY_KP_5, KEY_KP_6, KEY_KP_7, KEY_KP_8, KEY_KP_9, KEY_KP_DECIMAL, KEY_KP_DIVIDE, KEY_KP_MULTIPLY, KEY_KP_SUBTRACT, KEY_KP_ADD, KEY_KP_EQUAL };
+	for (auto& key : keyList)
+	{
+		if (IsKeyPressedRepeat(key))
+		{
+			if (('A' <= key && key <= 'Z'))
 			{
-				if (_highlighting)
+				if (shiftDown || isCapsLock)
 				{
-					DeleteHighlightedText();
-					_highlighting = false;
+					_inputCmds.push_back(InputCmd{ INPUT_INSERT, (uint32_t)key });
 				}
 				else
 				{
-					if (cmd.flags == FLAG_DELETE_FWD)
-					{
-						if (_cursorColumn < _editorLines.at(_cursorLine).length())
-						{
-							_editorLines.at(_cursorLine).erase(_cursorColumn, 1);
-						}
-						else
-						{
-							if (_cursorLine < _editorLines.size() - 1)
-							{
-								auto line = _editorLines.at(_cursorLine);
-								auto nextLine = _editorLines.at(_cursorLine + 1);
-								_editorLines.at(_cursorLine) += nextLine;
-								_editorLines.erase(_editorLines.begin() + _cursorLine + 1);
-							}
-						}
-					}
-					else if (cmd.flags == FLAG_DELETE_BWD)
-					{
-						if (_cursorColumn > 0)
-						{
-							_cursorColumn--;
-							_editorLines.at(_cursorLine).erase(_cursorColumn, 1);
-						}
-						else
-						{
-							if (_cursorLine > 0)
-							{
-								auto line = _editorLines.at(_cursorLine);
-								auto prevLine = _editorLines.at(_cursorLine - 1);
-								_cursorColumn = prevLine.length();
-								_editorLines.at(_cursorLine - 1) += line;
-								_editorLines.erase(_editorLines.begin() + _cursorLine);
-								_cursorLine--;
-							}
-						}
-					}
+					_inputCmds.push_back(InputCmd{ INPUT_INSERT, (uint32_t)(key+32) });
 				}
-				break;
-			}
-			case INPUT_CURSOR_HOME:
-			{
-				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-				_cursorColumn = 0;
-				break;
-			}
-			case INPUT_CURSOR_END:
-			{
-				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-				_cursorColumn = _editorLines.at(_cursorLine).length();
-				break;
-			}
-			case INPUT_CURSOR_PAGEUP:
-			{
-				_cursorLine--;
-				if (_cursorLine < 0)
-				{
-					_cursorLine = 0;
-				}
-				break;
-			}
-			case INPUT_CURSOR_PAGEDOWN:
-			{
-				_cursorLine++;
-				if (_cursorLine >= _editorLines.size())
-				{
-					_cursorLine = _editorLines.size() - 1;
-				}
-				break;
-			}
-			case INPUT_NEWLINE:
-			{
-				if (_highlighting)
-				{
-					DeleteHighlightedText();
-					_highlighting = false;
-				}
-				auto line = _editorLines.at(_cursorLine);
-				auto newLine = line.substr(_cursorColumn);
-				_editorLines.at(_cursorLine) = line.substr(0, _cursorColumn);
-				_editorLines.insert(_editorLines.begin() + _cursorLine + 1, newLine);
-				_cursorLine++;
-				_cursorColumn = 0;
-				break;
-			}
-			case INPUT_CURSOR_COPY:
-			{
-				CopyHighlightedText();
-				break;
-			}
-			case INPUT_CURSOR_CUT:
-			{
-				CopyHighlightedText();
-				DeleteHighlightedText();
-				_highlighting = false;
-				break;
-			}
-			case INPUT_CURSOR_PASTE:
-			{
-				InsertClipboardText();
-				_highlighting = false;
-				break;
-			}
-		}
-	}
-
-	//normalize the cursor position
-	if (_cursorColumn < 0)
-	{
-		_cursorColumn = 0;
-	}
-	if (_cursorLine < 0)
-	{
-		_cursorLine = 0;
-	}
-	if (_cursorLine >= _editorLines.size())
-	{
-		_cursorLine = _editorLines.size() - 1;
-	}
-	if (_cursorColumn > _editorLines.at(_cursorLine).length())
-	{
-		_cursorColumn = _editorLines.at(_cursorLine).length();
-	}
-	
-	//update the last cursor position
-	if (!_highlighting)
-	{
-		_highlightColumn = _cursorColumn;
-		_highlightLine = _cursorLine;
-	}
-}
-
-void UI::DeleteHighlightedText()
-{
-	if (_highlighting)
-	{
-		auto startLine = std::min(_cursorLine, _highlightLine);
-		auto endLine = std::max(_cursorLine, _highlightLine);
-		auto startColumn = std::min(_cursorColumn, _highlightColumn);
-		auto endColumn = std::max(_cursorColumn, _highlightColumn);
-		std::string text;
-		if (startLine == endLine)
-		{
-			_editorLines.at(startLine).erase(startColumn, endColumn - startColumn);
-		}
-		else
-		{
-			_editorLines.at(startLine).erase(startColumn);
-			_editorLines.at(endLine).erase(0, endColumn);
-			_editorLines.erase(_editorLines.begin() + startLine + 1, _editorLines.begin() + endLine);
-		}
-	}
-}
-
-void UI::CopyHighlightedText()
-{
-	if (_highlighting)
-	{
-		auto startLine = std::min(_cursorLine, _highlightLine);
-		auto endLine = std::max(_cursorLine, _highlightLine);
-		auto startColumn = std::min(_cursorColumn, _highlightColumn);
-		auto endColumn = std::max(_cursorColumn, _highlightColumn);
-		std::string text;
-		if (startLine == endLine)
-		{
-			text = _editorLines.at(startLine).substr(startColumn, endColumn - startColumn);
-		}
-		else
-		{
-			text = _editorLines.at(startLine).substr(startColumn) + '\n';
-			for (auto i = startLine + 1; i < endLine; i++)
-			{
-				text += _editorLines.at(i) + '\n';
-			}
-			text += _editorLines.at(endLine).substr(0, endColumn);
-		}
-		SetClipboardText(text.c_str());
-	}
-}
-
-void UI::InsertClipboardText()
-{
-	if (_highlighting)
-	{
-		DeleteHighlightedText();
-	}
-
-	auto textToInsert = GetLinesBySplitor(_clipBoardText, '\n');
-
-	if (textToInsert.size() > 0)
-	{
-		auto startLine = _cursorLine;
-		auto startColumn = _cursorColumn;
-		auto firstLine = textToInsert.at(0);
-		_editorLines.at(startLine).insert(startColumn, firstLine);
-		_cursorColumn += firstLine.length();
-
-		if (textToInsert.size() >= 2)
-		{
-			// [0][1][2][3] -> 4, skip 0 and 3 -> 1,2
-			for (auto i = 1; i < textToInsert.size() - 1; i++)
-			{
-				_editorLines.insert(_editorLines.begin() + startLine + i, textToInsert.at(i));
-			}
-		}
-		
-		if (textToInsert.size() > 1)
-		{
-			//add last line
-			//check to see if we need to insert a new line
-			if (startLine + textToInsert.size() - 1 > _editorLines.size() - 1)
-			{
-				_editorLines.push_back(textToInsert.at(textToInsert.size() - 1));
 			}
 			else
 			{
-				_editorLines.at(startLine + textToInsert.size() - 1).insert(0, textToInsert.at(textToInsert.size() - 1));
+				_inputCmds.push_back(InputCmd{ INPUT_INSERT, (uint32_t)key });
 			}
-
-			_cursorLine += textToInsert.size() - 1;
-			_cursorColumn = textToInsert.at(textToInsert.size() - 1).length();
 		}
 	}
 }
 
-void UI::SetClipboardText(const std::string& text)
-{
-	_clipBoardText = text;
-}

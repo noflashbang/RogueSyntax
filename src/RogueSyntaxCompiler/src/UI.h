@@ -9,47 +9,18 @@
 #include <ranges>
 #include <algorithm>
 #include <format>
+#include "InputCmd.h"
+#include "InputForm.h"
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) { .x = vector.x, .y = vector.y }
 
 const uint32_t FONT_ID_BODY_24 = 0;
 const uint32_t FONT_ID_BODY_16 = 1;
 
-std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor);
-
 struct MenuId
 {
 	std::string id;
 	std::string name;
-};
-
-enum InputCmdType
-{
-	INPUT_INSERT,
-	INPUT_NEWLINE,
-	INPUT_DELETE,
-	INPUT_CURSOR_LEFT,
-	INPUT_CURSOR_RIGHT,
-	INPUT_CURSOR_UP,
-	INPUT_CURSOR_DOWN,
-	INPUT_CURSOR_HOME,
-	INPUT_CURSOR_END,
-	INPUT_CURSOR_PAGEUP,
-	INPUT_CURSOR_PAGEDOWN,
-	INPUT_CURSOR_COPY,
-	INPUT_CURSOR_CUT,
-	INPUT_CURSOR_PASTE
-};
-
-#define FLAG_NORMAL (0u)
-#define FLAG_HIGHLIGHT (1u)
-#define FLAG_DELETE_FWD (0u)
-#define FLAG_DELETE_BWD (1u)
-
-struct InputCmd
-{
-	InputCmdType type;
-	uint32_t flags;
 };
 
 class UI
@@ -68,9 +39,6 @@ public:
 
 protected:
 
-	void CreateLine(const std::string& context, size_t line_number, const std::string_view line, bool lineNumbers);
-	void CreateChar(const std::string& context, size_t line_number, size_t index, const char* character);
-
 	void CreateRoot();
 	void CreateMenu();
 	void CreateMenuButton(const MenuId& name, const std::vector<MenuId>& items);
@@ -87,7 +55,6 @@ protected:
 	void CreateDetails();
 
 	void CreateInputCommands();
-	void ProcessInputCommands();
 
 private:
 	Palette _colors;
@@ -96,24 +63,7 @@ private:
 	//font sized based padding
 	Clay_Padding _padding;
 
-
-	//current cursor position
-	uint16_t _cursorLine = 0;
-	uint16_t _cursorColumn = 0;
-
-	//start of the highlight
-	bool _highlighting = false;
-	uint16_t _highlightLine = 0;
-	uint16_t _highlightColumn = 0;
-	
-	void DeleteHighlightedText();
-	void CopyHighlightedText();
-	void InsertClipboardText();
-
-	void SetClipboardText(const std::string& text);
-	std::string _clipBoardText;
-		
-	std::vector<std::string> _editorLines;
+	InputForm _editorForm;
 	std::vector<std::string> _outputLines;
 	std::vector<std::string> _infoLines;
 
@@ -124,6 +74,7 @@ private:
 
 	bool _cursorBlink = false;
 	double _keyboardAccumulatedTime = 0.0;
+	double _mouseBtnOneDownTime = 0.0;
 	double _blinkAccumulatedTime = 0.0;
 
 	const char _cursorPlaceholder = ' '; //used to draw a text layout when the cursor is at the end of a line, need a valid char* to draw
@@ -137,6 +88,6 @@ private:
 	std::string _info;
 	std::vector<std::pair<MenuId,std::vector<MenuId>>> _menu;
 
-	std::vector<std::string> _lineNumbers;
+	
 	std::string _menuIdActive;
 };
