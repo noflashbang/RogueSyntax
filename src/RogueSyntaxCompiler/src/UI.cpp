@@ -31,11 +31,11 @@ void UI::DoLayout()
 	}
 	else if (_formFocus == "Output")
 	{
-		
+		_outputForm.ProcessInputCommands(_inputCmds);
 	}
 	else if (_formFocus == "Info")
 	{
-		
+		_infoForm.ProcessInputCommands(_inputCmds);
 	}
 
 	//if (_highlighting)
@@ -312,12 +312,13 @@ void UI::CreateEditor()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		bool hasFocus = false;
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
+			hasFocus = true;
 			_formFocus = "Editor";
 		}
-
-		_editorForm.Layout();
+		_editorForm.Layout(hasFocus);
 	}
 }
 
@@ -329,12 +330,14 @@ void UI::CreateOutput()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		bool hasFocus = false;
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
+			hasFocus = true;
 			_formFocus = "Output";
 		}
 
-		_outputForm.Layout();
+		_outputForm.Layout(hasFocus);
 	}
 }
 
@@ -346,12 +349,13 @@ void UI::CreateInfo()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		bool hasFocus = false;
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
+			hasFocus = true;
 			_formFocus = "Info";
 		}
-
-		_infoForm.Layout();
+		_infoForm.Layout(hasFocus);
 	}
 }
 

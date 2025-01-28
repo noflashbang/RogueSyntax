@@ -21,12 +21,12 @@ public:
 	void ProcessInputCommands(const std::vector<InputCmd>& cmds);
 	const std::vector<std::string>& GetInputFormLines() { return _inputFormLines; };
 
-	void Layout();
+	void Layout(bool hasFocus);
 
 protected:
 
-	void CreateLine(const std::string& context, size_t line_number, const std::string_view line, bool lineNumbers);
-	void CreateChar(const std::string& context, size_t line_number, size_t index, const char* character);
+	void CreateLine(bool hasFocus, size_t line_number, const std::string_view line, bool lineNumbers);
+	void CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
 private:
 

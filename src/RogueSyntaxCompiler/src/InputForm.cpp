@@ -265,12 +265,12 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 	}
 }
 
-void InputForm::Layout()
+void InputForm::Layout(bool hasFocus)
 {
 
 }
 
-void InputForm::CreateLine(const std::string& context, size_t line_number, const std::string_view line, bool lineNumbers)
+void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_view line, bool lineNumbers)
 {
 	CLAY(
 		CLAY_IDI_LOCAL("LINE", line_number),
@@ -298,7 +298,7 @@ void InputForm::CreateLine(const std::string& context, size_t line_number, const
 			char* character = (char*)line.data() + index;
 			if (character != nullptr && *character != '\0')
 			{
-				CreateChar(context, line_number, index, character);
+				CreateChar(hasFocus, line_number, index, character);
 			}
 		}
 		//draw a cursor at the end of the line
@@ -306,19 +306,19 @@ void InputForm::CreateLine(const std::string& context, size_t line_number, const
 		{
 			if (_cursorColumn == line.length())
 			{
-				CreateChar(context, line_number, line.length(), &_cursorPlaceholder);
+				CreateChar(hasFocus, line_number, line.length(), &_cursorPlaceholder);
 			}
 		}
 	}
 }
 
-void InputForm::CreateChar(const std::string& context, size_t line_number, size_t index, const char* character)
+void InputForm::CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character)
 {
 	auto strContent = Clay_String{ .length = 1, .chars = character };
 	Clay_Color textColor = _config.colors.text;
 	Clay_Color backgroundColor = _config.colors.background;
 
-	if (_highlighting && context == _formFocus)
+	if (_highlighting && hasFocus)
 	{
 		auto startLine = std::min(_cursorLine, _highlightLine);
 		auto endLine = std::max(_cursorLine, _highlightLine);
@@ -361,7 +361,7 @@ void InputForm::CreateChar(const std::string& context, size_t line_number, size_
 	)
 	{
 		bool hasCursor = false;
-		if (_formFocus == context)
+		if (hasFocus)
 		{
 			if (_cursorLine == line_number)
 			{
