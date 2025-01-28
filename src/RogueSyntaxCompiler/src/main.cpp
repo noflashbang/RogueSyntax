@@ -33,17 +33,6 @@ void UpdateDrawFrame(UI& ui)
 
 	accumulatedTime += GetFrameTime();
 
-	
-    if (accumulatedTime > 0.5)
-    {
-		accumulatedTime = 0.0;
-		cursorBlink = !cursorBlink;
-    }
-
-	auto cursor = cursorBlink ? ":>_" : ":>";
-
-    ui.SetOutput(cursor);
-
     if (IsKeyPressed(KEY_D)) {
         debugEnabled = !debugEnabled;
         Clay_SetDebugModeEnabled(debugEnabled);
@@ -81,7 +70,7 @@ int main(int argc, char *argv[])
     Clay_Arena clayMemory = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
     Clay_Initialize(clayMemory, { (float)GetScreenWidth(), (float)GetScreenHeight() }, { HandleClayErrors });
     Clay_SetMeasureTextFunction(Clay_RayLib_Render::Raylib_MeasureText, 0);
-    Clay_RayLib_Render::Clay_Raylib_Initialize(1024, 768, "~~Rogue//Syntax~~", FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
+    Clay_RayLib_Render::Clay_Raylib_Initialize(1024*2, 1000, "~~Rogue//Syntax~~", FLAG_VSYNC_HINT | FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
 
     Clay_RayLib_Render::Raylib_fonts[FONT_ID_BODY_24] = Raylib_Font {
         .fontId = FONT_ID_BODY_24,
@@ -106,7 +95,7 @@ int main(int argc, char *argv[])
     .highlight = Clay_ColorFromInt(0xffd60a)
     };
 
-	UI ui(DEFAULT_PALETTE, FONT_ID_BODY_16, 16);
+	UI ui(DEFAULT_PALETTE, FONT_ID_BODY_24, 24);
     
     
 
