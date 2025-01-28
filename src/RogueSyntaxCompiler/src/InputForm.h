@@ -120,6 +120,7 @@ protected:
 private:
 
 	float _formHeight = 0;
+	uint16_t _scrollOffset = 0;
 
 	//ui font and colors, sizes
 	UIConfig _config;

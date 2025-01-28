@@ -284,12 +284,39 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 			_cursorPosition.column = _inputFormLines.at(_cursorPosition.line).length();
 			break;
 		}
+		case INPUT_SCROLL_DOWN:
+		{
+			_scrollOffset++;
+
+			uint16_t maxLines = _formHeight / _config.fontSize;
+			int16_t maxOffset = _inputFormLines.size() - maxLines;
+			if (_scrollOffset > maxOffset)
+			{
+				if (maxOffset < 0)
+				{
+					_scrollOffset = 0;
+				}
+				else
+				{
+					_scrollOffset = maxOffset;
+				}
+			}
+
+			break;
+		}
+		case INPUT_SCROLL_UP:
+		{
+			if (_scrollOffset > 0)
+			{
+				_scrollOffset--;
+			}
+			break;
+		}
 		case INPUT_CURSOR_PAGEUP:
 		{
-			_cursorPosition.line--;
-			if (_cursorPosition.line < 0)
+			if (_cursorPosition.line > 0)
 			{
-				_cursorPosition.line = 0;
+				_cursorPosition.line--;
 			}
 			break;
 		}
@@ -315,6 +342,7 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 			_inputFormLines.insert(_inputFormLines.begin() + _cursorPosition.line + 1, newLine);
 			_cursorPosition.line++;
 			_cursorPosition.column = 0;
+
 			break;
 		}
 		case INPUT_CURSOR_COPY:
@@ -336,9 +364,33 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 			break;
 		}
 		}
+
+		if (cmd.type == INPUT_CURSOR_DOWN || cmd.type == INPUT_CURSOR_UP || cmd.type == INPUT_CURSOR_HOME || cmd.type == INPUT_CURSOR_END || cmd.type == INPUT_NEWLINE)
+		{
+			//if the cursor is at the end/start of the form, we need to scroll the form to keep the cursor in view
+			uint16_t maxLines = _formHeight / _config.fontSize;
+			if (_cursorPosition.line >= _scrollOffset + maxLines)
+			{
+				_scrollOffset = _cursorPosition.line - maxLines + 1;
+			}
+			else if (_cursorPosition.line < _scrollOffset)
+			{
+				_scrollOffset = _cursorPosition.line;
+			}
+		}
 	}
 
 	//normalize the cursor position
+	//if (_cursorPosition.line > maxLines + _scrollOffset)
+	//{
+	//	_cursorPosition.line = maxLines + _scrollOffset;
+	//}
+	//
+	//if (_cursorPosition.line < _scrollOffset)
+	//{
+	//	_cursorPosition.line = _scrollOffset;
+	//}
+
 	if (_cursorPosition.column < 0)
 	{
 		_cursorPosition.column = 0;
@@ -372,13 +424,7 @@ void InputForm::Layout(bool hasFocus)
 	}
 
 	uint16_t maxLines = _formHeight / _config.fontSize;
-	uint16_t start_line = 0;
-
-	//if the cursor is at the end of the form, we need to scroll the form to keep the cursor in view
-	if (_cursorPosition.line >= start_line + maxLines)
-	{
-		start_line = _cursorPosition.line - maxLines + 1;
-	}
+	uint16_t start_line = _scrollOffset;
 
 	auto lineView = _inputFormLines | std::views::drop(start_line) | std::views::take(maxLines);
 	

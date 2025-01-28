@@ -1,4 +1,5 @@
 #include "UI.h"
+#include <iostream>
 
 
 
@@ -461,6 +462,16 @@ void UI::CreateInputCommands()
 		{
 			_inputCmds.push_back(InputCmd{ INPUT_CURSOR_MOVE, shiftDown ? FLAG_HIGHLIGHT : FLAG_NORMAL });
 		}
+	}
+
+	auto mouseWheel = GetMouseWheelMove();
+	if(mouseWheel > 0)
+	{
+		_inputCmds.push_back(InputCmd{ INPUT_SCROLL_UP, FLAG_NORMAL });
+	}
+	else if (mouseWheel < 0)
+	{
+		_inputCmds.push_back(InputCmd{ INPUT_SCROLL_DOWN, FLAG_NORMAL });
 	}
 
 	//handle text input

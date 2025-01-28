@@ -13,6 +13,8 @@ enum InputCmdType
 	INPUT_CURSOR_END,
 	INPUT_CURSOR_DRAG,
 	INPUT_CURSOR_MOVE,
+	INPUT_SCROLL_UP,
+	INPUT_SCROLL_DOWN,
 	INPUT_CURSOR_PAGEUP,
 	INPUT_CURSOR_PAGEDOWN,
 	INPUT_CURSOR_COPY,
@@ -23,8 +25,8 @@ enum InputCmdType
 #define FLAG_NORMAL     (0u)
 #define FLAG_HIGHLIGHT  (1u)
 #define FLAG_DRAG       (2u)
-#define FLAG_DELETE_FWD (0u)
-#define FLAG_DELETE_BWD (1u)
+#define FLAG_DELETE_FWD (4u)
+#define FLAG_DELETE_BWD (8u)
 
 struct InputCmd
 {
