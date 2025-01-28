@@ -57,10 +57,13 @@ protected:
 private:
 	
 	UIConfig _config;
-	InputForm _editorForm;
-	std::vector<std::string> _outputLines;
-	std::vector<std::string> _infoLines;
 
+	//more complex ui elements
+	InputForm _editorForm;
+	InputForm _outputForm;
+	InputForm _infoForm;
+	
+	//layout sizes
 	float _editorHeight = 600;
 	bool _editorSizing = false;
 	float _infoWidth = 1300;

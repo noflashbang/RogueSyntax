@@ -2,7 +2,7 @@
 
 
 
-UI::UI(UIConfig config) : _editorForm("Editor", config), _config(config)
+UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",config), _infoForm("Info", config),  _config(config)
 {
 	_menu.push_back(std::make_pair(MenuId{ "ID_FILE_MAIN", "File" }, std::vector<MenuId>{{"ID_NEW", "New"}, { "ID_OPEN","Open" }, { "ID_SAVE","Save" }, { "ID_SAVEAS","Save As" }, { "ID_EXIT","Exit" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_EDIT_MAIN", "Edit" }, std::vector<MenuId>{{"ID_UNDO", "Undo"}, { "ID_REDO","Redo" }, { "ID_CUT","Cut" }, { "ID_COPY","Copy" }, { "ID_PASTE","Paste" }}));
@@ -317,12 +317,7 @@ void UI::CreateEditor()
 			_formFocus = "Editor";
 		}
 
-		auto line_number = 0;
-		for (auto& line : _editorLines)
-		{
-			CreateLine("Editor",line_number, line, true);
-			line_number++;
-		}
+		_editorForm.Layout();
 	}
 }
 
@@ -339,12 +334,7 @@ void UI::CreateOutput()
 			_formFocus = "Output";
 		}
 
-		auto line_number = 0;
-		for (auto& line : _outputLines)
-		{
-			CreateLine("Output", line_number, line, false);
-			line_number++;
-		}
+		_outputForm.Layout();
 	}
 }
 
@@ -361,12 +351,7 @@ void UI::CreateInfo()
 			_formFocus = "Info";
 		}
 
-		auto line_number = 0;
-		for (auto& line : _infoLines)
-		{
-			CreateLine("Info", line_number, line, false);
-			line_number++;
-		}
+		_infoForm.Layout();
 	}
 }
 
@@ -376,7 +361,7 @@ void UI::CreateDetails()
 	CLAY(
 		CLAY_ID("DetailBar"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-		CLAY_RECTANGLE({ .color = _colors.accent })
+		CLAY_RECTANGLE({ .color = _config.colors.accent })
 	)
 	{
 		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
