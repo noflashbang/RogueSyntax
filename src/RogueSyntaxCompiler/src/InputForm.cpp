@@ -40,6 +40,69 @@ void SimpleLineNumbering::LayoutLineNumbering(size_t line_number)
 	}
 }
 
+BarCursorStrategy::BarCursorStrategy(UIConfig config) : _config(config)
+{
+}
+
+void BarCursorStrategy::LayoutCursor()
+{
+	if (_cursorBlinker)
+	{
+		CLAY(
+			CLAY_ID("CURSOR"),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
+			CLAY_RECTANGLE({ .color = _config.colors.highlight })
+		)
+		{
+		}
+	}
+	else
+	{
+		CLAY(
+			CLAY_ID("CURSOR"),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
+			CLAY_RECTANGLE({  })
+		)
+		{
+		}
+	}
+}
+
+HighlightCursorStrategy::HighlightCursorStrategy(UIConfig config) : _config(config)
+{
+}
+
+void HighlightCursorStrategy::LayoutCursor()
+{
+	if (_cursorBlinker)
+	{
+		Clay_Color cursorColor = _config.colors.highlight;
+		cursorColor.a = 128;
+
+		CLAY(
+			CLAY_ID("CURSOR"),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize / 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
+			CLAY_RECTANGLE({ .color = cursorColor })
+		)
+		{
+		}
+	}
+	else
+	{
+		CLAY(
+			CLAY_ID("CURSOR"),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
+			CLAY_RECTANGLE({  })
+		)
+		{
+		}
+	}
+}
+
 InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
 {
 	_name = name;
@@ -51,10 +114,25 @@ InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
 	_hoverLine = 0;
 	_hoverColumn = 0;
 	_clipBoardText = "";
+
+	//_lineNumberingStrategy = new SimpleLineNumbering(config);
+	//_cursorStrategy = new BarCursorStrategy(config);
+	//_cursorStrategy = new HighlightCursorStrategy(config);
 }
 
 InputForm::~InputForm()
 {
+	if (_lineNumberingStrategy != nullptr)
+	{
+		delete _lineNumberingStrategy;
+		_lineNumberingStrategy = nullptr;
+	}
+
+	if (_cursorStrategy != nullptr)
+	{
+		delete _cursorStrategy;
+		_cursorStrategy = nullptr;
+	}
 }
 
 void InputForm::SetContent(const std::string& content)
@@ -298,7 +376,10 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 
 void InputForm::Layout(bool hasFocus)
 {
-	_cursorBlinker.Update(GetFrameTime());
+	if (_cursorStrategy != nullptr)
+	{
+		_cursorStrategy->Update(GetFrameTime());
+	}
 
 	size_t line_number = 0;
 	for (auto& line : _inputFormLines)
@@ -313,6 +394,17 @@ void InputForm::LayoutLineNumbering(size_t line_number)
 	if (_lineNumberingStrategy != nullptr)
 	{
 		_lineNumberingStrategy->LayoutLineNumbering(line_number);
+	}
+}
+
+void InputForm::LayoutCursor(bool hasFocus, size_t line_number, size_t index)
+{
+	if (_cursorStrategy != nullptr)
+	{
+		if (hasFocus && (_cursorLine == line_number) && (_cursorColumn == index))
+		{
+			_cursorStrategy->LayoutCursor();
+		}
 	}
 }
 
@@ -358,39 +450,8 @@ void InputForm::CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t 
 		CLAY_RECTANGLE({ .color = backgroundColor })
 	)
 	{
-		bool hasCursor = false;
-		if (hasFocus)
-		{
-			if (_cursorLine == line_number)
-			{
-				if (_cursorColumn == index)
-				{
-					hasCursor = true;
-					if (_cursorBlinker)
-					{
-						CLAY(
-							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-							CLAY_RECTANGLE({ .color = _config.colors.highlight })
-						)
-						{
-						}
-					}
-					else
-					{
-						CLAY(
-							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-							CLAY_RECTANGLE({  })
-						)
-						{
-						}
-					}
-				}
-			}
-		}
+		LayoutCursor(hasFocus, line_number, index);
+
 		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 		if (Clay_Hovered())
 		{
@@ -448,39 +509,8 @@ void InputForm::CreateChar(bool hasFocus, size_t line_number, size_t index, cons
 		CLAY_RECTANGLE({ .color = backgroundColor })
 	)
 	{
-		bool hasCursor = false;
-		if (hasFocus)
-		{
-			if (_cursorLine == line_number)
-			{
-				if (_cursorColumn == index)
-				{
-					hasCursor = true;
-					if (_cursorBlinker)
-					{
-						CLAY(
-							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-							CLAY_RECTANGLE({ .color = _config.colors.highlight })
-						)
-						{
-						}
-					}
-					else
-					{
-						CLAY(
-							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-							CLAY_RECTANGLE({  })
-						)
-						{
-						}
-					}
-				}
-			}
-		}
+		LayoutCursor(hasFocus, line_number, index);
+
 		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 		if (Clay_Hovered())
 		{

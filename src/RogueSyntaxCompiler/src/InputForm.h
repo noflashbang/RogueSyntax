@@ -15,18 +15,57 @@ class ILineNumberingStrategy
 {
 public:
 	virtual void LayoutLineNumbering(size_t line_number) = 0;
+	virtual ~ILineNumberingStrategy() = default;
 };
 
 class SimpleLineNumbering : public ILineNumberingStrategy
 {
 public:
 	SimpleLineNumbering(UIConfig config);
+	virtual ~SimpleLineNumbering() = default;
+
 	virtual void LayoutLineNumbering(size_t line_number);
 private:
 	std::vector<std::string> _lineNumbers;
 	UIConfig _config;
 };
 
+class ICursorStrategy
+{
+public:
+	virtual ~ICursorStrategy() = default;
+	virtual void LayoutCursor() = 0;
+	virtual void Update(double dt) = 0;
+};
+
+class BarCursorStrategy : public ICursorStrategy
+{
+public:
+	BarCursorStrategy(UIConfig config);
+	virtual ~BarCursorStrategy() = default;
+	virtual void LayoutCursor();
+	virtual void Update(double dt) { _cursorBlinker.Update(dt); }
+
+private:
+	UIConfig _config;
+
+	//cursor blinker
+	Blinker _cursorBlinker = Blinker(0.5);
+};
+
+class HighlightCursorStrategy : public ICursorStrategy
+{
+public:
+	HighlightCursorStrategy(UIConfig config);
+	virtual void LayoutCursor();
+	virtual void Update(double dt) { _cursorBlinker.Update(dt); }
+
+private:
+	UIConfig _config;
+
+	//cursor blinker
+	Blinker _cursorBlinker = Blinker(0.5);
+};
 
 class InputForm
 {
@@ -46,14 +85,16 @@ protected:
 	ILineNumberingStrategy* _lineNumberingStrategy = nullptr;
 	void LayoutLineNumbering(size_t line_number);
 
+	ICursorStrategy* _cursorStrategy = nullptr;
+	void LayoutCursor(bool hasFocus, size_t line_number, size_t index);
+
 	void CreateLine(bool hasFocus, size_t line_number, const std::string_view line);
 	void CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 	void CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
 private:
 
-	//cursor blinker
-	Blinker _cursorBlinker = Blinker(0.5);
+	
 
 	//ui font and colors, sizes
 	UIConfig _config;
