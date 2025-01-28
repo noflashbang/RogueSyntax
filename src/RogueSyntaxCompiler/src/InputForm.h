@@ -13,6 +13,11 @@ struct CursorPosition
 {
 	uint16_t line;
 	uint16_t column;
+
+	bool operator==(const CursorPosition& other) const
+	{
+		return line == other.line && column == other.column;
+	}
 };
 
 
@@ -89,6 +94,11 @@ public:
 
 	void Layout(bool hasFocus);
 	const std::string& Name() { return _name; }
+
+	CursorPosition GetCursorPosition() { return _cursorPosition; }
+	CursorPosition GetHighlightPosition() { return _highlightPosition; }
+	CursorPosition GetHoverPosition() { return _hoverPosition; }
+	bool IsHighlighting() { return _cursorPosition != _highlightPosition && _highlighting; }
 
 protected:
 

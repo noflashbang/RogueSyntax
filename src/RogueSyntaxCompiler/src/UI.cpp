@@ -50,20 +50,27 @@ void UI::DoLayout()
 		_infoForm.ProcessInputCommands(_inputCmds);
 	}
 
-	//if (_highlighting)
-	//{
-	//	auto startLine = std::min(_cursorLine, _highlightLine);
-	//	auto endLine = std::max(_cursorLine, _highlightLine);
-	//
-	//	auto startColumn = std::min(_cursorColumn, _highlightColumn);
-	//	auto endColumn = std::max(_cursorColumn, _highlightColumn);
-	//
-	//	_details = std::format("Ln:{:0>2} Col: {:0>2} - Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", startLine, startColumn, endLine, endColumn, _hoverLine, _hoverColumn);
-	//}
-	//else
-	//{
-	//	_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", _cursorLine, _cursorColumn, _hoverLine, _hoverColumn);
-	//}
+	if (_editorForm.IsHighlighting())
+	{
+		auto cursorPos = _editorForm.GetCursorPosition();
+		auto highlightPos = _editorForm.GetHighlightPosition();
+
+		auto startLine = std::min(cursorPos.line, highlightPos.line);
+		auto endLine = std::max(cursorPos.line, highlightPos.line);
+	
+		auto startColumn = std::min(cursorPos.column, highlightPos.column);
+		auto endColumn = std::max(cursorPos.column, highlightPos.column);
+
+		auto hoverPos = _editorForm.GetHoverPosition();
+	
+		_details = std::format("Ln:{:0>2} Col: {:0>2} - Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", startLine, startColumn, endLine, endColumn, hoverPos.line, hoverPos.column);
+	}
+	else
+	{
+		auto hoverPos = _editorForm.GetHoverPosition();
+		auto cursorPos = _editorForm.GetCursorPosition();
+		_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", cursorPos.line, cursorPos.column, hoverPos.line, hoverPos.column);
+	}
 
 	if (IsMouseButtonDown(0))
 	{
