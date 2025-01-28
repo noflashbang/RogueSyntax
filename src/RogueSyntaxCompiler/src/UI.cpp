@@ -237,34 +237,32 @@ void UI::CreateMainForm()
 
 void UI::CreateMainFormSpliter()
 {
-	bool hovered = Clay_PointerOver(Clay_GetElementId(CLAY_STRING("MainFormSpliter")));
-
-	if (hovered)
-	{
-		SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
-	}
-
-	if (hovered && IsMouseButtonDown(0))
-	{
-		_infoSizing = true;
-	}
-	if (_infoSizing)
-	{
-		SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
-		if (IsMouseButtonUp(0))
-		{
-			SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-			_infoSizing = false;
-		}
-		_infoWidth += GetMouseDelta().x;
-	}
-
 	CLAY(
 		CLAY_ID("MainFormSpliter"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(4), .height = CLAY_SIZING_GROW(0)} }),
 		CLAY_RECTANGLE({ .color = _config.colors.text })
 	)
 	{
+		bool hovered = Clay_Hovered();
+		if (hovered)
+		{
+			SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+		}
+
+		if (hovered && IsMouseButtonDown(0))
+		{
+			_infoSizing = true;
+		}
+		if (_infoSizing)
+		{
+			SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+			if (IsMouseButtonUp(0))
+			{
+				SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+				_infoSizing = false;
+			}
+			_infoWidth += GetMouseDelta().x;
+		}
 	}
 }
 
@@ -284,43 +282,40 @@ void UI::CreateIDEForm()
 
 void UI::CreateIDEFormSpliter()
 {
-	bool hovered = Clay_PointerOver(Clay_GetElementId(CLAY_STRING("IDEFormSpliter")));
-
-	if (hovered)
-	{
-		SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
-	}
-
-
-	if (hovered && IsMouseButtonDown(0))
-	{
-		_editorSizing = true;
-	}
-
-	if (_editorSizing)
-	{
-		SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
-		if (IsMouseButtonUp(0))
-		{
-			SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-			_editorSizing = false;
-		}
-		_editorHeight += GetMouseDelta().y;
-	}
-
 	CLAY(
 		CLAY_ID("IDEFormSpliter"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(4)} }),
 		CLAY_RECTANGLE({ .color = _config.colors.text })
 	)
 	{
+		bool hovered = Clay_Hovered();
+		if (hovered)
+		{
+			SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
+		}
+
+		if (hovered && IsMouseButtonDown(0))
+		{
+			_editorSizing = true;
+		}
+
+		if (_editorSizing)
+		{
+			SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
+			if (IsMouseButtonUp(0))
+			{
+				SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+				_editorSizing = false;
+			}
+			_editorHeight += GetMouseDelta().y;
+		}
 	}
 }
 
 void UI::CreateEditor()
 {
 	CLAY(
-		CLAY_ID("Editor"),
+		CLAY_ID("EditorParent"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_editorHeight)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
@@ -337,7 +332,7 @@ void UI::CreateEditor()
 void UI::CreateOutput()
 {
 	CLAY(
-		CLAY_ID("Output"),
+		CLAY_ID("OutputParent"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
@@ -353,7 +348,7 @@ void UI::CreateOutput()
 void UI::CreateInfo()
 {
 	CLAY(
-		CLAY_ID("InfoWindow"),
+		CLAY_ID("InfoWindowParent"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(200), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)

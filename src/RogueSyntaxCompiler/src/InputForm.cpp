@@ -1,4 +1,5 @@
 #include "InputForm.h"
+#include <iostream>
 
 std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor)
 {
@@ -288,19 +289,7 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 		{
 			_scrollOffset++;
 
-			uint16_t maxLines = _formHeight / _config.fontSize;
-			int16_t maxOffset = _inputFormLines.size() - maxLines;
-			if (_scrollOffset > maxOffset)
-			{
-				if (maxOffset < 0)
-				{
-					_scrollOffset = 0;
-				}
-				else
-				{
-					_scrollOffset = maxOffset;
-				}
-			}
+			NormalizeScrollOffset();
 
 			break;
 		}
@@ -367,16 +356,7 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 
 		if (cmd.type == INPUT_CURSOR_DOWN || cmd.type == INPUT_CURSOR_UP || cmd.type == INPUT_CURSOR_HOME || cmd.type == INPUT_CURSOR_END || cmd.type == INPUT_NEWLINE)
 		{
-			//if the cursor is at the end/start of the form, we need to scroll the form to keep the cursor in view
-			uint16_t maxLines = _formHeight / _config.fontSize;
-			if (_cursorPosition.line >= _scrollOffset + maxLines)
-			{
-				_scrollOffset = _cursorPosition.line - maxLines + 1;
-			}
-			else if (_cursorPosition.line < _scrollOffset)
-			{
-				_scrollOffset = _cursorPosition.line;
-			}
+			ScrollCursorIntoView();
 		}
 	}
 
@@ -423,15 +403,144 @@ void InputForm::Layout(bool hasFocus)
 		_cursorStrategy->Update(GetFrameTime());
 	}
 
-	uint16_t maxLines = _formHeight / _config.fontSize;
-	uint16_t start_line = _scrollOffset;
+	Clay_String formId = Clay_StringFromStdString(_name);
 
-	auto lineView = _inputFormLines | std::views::drop(start_line) | std::views::take(maxLines);
-	
-	for (auto& line : lineView)
+	CLAY(
+		Clay__AttachId(Clay__HashString(formId, 1, 0)),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_LEFT_TO_RIGHT }),
+		CLAY_RECTANGLE({ .color = _config.colors.background })
+	)
 	{
-		CreateLine(hasFocus, start_line, line);
-		start_line++;
+		CLAY(
+			Clay__AttachId(Clay__HashString(formId, 2, 0)),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_formHeight)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+			CLAY_RECTANGLE({ .color = _config.colors.background })
+		)
+		{
+			uint16_t maxLines = _formHeight / _config.fontSize;
+			uint16_t start_line = _scrollOffset;
+
+			auto lineView = _inputFormLines | std::views::drop(start_line) | std::views::take(maxLines);
+
+			for (auto& line : lineView)
+			{
+				CreateLine(hasFocus, start_line, line);
+				start_line++;
+			}
+		}
+		LayoutScrollBar();
+	}
+}
+
+void InputForm::LayoutScrollBar()
+{
+	auto maxLines = _formHeight / _config.fontSize;
+
+	if(maxLines <= 0)
+	{
+		return;
+	}
+
+	float pageCount = _inputFormLines.size() / maxLines;
+	bool canScroll = pageCount >= 1;
+
+	if (canScroll)
+	{
+		float lineFactor = 1.0f / _inputFormLines.size();
+		auto maxFill = _formHeight - (_config.fontSize * 2);
+		float scrollFill = _scrollOffset * lineFactor * maxFill;
+		float endFill = (_inputFormLines.size() - maxLines - _scrollOffset) * lineFactor * maxFill;
+		float barFill = maxFill - scrollFill - endFill;
+
+		CLAY(
+			CLAY_ID_LOCAL("SCROLLCONTAINER"),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+			CLAY_RECTANGLE({ .color = _config.colors.background })
+		)
+		{
+			CLAY(
+				CLAY_ID_LOCAL("BTNSTART"),
+				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+				CLAY_RECTANGLE({ .color = _config.colors.foreground })
+			)
+			{
+				if (Clay_Hovered() && IsMouseButtonPressed(0))
+				{
+					if (_scrollOffset > 0)
+					{
+						_scrollOffset--;
+					}
+				}
+			}
+			CLAY(
+				CLAY_ID_LOCAL("FILLSTART"),
+				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_FIXED(scrollFill)} }),
+				CLAY_RECTANGLE({ .color = _config.colors.text })
+			)
+			{
+			}
+			CLAY(
+				CLAY_ID_LOCAL("BTNSCROLL"),
+				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_FIXED(barFill)} }),
+				CLAY_RECTANGLE({ .color = _config.colors.highlight })
+			)
+			{
+				if (Clay_Hovered() && IsMouseButtonDown(0))
+				{
+					_scrolling = true;
+				}
+
+				if (IsMouseButtonReleased(0))
+				{
+					_scrolling = false;
+				}
+
+				if (_scrolling)
+				{
+					auto mouseDelta = GetMouseDelta();
+
+					_mouseYDeltaAccumulated += mouseDelta.y / _config.fontSize;
+					if (_mouseYDeltaAccumulated > 0.5)
+					{
+						if (_scrollOffset < _inputFormLines.size() - maxLines)
+						{
+							_scrollOffset++;
+						}
+						_mouseYDeltaAccumulated = 0.0f;
+					}
+					else if (_mouseYDeltaAccumulated < -0.5)
+					{
+						if (_scrollOffset > 0)
+						{
+							_scrollOffset--;
+						}
+						_mouseYDeltaAccumulated = 0.0f;
+				
+					}
+				}
+			}
+			CLAY(
+				CLAY_ID_LOCAL("FILLEND"),
+				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_FIXED(endFill)} }),
+				CLAY_RECTANGLE({ .color = _config.colors.text })
+			)
+			{
+			}
+			CLAY(
+				CLAY_ID_LOCAL("BTNEND"),
+				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+				CLAY_RECTANGLE({ .color = _config.colors.foreground })
+			)
+			{
+				if (Clay_Hovered() && IsMouseButtonPressed(0))
+				{
+					if (_scrollOffset < _inputFormLines.size() - maxLines)
+					{
+						_scrollOffset++;
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -504,6 +613,37 @@ void InputForm::CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t 
 			_hoverPosition.line = line_number;
 			_hoverPosition.column = index;
 		}
+	}
+}
+
+void InputForm::NormalizeScrollOffset()
+{
+	uint16_t maxLines = _formHeight / _config.fontSize;
+	int16_t maxOffset = _inputFormLines.size() - maxLines;
+	if (_scrollOffset > maxOffset)
+	{
+		if (maxOffset < 0)
+		{
+			_scrollOffset = 0;
+		}
+		else
+		{
+			_scrollOffset = maxOffset;
+		}
+	}
+}
+
+void InputForm::ScrollCursorIntoView()
+{
+	//if the cursor is at the end/start of the form, we need to scroll the form to keep the cursor in view
+	uint16_t maxLines = _formHeight / _config.fontSize;
+	if (_cursorPosition.line >= _scrollOffset + maxLines)
+	{
+		_scrollOffset = _cursorPosition.line - maxLines + 1;
+	}
+	else if (_cursorPosition.line < _scrollOffset)
+	{
+		_scrollOffset = _cursorPosition.line;
 	}
 }
 

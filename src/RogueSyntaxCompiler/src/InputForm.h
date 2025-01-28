@@ -95,12 +95,15 @@ public:
 	void Layout(bool hasFocus);
 	const std::string& Name() { return _name; }
 
+	void LayoutScrollBar();
+
+
 	CursorPosition GetCursorPosition() { return _cursorPosition; }
 	CursorPosition GetHighlightPosition() { return _highlightPosition; }
 	CursorPosition GetHoverPosition() { return _hoverPosition; }
 	bool IsHighlighting() { return _cursorPosition != _highlightPosition && _highlighting; }
 
-	void SetFormHeight(float height) { _formHeight = height; }
+	void SetFormHeight(float height) { _formHeight = height; NormalizeScrollOffset(); }
 
 protected:
 
@@ -117,9 +120,15 @@ protected:
 	void CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 	void CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
+	void NormalizeScrollOffset();
+	void ScrollCursorIntoView();
+
 private:
 
 	float _formHeight = 0;
+	float _mouseYDeltaAccumulated = 0;
+	bool _scrolling = false;
+
 	uint16_t _scrollOffset = 0;
 
 	//ui font and colors, sizes
