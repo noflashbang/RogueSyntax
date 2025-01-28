@@ -290,9 +290,15 @@ void InputForm::Layout(bool hasFocus)
 
 void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_view line, bool lineNumbers)
 {
+	uint32_t borderSize = 0;
+	if (_cursorLine == line_number)
+	{
+		borderSize = 1;
+	}
 	CLAY(
 		CLAY_IDI_LOCAL("LINE", line_number),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+		//CLAY_BORDER_OUTSIDE({ .width = borderSize, .color = _config.colors.highlight }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
@@ -311,6 +317,7 @@ void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_
 				}
 			}
 		}
+		
 		for (auto index = 0; index < line.length(); index++)
 		{
 			char* character = (char*)line.data() + index;
@@ -319,13 +326,62 @@ void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_
 				CreateChar(hasFocus, line_number, index, character);
 			}
 		}
-		//draw a cursor at the end of the line
-		if (_cursorLine == line_number)
+
+		//for drawing the cursor at the end of the line - also handles clicks at the end of the line
+		CreatePlaceHolderChar(hasFocus, line_number, line.length(), &_cursorPlaceholder);
+	}
+}
+
+void InputForm::CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character)
+{
+	auto strContent = Clay_String{ .length = 1, .chars = character };
+	Clay_Color textColor = _config.colors.text;
+	Clay_Color backgroundColor = _config.colors.background;
+
+	CLAY(
+		CLAY_IDI_LOCAL("COL", index),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+		CLAY_RECTANGLE({ .color = backgroundColor })
+	)
+	{
+		bool hasCursor = false;
+		if (hasFocus)
 		{
-			if (_cursorColumn == line.length())
+			if (_cursorLine == line_number)
 			{
-				CreateChar(hasFocus, line_number, line.length(), &_cursorPlaceholder);
+				if (_cursorColumn == index)
+				{
+					hasCursor = true;
+					if (_cursorBlinker)
+					{
+						CLAY(
+							CLAY_ID("CURSOR"),
+							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
+							CLAY_RECTANGLE({ .color = _config.colors.highlight })
+						)
+						{
+						}
+					}
+					else
+					{
+						CLAY(
+							CLAY_ID("CURSOR"),
+							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
+							CLAY_RECTANGLE({  })
+						)
+						{
+						}
+					}
+				}
 			}
+		}
+		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _config.fontId, .fontSize = _config.fontSize }));
+		if (Clay_Hovered())
+		{
+			_hoverLine = line_number;
+			_hoverColumn = index;
 		}
 	}
 }

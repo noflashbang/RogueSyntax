@@ -9,7 +9,6 @@
 #include <vector>
 #include <format>
 
-
 std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor);
 
 class InputForm
@@ -29,6 +28,7 @@ protected:
 
 	void CreateLine(bool hasFocus, size_t line_number, const std::string_view line, bool lineNumbers);
 	void CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character);
+	void CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
 private:
 
