@@ -332,24 +332,24 @@ void InputForm::CreateChar(const std::string& context, size_t line_number, size_
 			{
 				if (startColumn <= index && index < endColumn)
 				{
-					backgroundColor = _colors.foreground;
-					textColor = _colors.accentText;
+					backgroundColor = _config.colors.foreground;
+					textColor = _config.colors.accentText;
 				}
 			}
 			else if (startLine == line_number && index >= startColumn)
 			{
-				backgroundColor = _colors.foreground;
-				textColor = _colors.accentText;
+				backgroundColor = _config.colors.foreground;
+				textColor = _config.colors.accentText;
 			}
 			else if (endLine == line_number && index < endColumn)
 			{
-				backgroundColor = _colors.foreground;
-				textColor = _colors.accentText;
+				backgroundColor = _config.colors.foreground;
+				textColor = _config.colors.accentText;
 			}
 			else if (startLine < line_number && line_number < endLine)
 			{
-				backgroundColor = _colors.foreground;
-				textColor = _colors.accentText;
+				backgroundColor = _config.colors.foreground;
+				textColor = _config.colors.accentText;
 			}
 		}
 	}
