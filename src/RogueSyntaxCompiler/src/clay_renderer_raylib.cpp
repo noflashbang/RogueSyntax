@@ -107,6 +107,7 @@ void Clay_RayLib_Render::Clay_Raylib_Render(Clay_RenderCommandArray renderComman
             Clay_StringSlice text = renderCommand->text;
             char* cloned = (char*)malloc(text.length + 1);
             memcpy(cloned, text.chars, text.length);
+
             cloned[text.length] = '\0';
             Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
             DrawTextEx(fontToUse, cloned, { boundingBox.x, boundingBox.y }, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));

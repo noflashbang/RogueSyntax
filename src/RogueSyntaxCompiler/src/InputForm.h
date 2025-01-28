@@ -9,6 +9,15 @@
 #include <vector>
 #include <format>
 
+struct CursorPosition
+{
+	uint16_t line;
+	uint16_t column;
+};
+
+
+
+
 std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor);
 
 class ILineNumberingStrategy
@@ -67,6 +76,7 @@ private:
 	Blinker _cursorBlinker = Blinker(0.5);
 };
 
+
 class InputForm
 {
 public:
@@ -90,6 +100,7 @@ protected:
 	ICursorStrategy* _cursorStrategy = nullptr;
 	void LayoutCursor(bool hasFocus, size_t line_number, size_t index);
 
+
 	void CreateLine(bool hasFocus, size_t line_number, const std::string_view line);
 	void CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 	void CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character);
@@ -100,17 +111,14 @@ private:
 	UIConfig _config;
 
 	//current cursor position
-	uint16_t _cursorLine = 0;
-	uint16_t _cursorColumn = 0;
+	CursorPosition _cursorPosition;
 
 	//start of the highlight
 	bool _highlighting = false;
-	uint16_t _highlightLine = 0;
-	uint16_t _highlightColumn = 0;
+	CursorPosition _highlightPosition;
 
 	//mouse hover position
-	uint16_t _hoverLine = 0;
-	uint16_t _hoverColumn = 0;
+	CursorPosition _hoverPosition;
 
 	const char _cursorPlaceholder = ' '; //used to draw a text layout when the cursor is at the end of a line, need a valid char* to draw
 
