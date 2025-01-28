@@ -63,10 +63,10 @@ void UpdateDrawFrame(UI& ui)
 
 bool reinitializeClay = false;
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-    Clay_SetMaxElementCount(8192 * 4);
-    uint64_t totalMemorySize = Clay_MinMemorySize() * 2;
+    Clay_SetMaxElementCount(8192 * 3);
+    uint64_t totalMemorySize = Clay_MinMemorySize();
     Clay_Arena clayMemory = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
     Clay_Initialize(clayMemory, { (float)GetScreenWidth(), (float)GetScreenHeight() }, { HandleClayErrors });
     Clay_SetMeasureTextFunction(Clay_RayLib_Render::Raylib_MeasureText, 0);
