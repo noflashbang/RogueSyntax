@@ -11,10 +11,17 @@ UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",co
 
 	_details = "";
 	_output = ":>";
+	_outputForm.SetContent(_output);
+
 	_editor = "let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ";
+	_editorForm.SetContent(_editor);
+
 	_info = "";
+	_infoForm.SetContent(_info);
 
 	_formFocus = "Editor";
+
+	_menuIdActive = "";
 }
 
 UI::~UI()
@@ -58,14 +65,6 @@ void UI::DoLayout()
 		_menuIdActive = "";
 	}
 	SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-
-	//handle cursor blink
-	_blinkAccumulatedTime += GetFrameTime();
-	if (_blinkAccumulatedTime > 0.5)
-	{
-		_blinkAccumulatedTime = 0.0;
-		_cursorBlink = !_cursorBlink;
-	}
 
 	CreateRoot();
 }
@@ -312,13 +311,11 @@ void UI::CreateEditor()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		bool hasFocus = false;
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
-			hasFocus = true;
-			_formFocus = "Editor";
+			_formFocus = _editorForm.Name();
 		}
-		_editorForm.Layout(hasFocus);
+		_editorForm.Layout(_formFocus == _editorForm.Name());
 	}
 }
 
@@ -330,14 +327,11 @@ void UI::CreateOutput()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		bool hasFocus = false;
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
-			hasFocus = true;
-			_formFocus = "Output";
+			_formFocus = _outputForm.Name();
 		}
-
-		_outputForm.Layout(hasFocus);
+		_outputForm.Layout(_formFocus == _outputForm.Name());
 	}
 }
 
@@ -349,13 +343,11 @@ void UI::CreateInfo()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		bool hasFocus = false;
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
-			hasFocus = true;
-			_formFocus = "Info";
+			_formFocus = _infoForm.Name();
 		}
-		_infoForm.Layout(hasFocus);
+		_infoForm.Layout(_formFocus == _infoForm.Name());
 	}
 }
 

@@ -96,6 +96,9 @@ int main(int argc, char *argv[])
     };
 
 	auto config = UIConfig::MakeDefault();
+
+	config.colors = DEFAULT_PALETTE;
+
 	UI ui(config);
     
     while (!WindowShouldClose())    // Detect window close button or ESC key

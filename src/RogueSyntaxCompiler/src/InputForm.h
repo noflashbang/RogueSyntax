@@ -23,6 +23,7 @@ public:
 	const std::vector<std::string>& GetInputFormLines() { return _inputFormLines; };
 
 	void Layout(bool hasFocus);
+	const std::string& Name() { return _name; }
 
 protected:
 

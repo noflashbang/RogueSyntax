@@ -23,6 +23,14 @@ InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
 	{
 		_lineNumbers.push_back(std::format("{:0>2}", i));
 	}
+	_cursorLine = 0;
+	_cursorColumn = 0;
+	_highlighting = false;
+	_highlightLine = 0;
+	_highlightColumn = 0;
+	_hoverLine = 0;
+	_hoverColumn = 0;
+	_clipBoardText = "";
 }
 
 InputForm::~InputForm()
@@ -113,6 +121,10 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 		}
 		case INPUT_INSERT:
 		{
+			if (_inputFormLines.size() == 0)
+			{
+				_inputFormLines.push_back("");
+			}
 			if (_highlighting)
 			{
 				DeleteHighlightedText(_inputFormLines);
@@ -247,11 +259,11 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 	{
 		_cursorLine = 0;
 	}
-	if (_cursorLine >= _inputFormLines.size())
+	if (_inputFormLines.size() > 0 && _cursorLine >= _inputFormLines.size())
 	{
 		_cursorLine = _inputFormLines.size() - 1;
 	}
-	if (_cursorColumn > _inputFormLines.at(_cursorLine).length())
+	if (_inputFormLines.size() > 0 && _cursorColumn > _inputFormLines.at(_cursorLine).length())
 	{
 		_cursorColumn = _inputFormLines.at(_cursorLine).length();
 	}
