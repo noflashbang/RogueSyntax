@@ -114,10 +114,6 @@ InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
 	_hoverLine = 0;
 	_hoverColumn = 0;
 	_clipBoardText = "";
-
-	//_lineNumberingStrategy = new SimpleLineNumbering(config);
-	//_cursorStrategy = new BarCursorStrategy(config);
-	//_cursorStrategy = new HighlightCursorStrategy(config);
 }
 
 InputForm::~InputForm()

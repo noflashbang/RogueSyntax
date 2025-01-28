@@ -4,6 +4,11 @@
 
 UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",config), _infoForm("Info", config),  _config(config)
 {
+
+	InputFormConfigurator(&_editorForm).With(new SimpleLineNumbering(config)).With(new BarCursorStrategy(config));
+	InputFormConfigurator(&_outputForm).With(new HighlightCursorStrategy(config));
+	InputFormConfigurator(&_infoForm).With(new BarCursorStrategy(config));
+
 	_menu.push_back(std::make_pair(MenuId{ "ID_FILE_MAIN", "File" }, std::vector<MenuId>{{"ID_NEW", "New"}, { "ID_OPEN","Open" }, { "ID_SAVE","Save" }, { "ID_SAVEAS","Save As" }, { "ID_EXIT","Exit" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_EDIT_MAIN", "Edit" }, std::vector<MenuId>{{"ID_UNDO", "Undo"}, { "ID_REDO","Redo" }, { "ID_CUT","Cut" }, { "ID_COPY","Copy" }, { "ID_PASTE","Paste" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_VIEW_MAIN", "View" }, std::vector<MenuId>{{"ID_ZOOMIN", "Zoom In"}, { "ID_ZOOMOUT","Zoom Out" }, { "ID_FULLSCREEN","Full Screen" }}));

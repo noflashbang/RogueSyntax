@@ -82,6 +82,8 @@ public:
 
 protected:
 
+	friend class InputFormConfigurator;
+
 	ILineNumberingStrategy* _lineNumberingStrategy = nullptr;
 	void LayoutLineNumbering(size_t line_number);
 
@@ -93,8 +95,6 @@ protected:
 	void CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
 private:
-
-	
 
 	//ui font and colors, sizes
 	UIConfig _config;
@@ -123,4 +123,24 @@ private:
 
 	std::vector<std::string> _inputFormLines;
 	std::string _name;
+};
+
+class InputFormConfigurator
+{
+public:
+	InputFormConfigurator(InputForm* toConfigure) : _target(toConfigure) {};
+	virtual ~InputFormConfigurator() = default;
+
+	InputFormConfigurator& With(ILineNumberingStrategy* strategy)
+	{
+		_target->_lineNumberingStrategy = strategy;	
+		return *this;
+	};
+
+	InputFormConfigurator& With(ICursorStrategy* strategy)
+	{
+		_target->_cursorStrategy = strategy;
+		return *this;
+	};
+	InputForm* _target;
 };
