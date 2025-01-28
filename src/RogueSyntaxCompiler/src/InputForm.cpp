@@ -371,11 +371,21 @@ void InputForm::Layout(bool hasFocus)
 		_cursorStrategy->Update(GetFrameTime());
 	}
 
-	size_t line_number = 0;
-	for (auto& line : _inputFormLines)
+	uint16_t maxLines = _formHeight / _config.fontSize;
+	uint16_t start_line = 0;
+
+	//if the cursor is at the end of the form, we need to scroll the form to keep the cursor in view
+	if (_cursorPosition.line >= start_line + maxLines)
 	{
-		CreateLine(hasFocus, line_number, line);
-		line_number++;
+		start_line = _cursorPosition.line - maxLines + 1;
+	}
+
+	auto lineView = _inputFormLines | std::views::drop(start_line) | std::views::take(maxLines);
+	
+	for (auto& line : lineView)
+	{
+		CreateLine(hasFocus, start_line, line);
+		start_line++;
 	}
 }
 

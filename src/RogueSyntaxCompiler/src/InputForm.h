@@ -100,6 +100,8 @@ public:
 	CursorPosition GetHoverPosition() { return _hoverPosition; }
 	bool IsHighlighting() { return _cursorPosition != _highlightPosition && _highlighting; }
 
+	void SetFormHeight(float height) { _formHeight = height; }
+
 protected:
 
 	friend class InputFormConfigurator;
@@ -116,6 +118,8 @@ protected:
 	void CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
 private:
+
+	float _formHeight = 0;
 
 	//ui font and colors, sizes
 	UIConfig _config;

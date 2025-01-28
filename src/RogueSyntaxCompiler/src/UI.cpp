@@ -324,6 +324,7 @@ void UI::CreateEditor()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		_editorForm.SetFormHeight(_editorHeight);
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
 			_formFocus = _editorForm.Name();
