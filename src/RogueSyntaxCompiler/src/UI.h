@@ -11,11 +11,9 @@
 #include <format>
 #include "InputCmd.h"
 #include "InputForm.h"
+#include "UIConfig.h"
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) { .x = vector.x, .y = vector.y }
-
-const uint32_t FONT_ID_BODY_24 = 0;
-const uint32_t FONT_ID_BODY_16 = 1;
 
 struct MenuId
 {
@@ -27,7 +25,7 @@ class UI
 {
 public:
 
-	UI(Palette colors, uint32_t fontId, uint32_t fontsize);
+	UI(UIConfig config);
 	~UI();
 
 	void DoLayout();
@@ -57,12 +55,8 @@ protected:
 	void CreateInputCommands();
 
 private:
-	Palette _colors;
-	uint16_t _fontId;
-	uint16_t _fontSize;
-	//font sized based padding
-	Clay_Padding _padding;
-
+	
+	UIConfig _config;
 	InputForm _editorForm;
 	std::vector<std::string> _outputLines;
 	std::vector<std::string> _infoLines;

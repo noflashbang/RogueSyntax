@@ -15,8 +15,9 @@ std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor
 	return lines;
 }
 
-InputForm::InputForm(const std::string& name)
+InputForm::InputForm(const std::string& name, UIConfig config)
 {
+	_config = config;
 	_name = name;
 
 	for (size_t i = 0; i < 99; i++)
@@ -273,22 +274,22 @@ void InputForm::CreateLine(const std::string& context, size_t line_number, const
 {
 	CLAY(
 		CLAY_IDI_LOCAL("LINE", line_number),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-		CLAY_RECTANGLE({ .color = _colors.background })
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
 		if (lineNumbers)
 		{
 			CLAY(
 				CLAY_IDI_LOCAL("LINENUM", line_number),
-				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_fontSize * 2)), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-				CLAY_RECTANGLE({ .color = _colors.background })
+				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize * 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+				CLAY_RECTANGLE({ .color = _config.colors.background })
 			)
 			{
 				if (_lineNumbers.size() > line_number)
 				{
 					auto strContent = Clay_StringFromStdString(_lineNumbers.at(line_number));
-					CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _colors.text, .fontId = _fontId, .fontSize = _fontSize }));
+					CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 				}
 			}
 		}
@@ -314,8 +315,8 @@ void InputForm::CreateLine(const std::string& context, size_t line_number, const
 void InputForm::CreateChar(const std::string& context, size_t line_number, size_t index, const char* character)
 {
 	auto strContent = Clay_String{ .length = 1, .chars = character };
-	Clay_Color textColor = _colors.text;
-	Clay_Color backgroundColor = _colors.background;
+	Clay_Color textColor = _config.colors.text;
+	Clay_Color backgroundColor = _config.colors.background;
 
 	if (_highlighting && context == _formFocus)
 	{
@@ -355,7 +356,7 @@ void InputForm::CreateChar(const std::string& context, size_t line_number, size_
 
 	CLAY(
 		CLAY_IDI_LOCAL("COL", index),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_fontSize / 2)), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize / 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 		CLAY_RECTANGLE({ .color = backgroundColor })
 	)
 	{
@@ -371,9 +372,9 @@ void InputForm::CreateChar(const std::string& context, size_t line_number, size_
 					{
 						CLAY(
 							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
+							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-							CLAY_RECTANGLE({ .color = _colors.highlight })
+							CLAY_RECTANGLE({ .color = _config.colors.highlight })
 						)
 						{
 						}
@@ -382,7 +383,7 @@ void InputForm::CreateChar(const std::string& context, size_t line_number, size_
 					{
 						CLAY(
 							CLAY_ID("CURSOR"),
-							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
+							CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 							CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
 							CLAY_RECTANGLE({  })
 						)
@@ -392,7 +393,7 @@ void InputForm::CreateChar(const std::string& context, size_t line_number, size_
 				}
 			}
 		}
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _fontId, .fontSize = _fontSize }));
+		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 		if (Clay_Hovered())
 		{
 			_hoverLine = line_number;

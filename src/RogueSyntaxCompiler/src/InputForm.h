@@ -2,6 +2,7 @@
 #include "clay.h"
 #include "clayex.h"
 #include "InputCmd.h"
+#include "UIConfig.h"
 #include <string>
 #include <ranges>
 #include <vector>
@@ -13,7 +14,7 @@ std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor
 class InputForm
 {
 public:
-	InputForm(const std::string& name);
+	InputForm(const std::string& name, UIConfig config);
 	~InputForm();
 
 	void SetContent(const std::string& content);
@@ -28,6 +29,9 @@ protected:
 	void CreateChar(const std::string& context, size_t line_number, size_t index, const char* character);
 
 private:
+
+	//ui font and colors, sizes
+	UIConfig _config;
 
 	//current cursor position
 	uint16_t _cursorLine = 0;

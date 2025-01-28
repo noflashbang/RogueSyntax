@@ -2,7 +2,7 @@
 
 
 
-UI::UI(Palette colors, uint32_t fontId, uint32_t fontsize) : _editorForm("Editor")
+UI::UI(UIConfig config) : _editorForm("Editor", config), _config(config)
 {
 	_menu.push_back(std::make_pair(MenuId{ "ID_FILE_MAIN", "File" }, std::vector<MenuId>{{"ID_NEW", "New"}, { "ID_OPEN","Open" }, { "ID_SAVE","Save" }, { "ID_SAVEAS","Save As" }, { "ID_EXIT","Exit" }}));
 	_menu.push_back(std::make_pair(MenuId{ "ID_EDIT_MAIN", "Edit" }, std::vector<MenuId>{{"ID_UNDO", "Undo"}, { "ID_REDO","Redo" }, { "ID_CUT","Cut" }, { "ID_COPY","Copy" }, { "ID_PASTE","Paste" }}));
@@ -14,16 +14,6 @@ UI::UI(Palette colors, uint32_t fontId, uint32_t fontsize) : _editorForm("Editor
 	_editor = "let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ";
 	_info = "";
 
-	
-	
-
-	_colors = colors;
-	_fontSize = fontsize;
-	_fontId = fontId;
-
-	uint16_t half = _fontSize / 2;
-	_padding = { _fontSize, _fontSize, half, half };
-
 	_formFocus = "Editor";
 }
 
@@ -33,9 +23,6 @@ UI::~UI()
 
 void UI::DoLayout()
 {
-	//_hoverColumn = 0;
-	//_hoverLine = 0;
-
 	CreateInputCommands();
 
 	if (_formFocus == "Editor")
@@ -90,7 +77,7 @@ void UI::CreateRoot()
 	CLAY(
 		CLAY_ID("Root"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
-		CLAY_RECTANGLE({ .color = _colors.background })
+		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
 		CreateMenu();
@@ -104,8 +91,8 @@ void UI::CreateMenu()
 {
 	CLAY(
 		CLAY_ID("Menu"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_fontSize*2)}, .childGap = _fontSize, .layoutDirection = CLAY_LEFT_TO_RIGHT }),
-		CLAY_RECTANGLE({ .color = _colors.accent })
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize*2)}, .childGap = _config.fontSize, .layoutDirection = CLAY_LEFT_TO_RIGHT }),
+		CLAY_RECTANGLE({ .color = _config.colors.accent })
 	)
 	{
 		for (auto& menu : _menu)
@@ -126,22 +113,22 @@ void UI::CreateMenuButton(const MenuId& name, const std::vector<MenuId>& items)
 		borderSize = 2;
 	}
 	
-	Clay_Color color = _colors.background;
-	Clay_Color textColor = _colors.text;
+	Clay_Color color = _config.colors.background;
+	Clay_Color textColor = _config.colors.text;
 	if (_menuIdActive == name.id)
 	{
-		color = _colors.foreground;
-		textColor = _colors.accentText;
+		color = _config.colors.foreground;
+		textColor = _config.colors.accentText;
 	}
 
 	CLAY(
 		Clay__AttachId(Clay__HashString(id, 0, 0)),
-		CLAY_LAYOUT({ .padding = _padding }),
-		CLAY_BORDER_OUTSIDE({ .width = borderSize, .color = _colors.highlight }),
+		CLAY_LAYOUT({ .padding = _config.padding }),
+		CLAY_BORDER_OUTSIDE({ .width = borderSize, .color = _config.colors.highlight }),
 		CLAY_RECTANGLE({ .color = color, .cornerRadius = 5 })
 	)
 	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _fontId, .fontSize = _fontSize }));
+		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 
 		if (Clay_Hovered())
 		{
@@ -178,7 +165,7 @@ void UI::CreateMenuDropDown(const std::vector<MenuId>& items)
 				},
 				.layoutDirection = CLAY_TOP_TO_BOTTOM,
 				}),
-			CLAY_BORDER_OUTSIDE({ .width = 2, .color = _colors.highlight }),
+			CLAY_BORDER_OUTSIDE({ .width = 2, .color = _config.colors.highlight }),
 			CLAY_RECTANGLE({
 				.color = { 40, 40, 40, 255 },
 				.cornerRadius = CLAY_CORNER_RADIUS(8)
@@ -202,11 +189,11 @@ void UI::CreateMenuDropDownButton(const MenuId& name)
 
 	CLAY(
 		Clay__AttachId(Clay__HashString(id, 0, 0)),
-		CLAY_LAYOUT({ .sizing = { .width = CLAY_SIZING_GROW(0) }, .padding = _padding }),
-		CLAY_RECTANGLE({ .color = hovered ?_colors.foreground : _colors.background, .cornerRadius = 5 })
+		CLAY_LAYOUT({ .sizing = { .width = CLAY_SIZING_GROW(0) }, .padding = _config.padding }),
+		CLAY_RECTANGLE({ .color = hovered ? _config.colors.foreground : _config.colors.background, .cornerRadius = 5 })
 	)
 	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = hovered ? _colors.accentText : _colors.text, .fontId = _fontId, .fontSize = _fontSize }));
+		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = hovered ? _config.colors.accentText : _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 	}
 }
 
@@ -214,8 +201,8 @@ void UI::CreateActionBar()
 {
 	CLAY(
 		CLAY_ID("ActionBar"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
-		CLAY_RECTANGLE({ .color = _colors.accent })
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+		CLAY_RECTANGLE({ .color = _config.colors.accent })
 	)
 	{
 	}
@@ -226,7 +213,7 @@ void UI::CreateMainForm()
 	CLAY(
 		CLAY_ID("MainContent"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_LEFT_TO_RIGHT }),
-		CLAY_RECTANGLE({ .color = _colors.background })
+		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
 		CreateIDEForm();
@@ -262,7 +249,7 @@ void UI::CreateMainFormSpliter()
 	CLAY(
 		CLAY_ID("MainFormSpliter"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(4), .height = CLAY_SIZING_GROW(0)} }),
-		CLAY_RECTANGLE({ .color = _colors.text })
+		CLAY_RECTANGLE({ .color = _config.colors.text })
 	)
 	{
 	}
@@ -273,7 +260,7 @@ void UI::CreateIDEForm()
 	CLAY(
 		CLAY_ID("IDEForm"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(_infoWidth), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
-		CLAY_RECTANGLE({ .color = _colors.text })
+		CLAY_RECTANGLE({ .color = _config.colors.text })
 	)
 	{
 		CreateEditor();
@@ -311,7 +298,7 @@ void UI::CreateIDEFormSpliter()
 	CLAY(
 		CLAY_ID("IDEFormSpliter"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(4)} }),
-		CLAY_RECTANGLE({ .color = _colors.text })
+		CLAY_RECTANGLE({ .color = _config.colors.text })
 	)
 	{
 	}
@@ -322,7 +309,7 @@ void UI::CreateEditor()
 	CLAY(
 		CLAY_ID("Editor"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_editorHeight)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
-		CLAY_RECTANGLE({ .color = _colors.background })
+		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
 		if (Clay_Hovered() && IsMouseButtonDown(0))
@@ -344,7 +331,7 @@ void UI::CreateOutput()
 	CLAY(
 		CLAY_ID("Output"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
-		CLAY_RECTANGLE({ .color = _colors.background })
+		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
 		if (Clay_Hovered() && IsMouseButtonDown(0))
@@ -366,7 +353,7 @@ void UI::CreateInfo()
 	CLAY(
 		CLAY_ID("InfoWindow"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(200), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
-		CLAY_RECTANGLE({ .color = _colors.background })
+		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
 		if (Clay_Hovered() && IsMouseButtonDown(0))
@@ -388,11 +375,11 @@ void UI::CreateDetails()
 	auto strContent = Clay_StringFromStdString(_details);
 	CLAY(
 		CLAY_ID("DetailBar"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_fontSize)} }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 		CLAY_RECTANGLE({ .color = _colors.accent })
 	)
 	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _colors.text, .fontId = _fontId, .fontSize = _fontSize }));
+		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 	}
 }
 

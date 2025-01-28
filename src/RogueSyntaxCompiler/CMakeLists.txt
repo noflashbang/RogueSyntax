@@ -62,6 +62,7 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputCmd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UIConfig.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.h
  )
 
