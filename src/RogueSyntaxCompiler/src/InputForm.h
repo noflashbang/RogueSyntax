@@ -46,6 +46,8 @@ private:
 	uint16_t _hoverLine = 0;
 	uint16_t _hoverColumn = 0;
 
+	const char _cursorPlaceholder = ' '; //used to draw a text layout when the cursor is at the end of a line, need a valid char* to draw
+
 	void DeleteHighlightedText(std::vector<std::string>& data);
 	void CopyHighlightedText(std::vector<std::string>& data);
 	void InsertClipboardText(std::vector<std::string>& data);
