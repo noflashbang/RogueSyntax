@@ -11,6 +11,23 @@
 
 std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor);
 
+class ILineNumberingStrategy
+{
+public:
+	virtual void LayoutLineNumbering(size_t line_number) = 0;
+};
+
+class SimpleLineNumbering : public ILineNumberingStrategy
+{
+public:
+	SimpleLineNumbering(UIConfig config);
+	virtual void LayoutLineNumbering(size_t line_number);
+private:
+	std::vector<std::string> _lineNumbers;
+	UIConfig _config;
+};
+
+
 class InputForm
 {
 public:
@@ -26,7 +43,10 @@ public:
 
 protected:
 
-	void CreateLine(bool hasFocus, size_t line_number, const std::string_view line, bool lineNumbers);
+	ILineNumberingStrategy* _lineNumberingStrategy = nullptr;
+	void LayoutLineNumbering(size_t line_number);
+
+	void CreateLine(bool hasFocus, size_t line_number, const std::string_view line);
 	void CreateChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 	void CreatePlaceHolderChar(bool hasFocus, size_t line_number, size_t index, const char* character);
 
@@ -62,6 +82,4 @@ private:
 
 	std::vector<std::string> _inputFormLines;
 	std::string _name;
-
-	std::vector<std::string> _lineNumbers;
 };

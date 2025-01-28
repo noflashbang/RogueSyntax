@@ -15,14 +15,34 @@ std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor
 	return lines;
 }
 
-InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
-{
-	_name = name;
 
+SimpleLineNumbering::SimpleLineNumbering(UIConfig config) : _config(config)
+{
 	for (size_t i = 0; i < 99; i++)
 	{
 		_lineNumbers.push_back(std::format("{:0>2}", i));
 	}
+}
+
+void SimpleLineNumbering::LayoutLineNumbering(size_t line_number)
+{
+	CLAY(
+		CLAY_IDI_LOCAL("LINENUM", line_number),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize * 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
+		CLAY_RECTANGLE({ .color = _config.colors.background })
+	)
+	{
+		if (_lineNumbers.size() > line_number)
+		{
+			auto strContent = Clay_StringFromStdString(_lineNumbers.at(line_number));
+			CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
+		}
+	}
+}
+
+InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
+{
+	_name = name;
 	_cursorLine = 0;
 	_cursorColumn = 0;
 	_highlighting = false;
@@ -283,12 +303,20 @@ void InputForm::Layout(bool hasFocus)
 	size_t line_number = 0;
 	for (auto& line : _inputFormLines)
 	{
-		CreateLine(hasFocus, line_number, line, true);
+		CreateLine(hasFocus, line_number, line);
 		line_number++;
 	}
 }
 
-void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_view line, bool lineNumbers)
+void InputForm::LayoutLineNumbering(size_t line_number)
+{
+	if (_lineNumberingStrategy != nullptr)
+	{
+		_lineNumberingStrategy->LayoutLineNumbering(line_number);
+	}
+}
+
+void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_view line)
 {
 	uint32_t borderSize = 0;
 	if (_cursorLine == line_number)
@@ -302,22 +330,8 @@ void InputForm::CreateLine(bool hasFocus, size_t line_number, const std::string_
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		if (lineNumbers)
-		{
-			CLAY(
-				CLAY_IDI_LOCAL("LINENUM", line_number),
-				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize * 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-				CLAY_RECTANGLE({ .color = _config.colors.background })
-			)
-			{
-				if (_lineNumbers.size() > line_number)
-				{
-					auto strContent = Clay_StringFromStdString(_lineNumbers.at(line_number));
-					CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
-				}
-			}
-		}
-		
+		LayoutLineNumbering(line_number);
+
 		for (auto index = 0; index < line.length(); index++)
 		{
 			char* character = (char*)line.data() + index;
@@ -573,3 +587,5 @@ void InputForm::SetClipboardText(const std::string& text)
 {
 	_clipBoardText = text;
 }
+
+
