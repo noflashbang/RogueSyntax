@@ -12,6 +12,7 @@
 #include "InputCmd.h"
 #include "InputForm.h"
 #include "UIConfig.h"
+#include "UI_Layout_Splitter.h"
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) { .x = vector.x, .y = vector.y }
 
@@ -44,10 +45,8 @@ protected:
 	void CreateMenuDropDownButton(const MenuId& name);
 	void CreateActionBar();
 	void CreateMainForm();
-	void CreateMainFormSpliter();
 	void CreateIDEForm();
 	void CreateEditor();
-	void CreateIDEFormSpliter();
 	void CreateOutput();
 	void CreateInfo();
 	void CreateDetails();
@@ -63,9 +62,11 @@ private:
 	InputForm _outputForm;
 	InputForm _infoForm;
 	
-	//layout sizes
-	float _editorHeight = 600;
-	bool _editorSizing = false;
+	//splitters
+	std::unique_ptr<UI_Splitter> _mainFormSplitter;
+	std::unique_ptr<UI_Splitter> _ideFormSplitter;
+
+
 	float _infoWidth = 1300;
 	bool _infoSizing = false;
 

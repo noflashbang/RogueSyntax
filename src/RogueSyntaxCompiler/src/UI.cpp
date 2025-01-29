@@ -28,6 +28,9 @@ UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",co
 	_formFocus = "Editor";
 
 	_menuIdActive = "";
+
+	_mainFormSplitter = std::make_unique<UI_Splitter>(config, 1300, SPLITTER_VERTICAL, [this]() { this->CreateIDEForm(); }, [this]() { this->CreateInfo(); });
+	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 600, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
 }
 
 UI::~UI()
@@ -81,8 +84,6 @@ void UI::DoLayout()
 
 	CreateRoot();
 }
-
-
 
 void UI::CreateRoot()
 {
@@ -223,104 +224,26 @@ void UI::CreateActionBar()
 
 void UI::CreateMainForm()
 {
-	CLAY(
-		CLAY_ID("MainContent"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_LEFT_TO_RIGHT }),
-		CLAY_RECTANGLE({ .color = _config.colors.background })
-	)
-	{
-		CreateIDEForm();
-		CreateMainFormSpliter();
-		CreateInfo();
-	}
-}
-
-void UI::CreateMainFormSpliter()
-{
-	CLAY(
-		CLAY_ID("MainFormSpliter"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(4), .height = CLAY_SIZING_GROW(0)} }),
-		CLAY_RECTANGLE({ .color = _config.colors.text })
-	)
-	{
-		bool hovered = Clay_Hovered();
-		if (hovered)
-		{
-			SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
-		}
-
-		if (hovered && IsMouseButtonDown(0))
-		{
-			_infoSizing = true;
-		}
-		if (_infoSizing)
-		{
-			SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
-			if (IsMouseButtonUp(0))
-			{
-				SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-				_infoSizing = false;
-			}
-			_infoWidth += GetMouseDelta().x;
-		}
-	}
+	_mainFormSplitter->Layout();
 }
 
 void UI::CreateIDEForm()
 {
-	CLAY(
-		CLAY_ID("IDEForm"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(_infoWidth), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
-		CLAY_RECTANGLE({ .color = _config.colors.text })
-	)
-	{
-		CreateEditor();
-		CreateIDEFormSpliter();
-		CreateOutput();
-	}
-}
-
-void UI::CreateIDEFormSpliter()
-{
-	CLAY(
-		CLAY_ID("IDEFormSpliter"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(4)} }),
-		CLAY_RECTANGLE({ .color = _config.colors.text })
-	)
-	{
-		bool hovered = Clay_Hovered();
-		if (hovered)
-		{
-			SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
-		}
-
-		if (hovered && IsMouseButtonDown(0))
-		{
-			_editorSizing = true;
-		}
-
-		if (_editorSizing)
-		{
-			SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
-			if (IsMouseButtonUp(0))
-			{
-				SetMouseCursor(MOUSE_CURSOR_DEFAULT);
-				_editorSizing = false;
-			}
-			_editorHeight += GetMouseDelta().y;
-		}
-	}
+	_ideFormSplitter->Layout();
 }
 
 void UI::CreateEditor()
 {
 	CLAY(
 		CLAY_ID("EditorParent"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_editorHeight)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		_editorForm.SetFormHeight(_editorHeight);
+		auto id = Clay_GetElementId(CLAY_STRING("EditorParent"));
+		auto h = Clay_GetElementData(id).boundingBox.height;
+
+		_editorForm.SetFormHeight(h);
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
 			_formFocus = _editorForm.Name();
@@ -337,6 +260,10 @@ void UI::CreateOutput()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		auto id = Clay_GetElementId(CLAY_STRING("OutputParent"));
+		auto h = Clay_GetElementData(id).boundingBox.height;
+
+		_outputForm.SetFormHeight(h);
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
 			_formFocus = _outputForm.Name();
@@ -349,10 +276,15 @@ void UI::CreateInfo()
 {
 	CLAY(
 		CLAY_ID("InfoWindowParent"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(200), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		auto id = Clay_GetElementId(CLAY_STRING("InfoWindowParent"));
+		auto h = Clay_GetElementData(id).boundingBox.height;
+		auto w = Clay_GetElementData(id).boundingBox.width;
+
+		_infoForm.SetFormHeight(h);
 		if (Clay_Hovered() && IsMouseButtonDown(0))
 		{
 			_formFocus = _infoForm.Name();

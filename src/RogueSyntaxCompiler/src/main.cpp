@@ -99,6 +99,7 @@ int main(int argc, char* argv[])
 
 	config.colors = DEFAULT_PALETTE;
 
+    InteractiveCompiler console;
 	UI ui(config);
     
     while (!WindowShouldClose())    // Detect window close button or ESC key
@@ -112,11 +113,6 @@ int main(int argc, char* argv[])
         }
         UpdateDrawFrame(ui);
     }
-
-	//InteractiveCompiler console;
-	//console.Start();
-	//console.PrintDecompile();
-	//console.Run();
 	return 0;
 }
 

@@ -423,7 +423,7 @@ void InputForm::Layout(bool hasFocus)
 	{
 		CLAY(
 			Clay__AttachId(Clay__HashString(formId, 2, 0)),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_formHeight)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 			CLAY_RECTANGLE({ .color = _config.colors.background })
 		)
 		{
