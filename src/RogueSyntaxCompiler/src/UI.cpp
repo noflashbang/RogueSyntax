@@ -10,11 +10,6 @@ UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",co
 	InputFormConfigurator(&_outputForm).With(new HighlightCursorStrategy(config));
 	InputFormConfigurator(&_infoForm).With(new BarCursorStrategy(config));
 
-	_menu.push_back(std::make_pair(MenuId{ "ID_FILE_MAIN", "File" }, std::vector<MenuId>{{"ID_NEW", "New"}, { "ID_OPEN","Open" }, { "ID_SAVE","Save" }, { "ID_SAVEAS","Save As" }, { "ID_EXIT","Exit" }}));
-	_menu.push_back(std::make_pair(MenuId{ "ID_EDIT_MAIN", "Edit" }, std::vector<MenuId>{{"ID_UNDO", "Undo"}, { "ID_REDO","Redo" }, { "ID_CUT","Cut" }, { "ID_COPY","Copy" }, { "ID_PASTE","Paste" }}));
-	_menu.push_back(std::make_pair(MenuId{ "ID_VIEW_MAIN", "View" }, std::vector<MenuId>{{"ID_ZOOMIN", "Zoom In"}, { "ID_ZOOMOUT","Zoom Out" }, { "ID_FULLSCREEN","Full Screen" }}));
-	_menu.push_back(std::make_pair(MenuId{ "ID_HELP_MAIN", "Help" }, std::vector<MenuId>{{"ID_ABOUT", "About"}, { "ID_HELP","Help" }}));
-
 	_details = "";
 	_output = ":>";
 	_outputForm.SetContent(_output);
@@ -27,10 +22,15 @@ UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",co
 
 	_formFocus = "Editor";
 
-	_menuIdActive = "";
-
 	_mainFormSplitter = std::make_unique<UI_Splitter>(config, 1300, SPLITTER_VERTICAL, [this]() { this->CreateIDEForm(); }, [this]() { this->CreateInfo(); });
 	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 600, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
+
+	_menuBar = std::make_unique<UI_MenuBar>(config);
+
+	_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
+	_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
+	_menuBar->AddMenu("View", { "Zoom In", "Zoom Out", "Full Screen" });
+	_menuBar->AddMenu("Help", { "About", "Help" });
 }
 
 UI::~UI()
@@ -78,7 +78,7 @@ void UI::DoLayout()
 
 	if (IsMouseButtonDown(0))
 	{
-		_menuIdActive = "";
+		//_menuIdActive = "";
 	}
 	SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
@@ -93,121 +93,11 @@ void UI::CreateRoot()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		CreateMenu();
+		_menuBar->Layout();
+
 		CreateActionBar();
 		CreateMainForm();
 		CreateDetails();
-	}
-}
-
-void UI::CreateMenu()
-{
-	CLAY(
-		CLAY_ID("Menu"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize*2)}, .childGap = _config.fontSize, .layoutDirection = CLAY_LEFT_TO_RIGHT }),
-		CLAY_RECTANGLE({ .color = _config.colors.accent })
-	)
-	{
-		for (auto& menu : _menu)
-		{
-			CreateMenuButton(menu.first, menu.second);
-		}
-	}
-}
-
-void UI::CreateMenuButton(const MenuId& name, const std::vector<MenuId>& items)
-{
-	auto id = Clay_StringFromStdString(name.id);
-	auto strContent = Clay_StringFromStdString(name.name);
-	uint32_t borderSize = 0;
-	bool hovered = Clay_PointerOver(Clay__HashString(id, 0, 0));
-	if (hovered)
-	{
-		borderSize = 2;
-	}
-	
-	Clay_Color color = _config.colors.background;
-	Clay_Color textColor = _config.colors.text;
-	if (_menuIdActive == name.id)
-	{
-		color = _config.colors.foreground;
-		textColor = _config.colors.accentText;
-	}
-
-	CLAY(
-		Clay__AttachId(Clay__HashString(id, 0, 0)),
-		CLAY_LAYOUT({ .padding = _config.padding }),
-		CLAY_BORDER_OUTSIDE({ .width = borderSize, .color = _config.colors.highlight }),
-		CLAY_RECTANGLE({ .color = color, .cornerRadius = 5 })
-	)
-	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _config.fontId, .fontSize = _config.fontSize }));
-
-		if (Clay_Hovered())
-		{
-			if (IsMouseButtonDown(0))
-			{
-				_menuIdActive = name.id;
-				_formFocus = "";
-			}
-		}
-		
-		if (_menuIdActive == name.id)
-		{
-			CreateMenuDropDown(items);
-		}
-	}
-}
-
-void UI::CreateMenuDropDown(const std::vector<MenuId>& items)
-{
-	CLAY(
-		CLAY_ID("FileMenu"),
-		CLAY_FLOATING({
-			.attachment = {
-				.parent = CLAY_ATTACH_POINT_LEFT_BOTTOM
-			},
-			}),
-		CLAY_LAYOUT({
-			.padding = {0, 0, 8, 8 }
-			})
-	) {
-		CLAY(
-			CLAY_LAYOUT({
-				.sizing = {
-						.width = CLAY_SIZING_FIXED(150)
-				},
-				.layoutDirection = CLAY_TOP_TO_BOTTOM,
-				}),
-			CLAY_BORDER_OUTSIDE({ .width = 2, .color = _config.colors.highlight }),
-			CLAY_RECTANGLE({
-				.color = { 40, 40, 40, 255 },
-				.cornerRadius = CLAY_CORNER_RADIUS(8)
-				})
-		)
-		{
-			for (auto& item : items)
-			{
-				CreateMenuDropDownButton(item);
-			}
-		}
-	}
-}
-
-void UI::CreateMenuDropDownButton(const MenuId& name)
-{
-	auto id = Clay_StringFromStdString(name.id);
-	auto strContent = Clay_StringFromStdString(name.name);
-
-	bool hovered = Clay_PointerOver(Clay__HashString(id, 0, 0));
-
-	CLAY(
-		Clay__AttachId(Clay__HashString(id, 0, 0)),
-		CLAY_LAYOUT({ .sizing = { .width = CLAY_SIZING_GROW(0) }, .padding = _config.padding }),
-		CLAY_RECTANGLE({ .color = hovered ? _config.colors.foreground : _config.colors.background, .cornerRadius = 5 })
-	)
-	{
-		CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = hovered ? _config.colors.accentText : _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 	}
 }
 

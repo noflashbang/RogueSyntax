@@ -13,6 +13,7 @@
 #include "InputForm.h"
 #include "UIConfig.h"
 #include "UI_Layout_Splitter.h"
+#include "UI_Layout_Menu.h"
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) { .x = vector.x, .y = vector.y }
 
@@ -39,10 +40,6 @@ public:
 protected:
 
 	void CreateRoot();
-	void CreateMenu();
-	void CreateMenuButton(const MenuId& name, const std::vector<MenuId>& items);
-	void CreateMenuDropDown(const std::vector<MenuId>& items);
-	void CreateMenuDropDownButton(const MenuId& name);
 	void CreateActionBar();
 	void CreateMainForm();
 	void CreateIDEForm();
@@ -66,6 +63,8 @@ private:
 	std::unique_ptr<UI_Splitter> _mainFormSplitter;
 	std::unique_ptr<UI_Splitter> _ideFormSplitter;
 
+	std::unique_ptr<UI_MenuBar> _menuBar;
+
 	double _mouseBtnOneDownTime = 0.0;
 
 	std::string _formFocus;
@@ -77,6 +76,5 @@ private:
 	std::string _editor;
 	std::string _info;
 
-	std::vector<std::pair<MenuId,std::vector<MenuId>>> _menu;
-	std::string _menuIdActive;
+
 };

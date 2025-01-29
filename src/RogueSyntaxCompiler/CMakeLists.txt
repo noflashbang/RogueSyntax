@@ -59,6 +59,7 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Menu.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Splitter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputCmd.h
@@ -72,6 +73,7 @@ set( compilerHeaders
 set( compilerSource 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Menu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Splitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.cpp
