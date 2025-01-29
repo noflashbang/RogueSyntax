@@ -14,7 +14,7 @@ public:
 
 	ByteCode Compile(const std::string& input);
 	std::string Decompile(const ByteCode& input);
-
+	std::string GetPrompt() { return _prompt; };
 
 	
 private:

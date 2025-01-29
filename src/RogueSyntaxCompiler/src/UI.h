@@ -32,9 +32,10 @@ public:
 
 	void DoLayout();
 
-	void SetDetails(const std::string& details) { _details = details; }
-	void SetOutput(const std::string& output) { _output = output; }
-	void SetEditor(const std::string& editor) { _editor = editor; }
+	void SetDetails(const std::string& details) { _infoForm.SetContent(details); }
+	void SetOutput(const std::string& output) { _outputForm.SetContent(output); }
+	void SetEditor(const std::string& editor) { _editorForm.SetContent(editor); }
+
 	void SetInfo(const std::string& info) { _info = info; }
 
 protected:

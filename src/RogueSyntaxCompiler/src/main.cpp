@@ -101,6 +101,8 @@ int main(int argc, char* argv[])
 
     InteractiveCompiler console;
 	UI ui(config);
+
+    ui.SetOutput(console.GetPrompt());
     
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {

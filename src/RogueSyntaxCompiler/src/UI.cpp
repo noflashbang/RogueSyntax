@@ -12,7 +12,7 @@ UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",co
 
 	_details = "";
 	_output = ":>";
-	_outputForm.SetContent(_output);
+	
 
 	_editor = "let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ";
 	_editorForm.SetContent(_editor);
