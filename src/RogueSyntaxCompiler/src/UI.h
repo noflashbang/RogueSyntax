@@ -66,16 +66,8 @@ private:
 	std::unique_ptr<UI_Splitter> _mainFormSplitter;
 	std::unique_ptr<UI_Splitter> _ideFormSplitter;
 
-
-	float _infoWidth = 1300;
-	bool _infoSizing = false;
-
-	bool _cursorBlink = false;
-	double _keyboardAccumulatedTime = 0.0;
 	double _mouseBtnOneDownTime = 0.0;
-	double _blinkAccumulatedTime = 0.0;
 
-	
 	std::string _formFocus;
 
 	std::vector<InputCmd> _inputCmds;
@@ -84,8 +76,7 @@ private:
 	std::string _output;
 	std::string _editor;
 	std::string _info;
-	std::vector<std::pair<MenuId,std::vector<MenuId>>> _menu;
 
-	
+	std::vector<std::pair<MenuId,std::vector<MenuId>>> _menu;
 	std::string _menuIdActive;
 };
