@@ -1,6 +1,6 @@
 #include "UI_Layout_Menu.h"
 
-UI_MenuBar::UI_MenuBar(const UIConfig& config) : _config(config)
+UI_MenuBar::UI_MenuBar(const UIConfig& config, std::shared_ptr<UIEventObserver<std::string>> focusChanged) : _config(config), _eventCurrentFocusObserver(focusChanged)
 {
 }
 
@@ -31,7 +31,7 @@ void UI_MenuBar::CreateMenuButton(uint16_t index, const std::string& name, const
 	auto strContent = Clay_StringFromStdString(name);
 	Clay_Color color = _config.colors.background;
 	Clay_Color textColor = _config.colors.text;
-	if (_menuIdActive == name)
+	if (_menuIdActive == name && _eventCurrentFocusObserver->GetEventData() == name)
 	{
 		color = _config.colors.foreground;
 		textColor = _config.colors.accentText;
@@ -57,7 +57,7 @@ void UI_MenuBar::CreateMenuButton(uint16_t index, const std::string& name, const
 		{
 			CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = textColor, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 
-			if (_menuIdActive == name)
+			if (_menuIdActive == name && _eventCurrentFocusObserver->GetEventData() == name)
 			{
 				CreateMenuDropDown(items);
 			}
@@ -67,11 +67,11 @@ void UI_MenuBar::CreateMenuButton(uint16_t index, const std::string& name, const
 				if (IsMouseButtonDown(0))
 				{
 					_menuIdActive = name;
+					_eventCurrentFocusObserver->SetEventData(name);
 				}
 			}
 		}
 	}
-	
 }
 
 void UI_MenuBar::CreateMenuDropDown(const std::vector<std::string>& items)

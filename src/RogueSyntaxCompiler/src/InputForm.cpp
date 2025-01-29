@@ -114,7 +114,7 @@ bool ConsoleInputCmdProcessor::ProcessInputCommand(const InputCmd& cmd)
 	return false;
 }
 
-InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
+InputForm::InputForm(const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged) : _config(config), _eventCurrentFocusObserver(focusChanged)
 {
 	_name = name;
 	_cursorPosition = { 0, 0 };
@@ -151,6 +151,11 @@ void InputForm::SetContent(const std::string& content)
 
 void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 {
+	if (_eventCurrentFocusObserver->GetEventData() != _name)
+	{
+		return;
+	}
+
 	for (auto& cmd : cmds)
 	{
 		switch (cmd.type)
@@ -406,8 +411,16 @@ void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
 	}
 }
 
-void InputForm::Layout(bool hasFocus)
+void InputForm::Layout()
 {
+	if (Clay_Hovered() && IsMouseButtonDown(0))
+	{
+		//observe focus
+		_eventCurrentFocusObserver->SetEventData(_name);
+	}
+
+	bool hasFocus = _eventCurrentFocusObserver->GetEventData() == _name;
+
 	if (_cursorStrategy != nullptr)
 	{
 		_cursorStrategy->Update(GetFrameTime());

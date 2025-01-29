@@ -6,12 +6,13 @@
 #include <raymath.h>
 #include <functional>
 #include "UIConfig.h"
+#include "UI_Layout_Event.h"
 
 
 class UI_MenuBar
 {
 public:
-	UI_MenuBar(const UIConfig& config);
+	UI_MenuBar(const UIConfig& config, std::shared_ptr<UIEventObserver<std::string>> focusChanged);
 	~UI_MenuBar() = default;
 
 	void Layout();
@@ -29,6 +30,7 @@ private:
 	void CreateMenuDropDownButton(const std::string& name, uint16_t index);
 	UIConfig _config;
 
+	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 	std::vector<std::pair<std::string, std::vector<std::string>>> _menu;
 	std::string _menuIdActive;
 

@@ -14,14 +14,9 @@
 #include "UIConfig.h"
 #include "UI_Layout_Splitter.h"
 #include "UI_Layout_Menu.h"
+#include "UI_Layout_Event.h"
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) { .x = vector.x, .y = vector.y }
-
-struct MenuId
-{
-	std::string id;
-	std::string name;
-};
 
 class UI
 {
@@ -54,6 +49,7 @@ protected:
 private:
 	
 	UIConfig _config;
+	UIEventAgent<std::string> _eventCurrentFocus;
 
 	//more complex ui elements
 	InputForm _editorForm;
@@ -64,11 +60,13 @@ private:
 	std::unique_ptr<UI_Splitter> _mainFormSplitter;
 	std::unique_ptr<UI_Splitter> _ideFormSplitter;
 
+	//menu
 	std::unique_ptr<UI_MenuBar> _menuBar;
 
-	double _mouseBtnOneDownTime = 0.0;
+	//std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 
-	std::string _formFocus;
+
+	double _mouseBtnOneDownTime = 0.0;
 
 	std::vector<InputCmd> _inputCmds;
 
@@ -76,6 +74,4 @@ private:
 	std::string _output;
 	std::string _editor;
 	std::string _info;
-
-
 };

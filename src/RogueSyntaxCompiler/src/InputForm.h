@@ -8,6 +8,7 @@
 #include <ranges>
 #include <vector>
 #include <format>
+#include "UI_Layout_Event.h"
 
 struct CursorPosition
 {
@@ -99,14 +100,14 @@ private:
 class InputForm
 {
 public:
-	InputForm(const std::string& name, UIConfig config);
+	InputForm(const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged);
 	~InputForm();
 
 	void SetContent(const std::string& content);
 	void ProcessInputCommands(const std::vector<InputCmd>& cmds);
 	const std::vector<std::string>& GetInputFormLines() { return _inputFormLines; };
 
-	void Layout(bool hasFocus);
+	void Layout();
 	const std::string& Name() { return _name; }
 
 	void LayoutScrollBar();
@@ -138,6 +139,8 @@ protected:
 	void ScrollCursorIntoView();
 
 private:
+
+	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 
 	float _formHeight = 0;
 	float _mouseYDeltaAccumulated = 0;

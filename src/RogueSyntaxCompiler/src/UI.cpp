@@ -2,10 +2,8 @@
 #include <iostream>
 
 
-
-UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",config), _infoForm("Info", config),  _config(config)
+UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subscribe()), _outputForm("Output",config, _eventCurrentFocus.Subscribe()), _infoForm("Info", config, _eventCurrentFocus.Subscribe()),  _config(config)
 {
-
 	InputFormConfigurator(&_editorForm).With(new SimpleLineNumbering(config)).With(new BarCursorStrategy(config));
 	InputFormConfigurator(&_outputForm).With(new HighlightCursorStrategy(config));
 	InputFormConfigurator(&_infoForm).With(new BarCursorStrategy(config));
@@ -13,19 +11,16 @@ UI::UI(UIConfig config) : _editorForm("Editor", config), _outputForm("Output",co
 	_details = "";
 	_output = ":>";
 	
-
 	_editor = "let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ";
 	_editorForm.SetContent(_editor);
 
 	_info = "";
 	_infoForm.SetContent(_info);
 
-	_formFocus = "Editor";
-
 	_mainFormSplitter = std::make_unique<UI_Splitter>(config, 1300, SPLITTER_VERTICAL, [this]() { this->CreateIDEForm(); }, [this]() { this->CreateInfo(); });
 	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 600, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
 
-	_menuBar = std::make_unique<UI_MenuBar>(config);
+	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
 	_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
 	_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
@@ -41,19 +36,10 @@ void UI::DoLayout()
 {
 	CreateInputCommands();
 
-	if (_formFocus == "Editor")
-	{
-		_editorForm.ProcessInputCommands(_inputCmds);
-	}
-	else if (_formFocus == "Output")
-	{
-		_outputForm.ProcessInputCommands(_inputCmds);
-	}
-	else if (_formFocus == "Info")
-	{
-		_infoForm.ProcessInputCommands(_inputCmds);
-	}
-
+	_editorForm.ProcessInputCommands(_inputCmds);
+	_outputForm.ProcessInputCommands(_inputCmds);
+	_infoForm.ProcessInputCommands(_inputCmds);
+		
 	if (_editorForm.IsHighlighting())
 	{
 		auto cursorPos = _editorForm.GetCursorPosition();
@@ -78,8 +64,10 @@ void UI::DoLayout()
 
 	if (IsMouseButtonDown(0))
 	{
-		//_menuIdActive = "";
+		//reset focus
+		_eventCurrentFocus.SetEventData("");
 	}
+
 	SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
 	CreateRoot();
@@ -134,11 +122,8 @@ void UI::CreateEditor()
 		auto h = Clay_GetElementData(id).boundingBox.height;
 
 		_editorForm.SetFormHeight(h);
-		if (Clay_Hovered() && IsMouseButtonDown(0))
-		{
-			_formFocus = _editorForm.Name();
-		}
-		_editorForm.Layout(_formFocus == _editorForm.Name());
+		
+		_editorForm.Layout();
 	}
 }
 
@@ -154,11 +139,7 @@ void UI::CreateOutput()
 		auto h = Clay_GetElementData(id).boundingBox.height;
 
 		_outputForm.SetFormHeight(h);
-		if (Clay_Hovered() && IsMouseButtonDown(0))
-		{
-			_formFocus = _outputForm.Name();
-		}
-		_outputForm.Layout(_formFocus == _outputForm.Name());
+		_outputForm.Layout();
 	}
 }
 
@@ -175,11 +156,7 @@ void UI::CreateInfo()
 		auto w = Clay_GetElementData(id).boundingBox.width;
 
 		_infoForm.SetFormHeight(h);
-		if (Clay_Hovered() && IsMouseButtonDown(0))
-		{
-			_formFocus = _infoForm.Name();
-		}
-		_infoForm.Layout(_formFocus == _infoForm.Name());
+		_infoForm.Layout();
 	}
 }
 
