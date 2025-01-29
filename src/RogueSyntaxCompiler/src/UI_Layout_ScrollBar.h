@@ -5,6 +5,8 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <functional>
+#include <algorithm>
+
 #include "UI_Layout_Structs.h"
 #include "UIConfig.h"
 

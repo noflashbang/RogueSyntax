@@ -32,20 +32,16 @@ void UI_ScrollBar::LayoutScrollbar()
 	)
 	{
 		auto bb = _layoutDimensions;
+		float longDirectionActual = (_type == ScrollBarType::SCROLLBAR_VERTICAL ? bb.height : bb.width) - _config.fontSize - _config.fontSize;
 
-		auto longDirectionUser = _max - _min;
-		auto longDirectionActual = _type == ScrollBarType::SCROLLBAR_VERTICAL ? bb.height : bb.width;
+		auto barFill = (_step / (_max - _min)) * longDirectionActual;
+		barFill = std::clamp(barFill, 0.0f, longDirectionActual);
 
-		auto directionRatio = longDirectionActual / longDirectionUser;
+		auto scrollFill = (_value / (_max - _min)) * longDirectionActual;
+		scrollFill = std::clamp(scrollFill, 0.0f, longDirectionActual- barFill);
 
-		auto barFill = (longDirectionUser / _step) * directionRatio;
-		if (barFill < _config.fontSize)
-		{
-			barFill = _config.fontSize;
-		}
-
-		auto scrollFill = (_value * directionRatio) - (_config.fontSize) - (barFill / 2);
-		auto endFill = longDirectionActual - (_value * directionRatio) - (_config.fontSize) - (barFill / 2);
+		auto endFill = longDirectionActual - scrollFill - barFill;
+		endFill = std::clamp(endFill, 0.0f, longDirectionActual - barFill);
 
 		float barwidth = _config.fontSize;
 		float barHeight = _config.fontSize;
@@ -68,6 +64,7 @@ void UI_ScrollBar::LayoutScrollbar()
 			scrollwidth = scrollFill;
 			endwidth = endFill;
 		}
+
 
 		CLAY(
 			CLAY_ID_LOCAL("BTNSTART"),
