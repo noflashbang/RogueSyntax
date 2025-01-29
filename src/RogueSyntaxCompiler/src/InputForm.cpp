@@ -104,6 +104,16 @@ void HighlightCursorStrategy::LayoutCursor()
 	}
 }
 
+ConsoleInputCmdProcessor::ConsoleInputCmdProcessor()
+{
+
+}
+
+bool ConsoleInputCmdProcessor::ProcessInputCommand(const InputCmd& cmd)
+{
+	return false;
+}
+
 InputForm::InputForm(const std::string& name, UIConfig config) : _config(config)
 {
 	_name = name;

@@ -20,9 +20,6 @@ struct CursorPosition
 	}
 };
 
-
-
-
 std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor);
 
 class ILineNumberingStrategy
@@ -81,6 +78,23 @@ private:
 	Blinker _cursorBlinker = Blinker(0.5);
 };
 
+class IInputCmdProcessor
+{
+public:
+	virtual bool ProcessInputCommand(const InputCmd& cmd) = 0;
+	virtual ~IInputCmdProcessor() = default;
+};
+
+class ConsoleInputCmdProcessor : public IInputCmdProcessor
+{
+public:
+	ConsoleInputCmdProcessor();
+	virtual ~ConsoleInputCmdProcessor() = default;
+	virtual bool ProcessInputCommand(const InputCmd& cmd) override;
+
+private:
+
+};
 
 class InputForm
 {

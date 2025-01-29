@@ -388,7 +388,7 @@ const IObject* RogueVM::Pop()
 	return _stack[--_sp];
 }
 
-const IObject* RogueVM::LastPoppped() const 
+const IObject* RogueVM::LastPopped() const 
 { 
 	if (_sp == 0)
 	{

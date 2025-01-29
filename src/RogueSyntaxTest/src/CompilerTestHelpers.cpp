@@ -157,7 +157,7 @@ bool VmTest(std::string input, ConstantValue expected)
 	try
 	{
 		vm->Run();
-		auto actual = vm->LastPoppped();
+		auto actual = vm->LastPopped();
 		REQUIRE(actual != nullptr);
 		return TestConstant(expected, actual);
 	}

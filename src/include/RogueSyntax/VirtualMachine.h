@@ -40,19 +40,20 @@ public:
 	~RogueVM();
 
 	void Run();
-
-	//stack operations
 	const IObject* Top() const;
+	const IObject* LastPopped() const;
+	const Frame& CurrentFrame() const;
+
+protected:
+
 	void Push(const IObject* obj);
 	const IObject* Pop();
-	const IObject* LastPoppped() const;
 
 	//frame operations
-	inline void IncrementFrameIp() { _frames[_frameIndex-1].IncrementIp(); };
-	inline void IncrementFrameIp(int amount) { _frames[_frameIndex-1].IncrementIp(amount); };
-	inline void SetFrameIp(int ip) { _frames[_frameIndex-1].SetIp(ip); };
+	inline void IncrementFrameIp() { _frames[_frameIndex - 1].IncrementIp(); };
+	inline void IncrementFrameIp(int amount) { _frames[_frameIndex - 1].IncrementIp(amount); };
+	inline void SetFrameIp(int ip) { _frames[_frameIndex - 1].SetIp(ip); };
 
-	const Frame& CurrentFrame() const;
 	void PushFrame(Frame frame);
 	Frame PopFrame();
 
@@ -82,8 +83,6 @@ public:
 		return operand;
 	}
 
-
-protected:
 	void ExecuteArithmeticInfix(OpCode::Constants opcode);
 	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right);
 	void ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, const DecimalObj* left, const DecimalObj* right);

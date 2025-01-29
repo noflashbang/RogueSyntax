@@ -1,3 +1,4 @@
+#include "RogueSyntax.h"
 #include "pch.h"
 #include "RogueSyntax.h"
 #include "Compiler.h"
@@ -30,6 +31,11 @@ ObjectCode RogueSyntax::Compile(const std::string& input, const std::string& uni
 
 	Compiler compiler(_objectStore->Factory());
 	return compiler.Compile(program, _builtIn, "PRG");
+}
+
+std::string RogueSyntax::Disassemble(const ByteCode& code) const
+{
+	return OpCode::PrintInstructions(code.Instructions);
 }
 
 ByteCode RogueSyntax::Link(const ObjectCode& objectCode) const
