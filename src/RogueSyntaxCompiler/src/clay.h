@@ -530,6 +530,7 @@ extern "C" {
     Clay_RenderCommandArray Clay_EndLayout(void);
     Clay_ElementId Clay_GetElementId(Clay_String idString);
     Clay_ElementId Clay_GetElementIdWithIndex(Clay_String idString, uint32_t index);
+    Clay_ElementId Clay_GetCurrentElementId();
     Clay_ElementData Clay_GetElementData(Clay_ElementId id);
     bool Clay_Hovered(void);
     void Clay_OnHover(void (*onHoverFunction)(Clay_ElementId elementId, Clay_PointerData pointerData, intptr_t userData), intptr_t userData);
@@ -4013,6 +4014,15 @@ Clay_ElementId Clay_GetElementId(Clay_String idString) {
 CLAY_WASM_EXPORT("Clay_GetElementIdWithIndex")
 Clay_ElementId Clay_GetElementIdWithIndex(Clay_String idString, uint32_t index) {
     return Clay__HashString(idString, index, 0);
+}
+
+CLAY_WASM_EXPORT("Clay_GetCurrentElementId")
+Clay_ElementId Clay_GetCurrentElementId() {
+    Clay_LayoutElement* openLayoutElement = Clay__GetOpenLayoutElement();
+    if (openLayoutElement->id == 0) {
+        Clay__GenerateIdForAnonymousElement(openLayoutElement);
+    }
+    return { .id = openLayoutElement->id };
 }
 
 bool Clay_Hovered(void) {

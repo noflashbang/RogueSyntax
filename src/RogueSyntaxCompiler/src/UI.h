@@ -12,6 +12,7 @@
 #include "InputCmd.h"
 #include "InputForm.h"
 #include "UIConfig.h"
+#include "UI_Layout_Structs.h"
 #include "UI_Layout_Splitter.h"
 #include "UI_Layout_Menu.h"
 #include "UI_Layout_Event.h"

@@ -119,10 +119,8 @@ void UI::CreateEditor()
 	)
 	{
 		auto id = Clay_GetElementId(CLAY_STRING("EditorParent"));
-		auto h = Clay_GetElementData(id).boundingBox.height;
-
-		_editorForm.SetFormHeight(h);
-		
+		auto bb = Clay_GetElementData(id).boundingBox;
+		_editorForm.SetLayoutDimensions(bb);
 		_editorForm.Layout();
 	}
 }
@@ -136,9 +134,8 @@ void UI::CreateOutput()
 	)
 	{
 		auto id = Clay_GetElementId(CLAY_STRING("OutputParent"));
-		auto h = Clay_GetElementData(id).boundingBox.height;
-
-		_outputForm.SetFormHeight(h);
+		auto bb = Clay_GetElementData(id).boundingBox;
+		_outputForm.SetLayoutDimensions(bb);
 		_outputForm.Layout();
 	}
 }
@@ -152,10 +149,8 @@ void UI::CreateInfo()
 	)
 	{
 		auto id = Clay_GetElementId(CLAY_STRING("InfoWindowParent"));
-		auto h = Clay_GetElementData(id).boundingBox.height;
-		auto w = Clay_GetElementData(id).boundingBox.width;
-
-		_infoForm.SetFormHeight(h);
+		auto bb = Clay_GetElementData(id).boundingBox;
+		_infoForm.SetLayoutDimensions(bb);
 		_infoForm.Layout();
 	}
 }

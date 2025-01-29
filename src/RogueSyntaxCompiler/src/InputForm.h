@@ -8,18 +8,10 @@
 #include <ranges>
 #include <vector>
 #include <format>
+#include "UI_Layout_Structs.h"
 #include "UI_Layout_Event.h"
+#include "UI_Layout_ScrollBar.h"
 
-struct CursorPosition
-{
-	uint16_t line;
-	uint16_t column;
-
-	bool operator==(const CursorPosition& other) const
-	{
-		return line == other.line && column == other.column;
-	}
-};
 
 std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor);
 
@@ -108,17 +100,16 @@ public:
 	const std::vector<std::string>& GetInputFormLines() { return _inputFormLines; };
 
 	void Layout();
-	const std::string& Name() { return _name; }
+	const std::string& Name() { return _name; };
 
 	void LayoutScrollBar();
 
+	CursorPosition GetCursorPosition() { return _cursorPosition; };
+	CursorPosition GetHighlightPosition() { return _highlightPosition; };
+	CursorPosition GetHoverPosition() { return _hoverPosition; };
+	bool IsHighlighting() { return _cursorPosition != _highlightPosition && _highlighting; };
 
-	CursorPosition GetCursorPosition() { return _cursorPosition; }
-	CursorPosition GetHighlightPosition() { return _highlightPosition; }
-	CursorPosition GetHoverPosition() { return _hoverPosition; }
-	bool IsHighlighting() { return _cursorPosition != _highlightPosition && _highlighting; }
-
-	void SetFormHeight(float height) { _formHeight = height; NormalizeScrollOffset(); }
+	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim; NormalizeScrollOffset(); };
 
 protected:
 
@@ -142,7 +133,10 @@ private:
 
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 
-	float _formHeight = 0;
+	std::unique_ptr<UI_ScrollBar> _scrollBar;
+
+	LayoutDimensions _layoutDimensions;
+
 	float _mouseYDeltaAccumulated = 0;
 	bool _scrolling = false;
 

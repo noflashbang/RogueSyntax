@@ -9,8 +9,6 @@
 
 #include "UIConfig.h"
 
-
-
 //simple event layer
 template <class>
 class UIEventObserver;
