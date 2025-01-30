@@ -12,6 +12,8 @@
 #include "UI_Layout_Cursor.h"
 #include "UIConfig.h"
 
+#define HIGHLIGHT_END 0xFFFF
+
 class UI_Textbox
 {
 public:
@@ -27,10 +29,13 @@ public:
 	void SetText(const std::string& text) { _text = text; };
 	const std::string& GetText() { return _text; };
 	bool HasFocus() { return _hasFocus; };
+	void SetFocus();
 	bool IsHighlighting() { return _highlighting; };
 	void SetHighlighting(bool highlight) { _highlighting = highlight; };
+	void SetHighlightingPosition(uint16_t start, uint16_t end);
 	void SetCursorPosition(uint16_t position) { _cursorPosition = std::clamp(position, (uint16_t)0, (uint16_t)_text.size()); };
 	uint16_t GetCursorPosition() { return _cursorPosition; };
+	uint16_t GetHoverPosition() { return _hoverPosition; };
 
 	bool CursorAtStart() { return _cursorPosition == 0; };
 	bool CursorAtEnd() { return _cursorPosition == _text.size(); };

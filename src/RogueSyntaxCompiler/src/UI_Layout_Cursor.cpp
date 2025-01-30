@@ -9,7 +9,7 @@ void BarCursorStrategy::LayoutCursor()
 	if (_cursorBlinker)
 	{
 		CLAY(
-			CLAY_ID("CURSOR"),
+			CLAY_ID_LOCAL("CURSOR"),
 			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
 			CLAY_RECTANGLE({ .color = _config.colors.highlight })
@@ -20,7 +20,7 @@ void BarCursorStrategy::LayoutCursor()
 	else
 	{
 		CLAY(
-			CLAY_ID("CURSOR"),
+			CLAY_ID_LOCAL("CURSOR"),
 			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
 			CLAY_RECTANGLE({  })
@@ -42,7 +42,7 @@ void HighlightCursorStrategy::LayoutCursor()
 		cursorColor.a = 128;
 
 		CLAY(
-			CLAY_ID("CURSOR"),
+			CLAY_ID_LOCAL("CURSOR"),
 			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize / 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
 			CLAY_RECTANGLE({ .color = cursorColor })
@@ -53,7 +53,7 @@ void HighlightCursorStrategy::LayoutCursor()
 	else
 	{
 		CLAY(
-			CLAY_ID("CURSOR"),
+			CLAY_ID_LOCAL("CURSOR"),
 			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
 			CLAY_RECTANGLE({  })

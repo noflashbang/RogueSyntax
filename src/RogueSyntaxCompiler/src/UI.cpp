@@ -23,6 +23,7 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
 	_testArea = std::make_unique<UI_TextArea>(config, "Test", _eventCurrentFocus.Subscribe(), std::make_unique<SimpleLineNumbering>(config));
+	_testArea->SetText("let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ");
 
 	_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
 	_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
@@ -242,17 +243,17 @@ void UI::CreateInputCommands()
 		_inputCmds.push_back(InputCmd{ INPUT_DELETE, FLAG_DELETE_FWD });
 	}
 	
-	if (IsMouseButtonDown(0))
-	{
-		_mouseBtnOneDownTime += GetFrameTime();
-	}
 	if (IsMouseButtonReleased(0))
 	{
 		_mouseBtnOneDownTime = 0;
 	}
+	if (IsMouseButtonDown(0))
+	{
+		_mouseBtnOneDownTime += GetFrameTime();
+	}
 	if (IsMouseButtonPressed(0) || IsMouseButtonDown(0))
 	{
-		if (_mouseBtnOneDownTime > 0.05)
+		if (_mouseBtnOneDownTime > 0.15)
 		{
 			_inputCmds.push_back(InputCmd{ INPUT_CURSOR_DRAG, FLAG_DRAG });
 		}

@@ -53,13 +53,14 @@ class UIEventObserver
 {
 public:
 	UIEventObserver(UIEventAgent<T>* obsThis) : _agent(obsThis) {};
-	void Update(T eventData) { _eventData = eventData; };
 	~UIEventObserver() = default;
 
 	void SetEventData(T data) { _agent->SetEventData(data); }
 	T GetEventData() { return _eventData; }
 
 private:
+	friend class UIEventAgent<T>; //we do this so that the users of the observers don't call the wrong method
+	void Update(T eventData) { _eventData = eventData; }; //make this private so that only the agent can call it
 	T _eventData;
 	UIEventAgent<T>* _agent;
 };

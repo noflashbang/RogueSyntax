@@ -42,6 +42,9 @@ public:
 	CursorPosition GetCursorPosition() { return _cursorPosition; };
 
 private:
+	uint32_t textboxId = 0;
+	std::string TextboxName() { return _name + "_LN_" + std::to_string(++textboxId);};
+
 	void LayoutTextArea();
 
 	void CreateLine(size_t index);

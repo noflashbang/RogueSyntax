@@ -146,8 +146,32 @@ void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
 		{
 			_highlightPosition = _cursorPosition;
 		}
+
 	}
 }
+
+void UI_Textbox::SetFocus()
+{
+	_eventCurrentFocusObserver->SetEventData(_name);
+	_hasFocus = true;
+	if (!_highlighting)
+	{
+		_highlightPosition = _cursorPosition;
+	}
+}
+void UI_Textbox::SetHighlightingPosition(uint16_t start, uint16_t end)
+{
+	if (end == HIGHLIGHT_END)
+	{
+		_highlightPosition = _text.size();
+		_cursorPosition = start;
+	}
+	else
+	{
+		_highlightPosition = std::min(start, end);
+		_cursorPosition = std::max(start, end);
+	}
+};
 
 void UI_Textbox::LayoutCursor(size_t index)
 {
@@ -267,5 +291,5 @@ void UI_Textbox::DeleteHighlightedText()
 void UI_Textbox::InsertText(const std::string& text)
 {
 	_text.insert(_cursorPosition, text);
-	_cursorPosition += text.length();
+	//_cursorPosition += text.length();
 }
