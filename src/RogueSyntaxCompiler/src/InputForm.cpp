@@ -1,107 +1,10 @@
 #include "InputForm.h"
 #include <iostream>
 
-std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor)
-{
-	std::vector<std::string> lines;
-	size_t start = 0;
-	size_t end = text.find(splitor);
-	while (end != std::string::npos)
-	{
-		lines.push_back(text.substr(start, end - start));
-		start = end + 1;
-		end = text.find(splitor, start);
-	}
-	lines.push_back(text.substr(start, end - start));
-	return lines;
-}
 
-SimpleLineNumbering::SimpleLineNumbering(UIConfig config) : _config(config)
-{
-	for (size_t i = 0; i < 99; i++)
-	{
-		_lineNumbers.push_back(std::format("{:0>2}", i));
-	}
-}
 
-void SimpleLineNumbering::LayoutLineNumbering(size_t line_number)
-{
-	CLAY(
-		CLAY_IDI_LOCAL("LINENUM", line_number),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize * 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-		CLAY_RECTANGLE({ .color = _config.colors.background })
-	)
-	{
-		if (_lineNumbers.size() > line_number)
-		{
-			auto strContent = Clay_StringFromStdString(_lineNumbers.at(line_number));
-			CLAY_TEXT(strContent, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
-		}
-	}
-}
 
-BarCursorStrategy::BarCursorStrategy(UIConfig config) : _config(config)
-{
-}
 
-void BarCursorStrategy::LayoutCursor()
-{
-	if (_cursorBlinker)
-	{
-		CLAY(
-			CLAY_ID("CURSOR"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-			CLAY_RECTANGLE({ .color = _config.colors.highlight })
-		)
-		{
-		}
-	}
-	else
-	{
-		CLAY(
-			CLAY_ID("CURSOR"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-			CLAY_RECTANGLE({  })
-		)
-		{
-		}
-	}
-}
-
-HighlightCursorStrategy::HighlightCursorStrategy(UIConfig config) : _config(config)
-{
-}
-
-void HighlightCursorStrategy::LayoutCursor()
-{
-	if (_cursorBlinker)
-	{
-		Clay_Color cursorColor = _config.colors.highlight;
-		cursorColor.a = 128;
-
-		CLAY(
-			CLAY_ID("CURSOR"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)(_config.fontSize / 2)), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-			CLAY_RECTANGLE({ .color = cursorColor })
-		)
-		{
-		}
-	}
-	else
-	{
-		CLAY(
-			CLAY_ID("CURSOR"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(1), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-			CLAY_FLOATING({ .attachment = {.element = CLAY_ATTACH_POINT_LEFT_CENTER, .parent = CLAY_ATTACH_POINT_LEFT_CENTER } }),
-			CLAY_RECTANGLE({  })
-		)
-		{
-		}
-	}
-}
 
 ConsoleInputCmdProcessor::ConsoleInputCmdProcessor()
 {
@@ -141,7 +44,7 @@ InputForm::~InputForm()
 
 void InputForm::SetContent(const std::string& content)
 {
-	_inputFormLines = GetLinesBySplitor(content, '\n');
+	//_inputFormLines = GetLinesBySplitor(content, '\n');
 	_cursorPosition = { 0, 0 };
 	_highlightPosition = { 0, 0 };
 	_hoverPosition = { 0, 0 };
@@ -149,232 +52,228 @@ void InputForm::SetContent(const std::string& content)
 	_clipBoardText = "";
 }
 
-void InputForm::ProcessInputCommands(const std::vector<InputCmd>& cmds)
+void InputForm::ProcessInputCommand(const InputCmd& cmd)
 {
 	if (_eventCurrentFocusObserver->GetEventData() != _name)
 	{
 		return;
 	}
 
-	for (auto& cmd : cmds)
+	switch (cmd.type)
 	{
-		switch (cmd.type)
+	case INPUT_CURSOR_LEFT:
+	{
+		_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+		if (_cursorPosition.column > 0)
 		{
-		case INPUT_CURSOR_LEFT:
-		{
-			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-			if (_cursorPosition.column > 0)
-			{
-				_cursorPosition.column--;
-			}
-			break;
+			_cursorPosition.column--;
 		}
-		case INPUT_CURSOR_RIGHT:
+		break;
+	}
+	case INPUT_CURSOR_RIGHT:
+	{
+		_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+		if (_cursorPosition.column < _inputFormLines.at(_cursorPosition.line).length())
 		{
-			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-			if (_cursorPosition.column < _inputFormLines.at(_cursorPosition.line).length())
-			{
-				_cursorPosition.column++;
-			}
-			break;
-		}
-		case INPUT_CURSOR_UP:
-		{
-			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-			if (_cursorPosition.line > 0)
-			{
-				_cursorPosition.line--;
-			}
-			break;
-		}
-		case INPUT_CURSOR_DOWN:
-		{
-			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-			if (_cursorPosition.line < _inputFormLines.size() - 1)
-			{
-				_cursorPosition.line++;
-			}
-			break;
-		}
-		case INPUT_CURSOR_MOVE:
-		{
-			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-
-			_cursorPosition.column = _hoverPosition.column;
-			_cursorPosition.line = _hoverPosition.line;
-
-			if (!_highlighting)
-			{
-				_highlightPosition.column = _cursorPosition.column;
-				_highlightPosition.line = _cursorPosition.line;
-			}
-
-			break;
-		}
-		case INPUT_CURSOR_DRAG:
-		{
-			if (!_highlighting)
-			{
-				_highlightPosition.column = _cursorPosition.column;
-				_highlightPosition.line = _cursorPosition.line;
-			}
-			_highlighting = true;
-			_cursorPosition.column = _hoverPosition.column;
-			_cursorPosition.line = _hoverPosition.line;
-			break;
-		}
-		case INPUT_INSERT:
-		{
-			if (_inputFormLines.size() == 0)
-			{
-				_inputFormLines.push_back("");
-			}
-			if (_highlighting)
-			{
-				DeleteHighlightedText(_inputFormLines);
-				_highlighting = false;
-			}
-			char character = (char)cmd.flags;
-			_inputFormLines.at(_cursorPosition.line).insert(_cursorPosition.column, 1, character);
 			_cursorPosition.column++;
-			break;
 		}
-		case INPUT_DELETE:
+		break;
+	}
+	case INPUT_CURSOR_UP:
+	{
+		_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+		if (_cursorPosition.line > 0)
 		{
-			if (_highlighting)
-			{
-				DeleteHighlightedText(_inputFormLines);
-				_highlighting = false;
-			}
-			else
-			{
-				if (cmd.flags == FLAG_DELETE_FWD)
-				{
-					if (_cursorPosition.column < _inputFormLines.at(_cursorPosition.line).length())
-					{
-						_inputFormLines.at(_cursorPosition.line).erase(_cursorPosition.column, 1);
-					}
-					else
-					{
-						if (_cursorPosition.line < _inputFormLines.size() - 1)
-						{
-							auto line = _inputFormLines.at(_cursorPosition.line);
-							auto nextLine = _inputFormLines.at(_cursorPosition.line + 1);
-							_inputFormLines.at(_cursorPosition.line) += nextLine;
-							_inputFormLines.erase(_inputFormLines.begin() + _cursorPosition.line + 1);
-						}
-					}
-				}
-				else if (cmd.flags == FLAG_DELETE_BWD)
-				{
-					if (_cursorPosition.column > 0)
-					{
-						_cursorPosition.column--;
-						_inputFormLines.at(_cursorPosition.line).erase(_cursorPosition.column, 1);
-					}
-					else
-					{
-						if (_cursorPosition.line > 0)
-						{
-							auto line = _inputFormLines.at(_cursorPosition.line);
-							auto prevLine = _inputFormLines.at(_cursorPosition.line - 1);
-							_cursorPosition.column = prevLine.length();
-							_inputFormLines.at(_cursorPosition.line - 1) += line;
-							_inputFormLines.erase(_inputFormLines.begin() + _cursorPosition.line);
-							_cursorPosition.line--;
-						}
-					}
-				}
-			}
-			break;
+			_cursorPosition.line--;
 		}
-		case INPUT_CURSOR_HOME:
-		{
-			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-			_cursorPosition.column = 0;
-			break;
-		}
-		case INPUT_CURSOR_END:
-		{
-			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-			_cursorPosition.column = _inputFormLines.at(_cursorPosition.line).length();
-			break;
-		}
-		case INPUT_SCROLL_DOWN:
-		{
-			_scrollOffset++;
-
-			NormalizeScrollOffset();
-
-			break;
-		}
-		case INPUT_SCROLL_UP:
-		{
-			if (_scrollOffset > 0)
-			{
-				_scrollOffset--;
-			}
-			break;
-		}
-		case INPUT_CURSOR_PAGEUP:
-		{
-			if (_cursorPosition.line > 0)
-			{
-				_cursorPosition.line--;
-			}
-			break;
-		}
-		case INPUT_CURSOR_PAGEDOWN:
+		break;
+	}
+	case INPUT_CURSOR_DOWN:
+	{
+		_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+		if (_cursorPosition.line < _inputFormLines.size() - 1)
 		{
 			_cursorPosition.line++;
-			if (_cursorPosition.line >= _inputFormLines.size())
-			{
-				_cursorPosition.line = _inputFormLines.size() - 1;
-			}
-			break;
 		}
-		case INPUT_NEWLINE:
-		{
-			if (_highlighting)
-			{
-				DeleteHighlightedText(_inputFormLines);
-				_highlighting = false;
-			}
-			auto line = _inputFormLines.at(_cursorPosition.line);
-			auto newLine = line.substr(_cursorPosition.column);
-			_inputFormLines.at(_cursorPosition.line) = line.substr(0, _cursorPosition.column);
-			_inputFormLines.insert(_inputFormLines.begin() + _cursorPosition.line + 1, newLine);
-			_cursorPosition.line++;
-			_cursorPosition.column = 0;
+		break;
+	}
+	case INPUT_CURSOR_MOVE:
+	{
+		_highlighting = cmd.flags == FLAG_HIGHLIGHT;
 
-			break;
-		}
-		case INPUT_CURSOR_COPY:
+		_cursorPosition.column = _hoverPosition.column;
+		_cursorPosition.line = _hoverPosition.line;
+
+		if (!_highlighting)
 		{
-			CopyHighlightedText(_inputFormLines);
-			break;
+			_highlightPosition.column = _cursorPosition.column;
+			_highlightPosition.line = _cursorPosition.line;
 		}
-		case INPUT_CURSOR_CUT:
+
+		break;
+	}
+	case INPUT_CURSOR_DRAG:
+	{
+		if (!_highlighting)
 		{
-			CopyHighlightedText(_inputFormLines);
+			_highlightPosition.column = _cursorPosition.column;
+			_highlightPosition.line = _cursorPosition.line;
+		}
+		_highlighting = true;
+		_cursorPosition.column = _hoverPosition.column;
+		_cursorPosition.line = _hoverPosition.line;
+		break;
+	}
+	case INPUT_INSERT:
+	{
+		if (_inputFormLines.size() == 0)
+		{
+			_inputFormLines.push_back("");
+		}
+		if (_highlighting)
+		{
 			DeleteHighlightedText(_inputFormLines);
 			_highlighting = false;
-			break;
 		}
-		case INPUT_CURSOR_PASTE:
+		char character = (char)cmd.flags;
+		_inputFormLines.at(_cursorPosition.line).insert(_cursorPosition.column, 1, character);
+		_cursorPosition.column++;
+		break;
+	}
+	case INPUT_DELETE:
+	{
+		if (_highlighting)
 		{
-			InsertClipboardText(_inputFormLines);
+			DeleteHighlightedText(_inputFormLines);
 			_highlighting = false;
-			break;
 		}
-		}
-
-		if (cmd.type == INPUT_CURSOR_DOWN || cmd.type == INPUT_CURSOR_UP || cmd.type == INPUT_CURSOR_HOME || cmd.type == INPUT_CURSOR_END || cmd.type == INPUT_NEWLINE)
+		else
 		{
-			ScrollCursorIntoView();
+			if (cmd.flags == FLAG_DELETE_FWD)
+			{
+				if (_cursorPosition.column < _inputFormLines.at(_cursorPosition.line).length())
+				{
+					_inputFormLines.at(_cursorPosition.line).erase(_cursorPosition.column, 1);
+				}
+				else
+				{
+					if (_cursorPosition.line < _inputFormLines.size() - 1)
+					{
+						auto line = _inputFormLines.at(_cursorPosition.line);
+						auto nextLine = _inputFormLines.at(_cursorPosition.line + 1);
+						_inputFormLines.at(_cursorPosition.line) += nextLine;
+						_inputFormLines.erase(_inputFormLines.begin() + _cursorPosition.line + 1);
+					}
+				}
+			}
+			else if (cmd.flags == FLAG_DELETE_BWD)
+			{
+				if (_cursorPosition.column > 0)
+				{
+					_cursorPosition.column--;
+					_inputFormLines.at(_cursorPosition.line).erase(_cursorPosition.column, 1);
+				}
+				else
+				{
+					if (_cursorPosition.line > 0)
+					{
+						auto line = _inputFormLines.at(_cursorPosition.line);
+						auto prevLine = _inputFormLines.at(_cursorPosition.line - 1);
+						_cursorPosition.column = prevLine.length();
+						_inputFormLines.at(_cursorPosition.line - 1) += line;
+						_inputFormLines.erase(_inputFormLines.begin() + _cursorPosition.line);
+						_cursorPosition.line--;
+					}
+				}
+			}
 		}
+		break;
+	}
+	case INPUT_CURSOR_HOME:
+	{
+		_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+		_cursorPosition.column = 0;
+		break;
+	}
+	case INPUT_CURSOR_END:
+	{
+		_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+		_cursorPosition.column = _inputFormLines.at(_cursorPosition.line).length();
+		break;
+	}
+	case INPUT_SCROLL_DOWN:
+	{
+		_scrollOffset++;
+
+		NormalizeScrollOffset();
+
+		break;
+	}
+	case INPUT_SCROLL_UP:
+	{
+		if (_scrollOffset > 0)
+		{
+			_scrollOffset--;
+		}
+		break;
+	}
+	case INPUT_CURSOR_PAGEUP:
+	{
+		if (_cursorPosition.line > 0)
+		{
+			_cursorPosition.line--;
+		}
+		break;
+	}
+	case INPUT_CURSOR_PAGEDOWN:
+	{
+		_cursorPosition.line++;
+		if (_cursorPosition.line >= _inputFormLines.size())
+		{
+			_cursorPosition.line = _inputFormLines.size() - 1;
+		}
+		break;
+	}
+	case INPUT_NEWLINE:
+	{
+		if (_highlighting)
+		{
+			DeleteHighlightedText(_inputFormLines);
+			_highlighting = false;
+		}
+		auto line = _inputFormLines.at(_cursorPosition.line);
+		auto newLine = line.substr(_cursorPosition.column);
+		_inputFormLines.at(_cursorPosition.line) = line.substr(0, _cursorPosition.column);
+		_inputFormLines.insert(_inputFormLines.begin() + _cursorPosition.line + 1, newLine);
+		_cursorPosition.line++;
+		_cursorPosition.column = 0;
+
+		break;
+	}
+	case INPUT_CURSOR_COPY:
+	{
+		CopyHighlightedText(_inputFormLines);
+		break;
+	}
+	case INPUT_CURSOR_CUT:
+	{
+		CopyHighlightedText(_inputFormLines);
+		DeleteHighlightedText(_inputFormLines);
+		_highlighting = false;
+		break;
+	}
+	case INPUT_CURSOR_PASTE:
+	{
+		InsertClipboardText(_inputFormLines);
+		_highlighting = false;
+		break;
+	}
 	}
 
+	if (cmd.type == INPUT_CURSOR_DOWN || cmd.type == INPUT_CURSOR_UP || cmd.type == INPUT_CURSOR_HOME || cmd.type == INPUT_CURSOR_END || cmd.type == INPUT_NEWLINE)
+	{
+		ScrollCursorIntoView();
+	}
 	//normalize the cursor position
 	//if (_cursorPosition.line > maxLines + _scrollOffset)
 	//{

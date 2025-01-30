@@ -60,9 +60,13 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Structs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Cursor.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_LineNumber.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Menu.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Splitter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_ScrollBar.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Textbox.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputCmd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.h
@@ -75,9 +79,13 @@ set( compilerHeaders
 set( compilerSource 
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Cursor.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_LineNumber.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Menu.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Splitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_ScrollBar.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Textbox.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.cpp

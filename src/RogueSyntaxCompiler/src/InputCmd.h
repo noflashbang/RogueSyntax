@@ -33,3 +33,4 @@ struct InputCmd
 	InputCmdType type;
 	uint32_t flags;
 };
+

@@ -11,15 +11,6 @@ void UI_ScrollBar::Layout()
 
 void UI_ScrollBar::LayoutScrollbar()
 {
-	//auto maxLines = _layoutDimensions.height / _config.fontSize;
-	//if (maxLines <= 0)
-	//{
-	//	return;
-	//}
-	//
-	//float pageCount = _inputFormLines.size() / maxLines;
-	//bool canScroll = pageCount >= 1;
-	// 	
 	auto verticalSizing = Clay_Sizing{ .width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_GROW(0) };
 	auto horizontalSizing = Clay_Sizing{ .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize) };
 

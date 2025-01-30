@@ -22,6 +22,8 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
+	_testArea = std::make_unique<UI_TextArea>(config, "Test", _eventCurrentFocus.Subscribe(), std::make_unique<SimpleLineNumbering>(config));
+
 	_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
 	_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
 	_menuBar->AddMenu("View", { "Zoom In", "Zoom Out", "Full Screen" });
@@ -36,10 +38,14 @@ void UI::DoLayout()
 {
 	CreateInputCommands();
 
-	_editorForm.ProcessInputCommands(_inputCmds);
-	_outputForm.ProcessInputCommands(_inputCmds);
-	_infoForm.ProcessInputCommands(_inputCmds);
-		
+	for (auto& cmd : _inputCmds)
+	{
+		_editorForm.ProcessInputCommand(cmd);
+		_outputForm.ProcessInputCommand(cmd);
+		_infoForm.ProcessInputCommand(cmd);
+		_testArea->ProcessInputCommand(cmd);
+	}
+	
 	if (_editorForm.IsHighlighting())
 	{
 		auto cursorPos = _editorForm.GetCursorPosition();
@@ -62,7 +68,7 @@ void UI::DoLayout()
 		_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", cursorPos.line, cursorPos.column, hoverPos.line, hoverPos.column);
 	}
 
-	if (IsMouseButtonDown(0))
+	if (IsMouseButtonPressed(0))
 	{
 		//reset focus
 		_eventCurrentFocus.SetEventData("");
@@ -81,6 +87,9 @@ void UI::CreateRoot()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+
+		_testArea->Layout();
+
 		_menuBar->Layout();
 
 		CreateActionBar();

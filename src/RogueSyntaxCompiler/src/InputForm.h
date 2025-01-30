@@ -9,67 +9,12 @@
 #include <vector>
 #include <format>
 #include "UI_Layout_Structs.h"
+#include "UI_Layout_Cursor.h"
+#include "UI_Layout_LineNumber.h"
 #include "UI_Layout_Event.h"
 #include "UI_Layout_ScrollBar.h"
-
-
-std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor);
-
-class ILineNumberingStrategy
-{
-public:
-	virtual void LayoutLineNumbering(size_t line_number) = 0;
-	virtual ~ILineNumberingStrategy() = default;
-};
-
-class SimpleLineNumbering : public ILineNumberingStrategy
-{
-public:
-	SimpleLineNumbering(UIConfig config);
-	virtual ~SimpleLineNumbering() = default;
-
-	virtual void LayoutLineNumbering(size_t line_number);
-private:
-	std::vector<std::string> _lineNumbers;
-	UIConfig _config;
-};
-
-class ICursorStrategy
-{
-public:
-	virtual ~ICursorStrategy() = default;
-	virtual void LayoutCursor() = 0;
-	virtual void Update(double dt) = 0;
-};
-
-class BarCursorStrategy : public ICursorStrategy
-{
-public:
-	BarCursorStrategy(UIConfig config);
-	virtual ~BarCursorStrategy() = default;
-	virtual void LayoutCursor();
-	virtual void Update(double dt) { _cursorBlinker.Update(dt); }
-
-private:
-	UIConfig _config;
-
-	//cursor blinker
-	Blinker _cursorBlinker = Blinker(0.5);
-};
-
-class HighlightCursorStrategy : public ICursorStrategy
-{
-public:
-	HighlightCursorStrategy(UIConfig config);
-	virtual void LayoutCursor();
-	virtual void Update(double dt) { _cursorBlinker.Update(dt); }
-
-private:
-	UIConfig _config;
-
-	//cursor blinker
-	Blinker _cursorBlinker = Blinker(0.5);
-};
+#include "UI_Layout_Textbox.h"
+#include "UI_Layout_TextArea.h"
 
 class IInputCmdProcessor
 {
@@ -96,7 +41,7 @@ public:
 	~InputForm();
 
 	void SetContent(const std::string& content);
-	void ProcessInputCommands(const std::vector<InputCmd>& cmds);
+	void ProcessInputCommand(const InputCmd& cmd);
 	const std::vector<std::string>& GetInputFormLines() { return _inputFormLines; };
 
 	void Layout();

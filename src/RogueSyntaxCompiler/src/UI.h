@@ -16,6 +16,7 @@
 #include "UI_Layout_Splitter.h"
 #include "UI_Layout_Menu.h"
 #include "UI_Layout_Event.h"
+#include "UI_Layout_Textbox.h"
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) { .x = vector.x, .y = vector.y }
 
@@ -56,13 +57,15 @@ private:
 	InputForm _editorForm;
 	InputForm _outputForm;
 	InputForm _infoForm;
-	
+
 	//splitters
 	std::unique_ptr<UI_Splitter> _mainFormSplitter;
 	std::unique_ptr<UI_Splitter> _ideFormSplitter;
 
 	//menu
 	std::unique_ptr<UI_MenuBar> _menuBar;
+
+	std::unique_ptr<UI_TextArea> _testArea;
 
 	//std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 
