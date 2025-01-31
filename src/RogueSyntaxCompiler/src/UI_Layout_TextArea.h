@@ -30,7 +30,7 @@ public:
 	void Layout();
 	void ProcessInputCommand(const InputCmd& cmds);
 
-	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim; };
+	void SetLayoutDimensions(const LayoutDimensions& dim);
 	void SetText(const std::string& text);
 	const std::string& GetText();
 	bool HasFocus() { return _hasFocus; };
@@ -44,8 +44,12 @@ public:
 private:
 	uint32_t textboxId = 0;
 	std::string TextboxName() { return _name + "_LN_" + std::to_string(++textboxId);};
-
+	void LayoutWithScrollbars();
 	void LayoutTextArea();
+	void LayoutScrollbarH();
+	void LayoutScrollbarV();
+	void ScrollCursorIntoView();
+	void NormalizeScrollOffset();
 
 	void CreateLine(size_t index);
 
@@ -67,9 +71,13 @@ private:
 	CursorPosition _hoverPosition;
 	CursorPosition _highlightPosition;
 
-	CursorPosition _scrollPosition;
+	//scroll bars
+	bool _allowScrolling = true;
+	CursorPosition _scrollOffset{0,0};
+	std::unique_ptr<UI_ScrollBar> _scrollBarH;
+	std::unique_ptr<UI_ScrollBar> _scrollBarV;
 
-	LayoutDimensions _layoutDimensions;
+	LayoutDimensions _layoutDimensions{0,0};
 	UIConfig _config;
 
 	std::string _copyBuffer;

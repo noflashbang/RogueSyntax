@@ -23,6 +23,7 @@ public:
 	~UI_Textbox() = default;
 
 	void Layout();
+	void Layout(uint16_t offset, uint16_t length);
 	void ProcessInputCommand(const InputCmd& cmds);
 
 	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim; };
@@ -45,7 +46,7 @@ public:
 
 private:
 	void LayoutCursor(size_t index);
-	void LayoutTextbox();
+	void LayoutTextbox(uint16_t offset, uint16_t length);
 
 	void CreateChar(size_t index, const char* character);
 	void CreatePlaceHolderChar(size_t index, const char* character);

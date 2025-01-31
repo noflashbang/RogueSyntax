@@ -24,7 +24,7 @@ public:
 
 	void Layout();
 
-	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim; };
+	void SetLayoutDimensions(const LayoutDimensions& dim) { _layoutDimensions = dim; };
 	
 	void SetValue(float value) { _value = value; };
 	float GetValue() { return _value; };
@@ -51,7 +51,7 @@ private:
 
 	float _mouseDeltaAccumulated = 0;
 
-	LayoutDimensions _layoutDimensions;
+	LayoutDimensions _layoutDimensions{0,0};
 
 	UIConfig _config;
 };

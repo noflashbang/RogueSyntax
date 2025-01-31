@@ -36,6 +36,9 @@ struct LayoutDimensions
 	}
 	LayoutDimensions& operator= (const LayoutDimensions& other)
 	{
+		if (this == &other)
+			return *this;
+
 		width = other.width;
 		height = other.height;
 		return *this;

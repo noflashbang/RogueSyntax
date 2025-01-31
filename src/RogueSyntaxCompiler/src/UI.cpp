@@ -88,7 +88,7 @@ void UI::CreateRoot()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-
+		_testArea->SetLayoutDimensions({ 400,400 });
 		_testArea->Layout();
 
 		_menuBar->Layout();

@@ -25,6 +25,8 @@ UI_TextArea::UI_TextArea(const UIConfig& config, const std::string name, std::sh
 	_highlighting = false;
 
 	_textboxes.push_back(std::make_unique<UI_Textbox>(_config, TextboxName(), _eventTextboxFocus.Subscribe(), std::make_unique<BarCursorStrategy>(_config)));
+	_scrollBarH = std::make_unique<UI_ScrollBar>(_config, 0, 0, 0, 1, SCROLLBAR_HORIZONTAL);
+	_scrollBarV = std::make_unique<UI_ScrollBar>(_config, 0, 0, 0, 1, SCROLLBAR_VERTICAL);
 }
 
 void UI_TextArea::Layout()
@@ -38,7 +40,14 @@ void UI_TextArea::Layout()
 		}
 	}
 
-	LayoutTextArea();
+	if (_allowScrolling)
+	{
+		LayoutWithScrollbars();
+	}
+	else
+	{
+		LayoutTextArea();
+	}
 }
 
 void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
@@ -53,6 +62,7 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
 				_textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
 				_cursorPosition.column = _textboxes.at(_cursorPosition.line)->GetCursorPosition();
+
 				break;
 			}
 			case INPUT_CURSOR_RIGHT:
@@ -199,14 +209,15 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 			}
 			case INPUT_SCROLL_DOWN:
 			{
-				_scrollPosition.line++;
+				_scrollOffset.line++;
+				NormalizeScrollOffset();
 				break;
 			}
 			case INPUT_SCROLL_UP:
 			{
-				if (_scrollPosition.line > 0)
+				if (_scrollOffset.line > 0)
 				{
-					_scrollPosition.line--;
+					_scrollOffset.line--;
 				}
 				break;
 			}
@@ -280,6 +291,12 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 				break;
 			}
 		}
+
+		if (cmd.type == INPUT_CURSOR_LEFT || cmd.type == INPUT_CURSOR_RIGHT || cmd.type == INPUT_CURSOR_DOWN || cmd.type == INPUT_CURSOR_UP || cmd.type == INPUT_CURSOR_HOME || cmd.type == INPUT_CURSOR_END || cmd.type == INPUT_NEWLINE)
+		{
+			ScrollCursorIntoView();
+		}
+
 		if (_highlighting)
 		{
 			//clear all highlighting
@@ -336,6 +353,12 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 	}
 }
 
+void UI_TextArea::SetLayoutDimensions(const LayoutDimensions& dim)
+{
+	_layoutDimensions = dim;
+	NormalizeScrollOffset();
+}
+
 void UI_TextArea::SetText(const std::string& text)
 {
 	_text = text;
@@ -359,6 +382,27 @@ const std::string& UI_TextArea::GetText()
 	return _text;
 }
 
+void UI_TextArea::LayoutWithScrollbars()
+{
+	CLAY(
+		CLAY_ID_LOCAL("TEXTAREA_CONTAINER_VSCROLL"),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_layoutDimensions.height)},  .layoutDirection = CLAY_LEFT_TO_RIGHT }),
+		CLAY_RECTANGLE({ .color = _config.colors.background })
+	)
+	{
+		CLAY(
+			CLAY_ID_LOCAL("TEXTAREA_CONTAINER_HSCROLL"),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(_layoutDimensions.width), .height = CLAY_SIZING_GROW(0)},  .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+			CLAY_RECTANGLE({ .color = _config.colors.background })
+		)
+		{
+			LayoutTextArea();
+			LayoutScrollbarH();
+		}
+		LayoutScrollbarV();
+	}
+}
+
 void UI_TextArea::LayoutTextArea()
 {
 	CLAY(
@@ -374,12 +418,133 @@ void UI_TextArea::LayoutTextArea()
 			_hasFocus = true;
 		}
 
-		for (size_t i = 0; i < _textboxes.size(); i++)
+		uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
+		uint16_t start_line = _scrollOffset.line;
+
+		std::vector<uint16_t> linesToDisplay(_textboxes.size());
+		std::iota(linesToDisplay.begin(), linesToDisplay.end(), 0);
+		auto lineView = linesToDisplay | std::views::drop(start_line) | std::views::take(maxLines);
+
+		for (auto iter : lineView)
 		{
-			CreateLine(i);
+			CreateLine(iter);
 		}
 	}
 }
+
+void UI_TextArea::LayoutScrollbarH()
+{
+	auto maxChars = (_layoutDimensions.width - _config.fontSize - _config.fontSize) / (_config.fontSize/2);
+	if (maxChars <= 0)
+	{
+		return;
+	}
+
+	auto longestElm = std::max_element(_textboxes.begin(), _textboxes.end(), [](const auto& lhs, const auto& rhs) { return lhs->GetText().length() < rhs->GetText().length(); });
+	auto maxLength = longestElm->get()->GetText().length();
+
+	float pageCount = maxLength / maxChars;
+	bool canScroll = pageCount >= 1;
+
+	if (canScroll)
+	{
+		_scrollBarH->SetLayoutDimensions(_layoutDimensions);
+		_scrollBarH->SetMin(0);
+		_scrollBarH->SetMax(maxLength);
+		_scrollBarH->SetValue(_scrollOffset.column);
+
+		_scrollBarH->SetStep(maxChars);
+
+		_scrollBarH->Layout();
+
+		_scrollOffset.column = _scrollBarH->GetValue();
+	}
+}
+
+void UI_TextArea::LayoutScrollbarV()
+{
+	auto maxLines = _layoutDimensions.height / _config.fontSize;
+	if (maxLines <= 0)
+	{
+		return;
+	}
+	float pageCount = _textboxes.size() / maxLines;
+	bool canScroll = pageCount >= 1;
+
+	if (canScroll)
+	{
+		_scrollBarV->SetLayoutDimensions(_layoutDimensions);
+		_scrollBarV->SetMin(0);
+		_scrollBarV->SetMax(_textboxes.size());
+		_scrollBarV->SetValue(_scrollOffset.line);
+
+		_scrollBarV->SetStep(maxLines);
+
+		_scrollBarV->Layout();
+
+		_scrollOffset.line = _scrollBarV->GetValue();
+	}
+}
+
+void UI_TextArea::ScrollCursorIntoView()
+{
+	//if the cursor is at the end/start of the form, we need to scroll the form to keep the cursor in view
+	uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
+	if (_cursorPosition.line >= _scrollOffset.line + maxLines)
+	{
+		_scrollOffset.line = _cursorPosition.line - maxLines + 1;
+	}
+	else if (_cursorPosition.line < _scrollOffset.line)
+	{
+		_scrollOffset.line = _cursorPosition.line;
+	}
+
+	//do horizontal scroll
+	auto maxChars = (_layoutDimensions.width - _config.fontSize - _config.fontSize) / (_config.fontSize/2);
+	if (_cursorPosition.column >= _scrollOffset.column + maxChars)
+	{
+		_scrollOffset.column = _cursorPosition.column - maxChars + 1;
+	}
+	else if (_cursorPosition.column < _scrollOffset.column)
+	{
+		_scrollOffset.column = _cursorPosition.column;
+	}
+}
+
+void UI_TextArea::NormalizeScrollOffset()
+{
+	uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
+	int16_t maxOffset = _textboxes.size() - maxLines;
+	if (_scrollOffset.line > maxOffset)
+	{
+		if (maxOffset < 0)
+		{
+			_scrollOffset.line = 0;
+		}
+		else
+		{
+			_scrollOffset.line = maxOffset;
+		}
+	}
+
+	auto maxChars = (_layoutDimensions.width - _config.fontSize - _config.fontSize) / (_config.fontSize / 2);
+	auto longestElm = std::max_element(_textboxes.begin(), _textboxes.end(), [](const auto& lhs, const auto& rhs) { return lhs->GetText().length() < rhs->GetText().length(); });
+	auto maxLength = longestElm->get()->GetText().length();
+	int16_t maxOffsetH = maxLength - maxChars;
+
+	if (_scrollOffset.column > maxOffsetH)
+	{
+		if (maxOffsetH < 0)
+		{
+			_scrollOffset.column = 0;
+		}
+		else
+		{
+			_scrollOffset.column = maxOffsetH;
+		}
+	}
+}
+
 
 void UI_TextArea::CreateLine(size_t index)
 {
@@ -390,8 +555,17 @@ void UI_TextArea::CreateLine(size_t index)
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		auto maxChars = (_layoutDimensions.width - _config.fontSize - _config.fontSize) / (_config.fontSize / 2);
+		uint16_t start_char = _scrollOffset.column;
+		auto maxLength = std::min((int16_t)(_textboxes.at(index)->GetText().length()), (int16_t)(maxChars + start_char));
+
+		if(maxLength < 0)
+		{
+			maxLength = 0;
+		}
+
 		_lineNumberingStrategy->LayoutLineNumbering(index);
-		_textboxes.at(index)->Layout();
+		_textboxes.at(index)->Layout(start_char, maxLength);
 
 		if (Clay_Hovered())
 		{

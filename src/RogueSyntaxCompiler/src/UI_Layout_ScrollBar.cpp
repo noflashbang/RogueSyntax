@@ -15,10 +15,11 @@ void UI_ScrollBar::LayoutScrollbar()
 	auto horizontalSizing = Clay_Sizing{ .width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize) };
 
 	auto sizing = _type == ScrollBarType::SCROLLBAR_VERTICAL ? verticalSizing : horizontalSizing;
+	auto layoutDirection = _type == ScrollBarType::SCROLLBAR_VERTICAL ? CLAY_TOP_TO_BOTTOM : CLAY_LEFT_TO_RIGHT;
 
 	CLAY(
 		CLAY_ID_LOCAL("SCROLLCONTAINER"),
-		CLAY_LAYOUT({ .sizing = sizing, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+		CLAY_LAYOUT({ .sizing = sizing, .layoutDirection = layoutDirection }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{

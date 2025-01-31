@@ -14,7 +14,17 @@ void UI_Textbox::Layout()
 		_cursorStrategy->Update(GetFrameTime());
 	}
 
-	LayoutTextbox();
+	LayoutTextbox(0, _text.length());
+}
+
+void UI_Textbox::Layout(uint16_t offset, uint16_t length)
+{
+	if (_cursorStrategy != nullptr)
+	{
+		_cursorStrategy->Update(GetFrameTime());
+	}
+
+	LayoutTextbox(offset, length);
 }
 
 void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
@@ -187,7 +197,7 @@ void UI_Textbox::LayoutCursor(size_t index)
 	}
 }
 
-void UI_Textbox::LayoutTextbox()
+void UI_Textbox::LayoutTextbox(uint16_t offset, uint16_t length)
 {
 	_hasFocus = _eventCurrentFocusObserver->GetEventData() == _name;
 
@@ -205,7 +215,9 @@ void UI_Textbox::LayoutTextbox()
 			_hasFocus = true;
 		}
 
-		for (auto index = 0; index < _text.length(); index++)
+
+
+		for (auto index = offset; index < length; index++)
 		{
 			char* character = (char*)_text.data() + index;
 			if (character != nullptr && *character != '\0' && *character != '\n')
@@ -215,7 +227,7 @@ void UI_Textbox::LayoutTextbox()
 		}
 
 		//for drawing the cursor at the end of the line - also handles clicks at the end of the line
-		CreatePlaceHolderChar(_text.length(), &_cursorPlaceholder);
+		CreatePlaceHolderChar(length+1, &_cursorPlaceholder);
 	}
 }
 void UI_Textbox::CreateChar(size_t index, const char* character)
