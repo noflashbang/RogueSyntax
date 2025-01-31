@@ -121,21 +121,24 @@ void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
 				}
 				case INPUT_CURSOR_COPY:
 				{
-					//put it where?
-					auto cpy = GetHighlightedText();
+					_copyBuffer = GetHighlightedText();
 					break;
 				}
 				case INPUT_CURSOR_CUT:
 				{
-					auto cpy = GetHighlightedText();
+					_copyBuffer = GetHighlightedText();
 					DeleteHighlightedText();
 					_highlighting = false;
 					break;
 				}
 				case INPUT_CURSOR_PASTE:
 				{
-					//from where?
-					InsertText("");
+					if (_highlighting)
+					{
+						DeleteHighlightedText();
+						_highlighting = false;
+					}
+					InsertText(_copyBuffer);
 					_highlighting = false;
 					break;
 				}
@@ -159,17 +162,17 @@ void UI_Textbox::SetFocus()
 		_highlightPosition = _cursorPosition;
 	}
 }
-void UI_Textbox::SetHighlightingPosition(uint16_t start, uint16_t end)
+void UI_Textbox::SetHighlightingPosition(uint16_t cursor, uint16_t hightlight)
 {
-	if (end == HIGHLIGHT_END)
+	if (hightlight == HIGHLIGHT_END)
 	{
 		_highlightPosition = _text.size();
-		_cursorPosition = start;
+		_cursorPosition = cursor;
 	}
 	else
 	{
-		_highlightPosition = std::min(start, end);
-		_cursorPosition = std::max(start, end);
+		_highlightPosition = hightlight;
+		_cursorPosition = cursor;
 	}
 };
 

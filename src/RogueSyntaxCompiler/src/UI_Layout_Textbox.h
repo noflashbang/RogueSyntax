@@ -65,5 +65,7 @@ private:
 
 	LayoutDimensions _layoutDimensions;
 	UIConfig _config;
+
+	std::string _copyBuffer;
 };
 

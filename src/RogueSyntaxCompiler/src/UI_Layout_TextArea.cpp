@@ -172,6 +172,7 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 								auto line = _textboxes.at(_cursorPosition.line)->GetText();
 								auto prevLine = _textboxes.at(_cursorPosition.line - 1)->GetText();
 								_cursorPosition.column = prevLine.length();
+								_textboxes.at(_cursorPosition.line - 1)->SetCursorPosition(prevLine.length());
 								_textboxes.at(_cursorPosition.line - 1)->InsertText(line);
 								_textboxes.erase(_textboxes.begin() + _cursorPosition.line);
 								_cursorPosition.line--;
@@ -185,12 +186,14 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 			{
 				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
 				_textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
+				_cursorPosition.column = 0;
 				break;
 			}
 			case INPUT_CURSOR_END:
 			{
 				_highlighting = cmd.flags == FLAG_HIGHLIGHT;
 				_textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
+				_cursorPosition.column = _textboxes.at(_cursorPosition.line)->GetText().length();
 				break;
 			}
 			case INPUT_SCROLL_DOWN:
@@ -243,19 +246,35 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 			}
 			case INPUT_CURSOR_COPY:
 			{
-				GetHighlightedText();
+				_copyBuffer = GetHighlightedText();
 				break;
 			}
 			case INPUT_CURSOR_CUT:
 			{
-				GetHighlightedText();
+				_copyBuffer = GetHighlightedText();
 				DeleteHighlightedText();
 				_highlighting = false;
+				//clear all highlighting
+				for (auto& textbox : _textboxes)
+				{
+					textbox->SetHighlighting(false);
+				}
 				break;
 			}
 			case INPUT_CURSOR_PASTE:
 			{
-				InsertText("");
+				if (_highlighting)
+				{
+					DeleteHighlightedText();
+					_highlighting = false;
+
+					//clear all highlighting
+					for (auto& textbox : _textboxes)
+					{
+						textbox->SetHighlighting(false);
+					}
+				}
+				InsertText(_copyBuffer);
 				_highlighting = false;
 				break;
 			}
@@ -272,13 +291,14 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 			auto startLine = std::min(_cursorPosition.line, _highlightPosition.line);
 			auto endLine = std::max(_cursorPosition.line, _highlightPosition.line);
 
-			auto startColumn = std::min(_cursorPosition.column, _highlightPosition.column);
-			auto endColumn = std::max(_cursorPosition.column, _highlightPosition.column);
+			auto startColumn = startLine == _cursorPosition.line ? _cursorPosition.column : _highlightPosition.column;
+			auto endColumn = endLine == _cursorPosition.line ? _cursorPosition.column : _highlightPosition.column;
 
 			if (startLine == endLine)
 			{
+				
 				_textboxes.at(startLine)->SetHighlighting(true);
-				_textboxes.at(startLine)->SetHighlightingPosition(startColumn, endColumn);
+				_textboxes.at(startLine)->SetHighlightingPosition(_cursorPosition.column, _highlightPosition.column);
 			}
 			else
 			{
@@ -290,7 +310,7 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 					}
 					else if (iter == endLine)
 					{
-						_textboxes.at(iter)->SetHighlightingPosition(0, endColumn);
+						_textboxes.at(iter)->SetHighlightingPosition(endColumn, 0);
 					}
 					else
 					{
@@ -301,22 +321,16 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 				}
 			}
 		}
+		else
+		{
+			_highlightPosition.column = _cursorPosition.column;
+			_highlightPosition.line = _cursorPosition.line;	
+		}
 
 		if (oldPos != _cursorPosition)
 		{
 			_textboxes.at(_cursorPosition.line)->SetCursorPosition(_cursorPosition.column);
 			_textboxes.at(_cursorPosition.line)->SetFocus();
-		}
-		else
-		{
-			
-			//update the last cursor position
-			if (!_highlighting)
-			{
-				_highlightPosition.column = _cursorPosition.column;
-				_highlightPosition.line = _cursorPosition.line;
-				//_textboxes.at(_cursorPosition.line)
-			}	
 		}
 	}
 }
@@ -336,7 +350,6 @@ void UI_TextArea::SetText(const std::string& text)
 const std::string& UI_TextArea::GetText()
 {
 	_text = "";
-
 	for (auto& tb : _textboxes)
 	{
 		_text += tb->GetText() + '\n';
@@ -389,15 +402,76 @@ void UI_TextArea::CreateLine(size_t index)
 
 std::string UI_TextArea::GetHighlightedText()
 {
-	return std::string();
+	std::string highlightedText = "";
+
+	//mark each highlighted character
+	auto startLine = std::min(_cursorPosition.line, _highlightPosition.line);
+	auto endLine = std::max(_cursorPosition.line, _highlightPosition.line);
+
+	auto startColumn = startLine == _cursorPosition.line ? _cursorPosition.column : _highlightPosition.column;
+	auto endColumn = endLine == _cursorPosition.line ? _cursorPosition.column : _highlightPosition.column;
+
+	if (startLine == endLine)
+	{
+		highlightedText = _textboxes.at(startLine)->GetHighlightedText();
+	}
+	else
+	{
+		for (auto iter = startLine; iter <= endLine; iter++)
+		{
+			highlightedText += _textboxes.at(iter)->GetHighlightedText() +"\n";
+		}
+		highlightedText.pop_back();
+	}
+
+	return highlightedText;
 }
 
 void UI_TextArea::DeleteHighlightedText()
 {
+	//mark each highlighted character
+	auto startLine = std::min(_cursorPosition.line, _highlightPosition.line);
+	auto endLine = std::max(_cursorPosition.line, _highlightPosition.line);
+
+	auto startColumn = startLine == _cursorPosition.line ? _cursorPosition.column : _highlightPosition.column;
+	auto endColumn = endLine == _cursorPosition.line ? _cursorPosition.column : _highlightPosition.column;
+	
+	if (startLine == endLine)
+	{
+		_textboxes.at(startLine)->DeleteHighlightedText();
+	}
+	else
+	{
+		_textboxes.at(startLine)->DeleteHighlightedText();
+		_textboxes.at(endLine)->DeleteHighlightedText();
+		auto startText = _textboxes.at(startLine)->GetText();
+		auto endText = _textboxes.at(endLine)->GetText();
+		_textboxes.at(startLine)->SetText(startText.substr(0, startColumn) + endText);
+		_textboxes.erase(_textboxes.begin() + startLine + 1, _textboxes.begin() + endLine + 1);
+		_cursorPosition.line = startLine;
+		_cursorPosition.column = startColumn;
+	}
 }
 
 void UI_TextArea::InsertText(const std::string& text)
 {
+	auto lines = GetLinesBySplitor(text, '\n');
+
+	auto currentText = _textboxes.at(_cursorPosition.line)->GetText();
+	auto currentLine = currentText.substr(0, _cursorPosition.column);
+	auto nextLine = currentText.substr(_cursorPosition.column);
+	
+	lines.at(0) = currentLine + lines.at(0);
+	lines.at(lines.size()-1) = lines.at(lines.size()-1) + nextLine;
+
+	_textboxes.at(_cursorPosition.line)->SetText(lines[0]);
+
+	for (auto& line : std::views::drop(lines, 1))
+	{
+		_textboxes.insert(_textboxes.begin() + _cursorPosition.line + 1, std::make_unique<UI_Textbox>(_config, TextboxName(), _eventTextboxFocus.Subscribe(), std::make_unique<BarCursorStrategy>(_config)));
+		_textboxes.at(_cursorPosition.line + 1)->SetText(line);
+		_cursorPosition.line++;
+	}
 }
 
 
