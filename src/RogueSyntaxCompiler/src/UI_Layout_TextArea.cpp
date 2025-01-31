@@ -130,6 +130,7 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 				}
 				
 				_textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
+				_cursorPosition.column = _textboxes.at(_cursorPosition.line)->GetCursorPosition();
 
 				break;
 			}
