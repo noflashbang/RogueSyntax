@@ -4,8 +4,13 @@
 #include "clayex.h"
 #include <raylib.h>
 #include <raymath.h>
+#include <vector>
 #include <functional>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
+#include <atomic>
+
 
 #include "UIConfig.h"
 
@@ -63,4 +68,183 @@ private:
 	void Update(T eventData) { _eventData = eventData; }; //make this private so that only the agent can call it
 	T _eventData;
 	UIEventAgent<T>* _agent;
+};
+
+
+// Generic Lockable Concept
+template <typename LockType>
+concept Lockable = requires(LockType lock)
+{
+	lock.lock();
+	lock.unlock();
+};
+
+// No-op lock (for single-threaded or lock-free cases)
+class NoLock
+{
+public:
+	void lock() {}
+	void unlock() {}
+};
+
+// Spinlock implementation (lightweight, good for low contention)
+class SpinLock
+{
+public:
+	void lock()
+	{
+		while (_flag.test_and_set(std::memory_order_acquire));
+	}
+	void unlock() 
+	{
+		_flag.clear(std::memory_order_release);
+	}
+private:
+	std::atomic_flag _flag = ATOMIC_FLAG_INIT;
+};
+
+class ScopedConnection 
+{
+public:
+	using DisconnectFn = std::function<void()>;
+
+	explicit ScopedConnection(DisconnectFn disconnect) : _disconnect(std::move(disconnect))
+	{
+	};
+
+	~ScopedConnection() { _disconnect(); };
+
+private:
+	DisconnectFn _disconnect;
+};
+
+
+template<typename mutex_type, typename... Args>
+requires Lockable<mutex_type>
+class UI_Delegate
+{
+public:
+	using HandlerType = std::function<void(Args...)>;
+
+	class Connection
+	{
+	public:
+		Connection(UI_Delegate& event, size_t id) : _event(event), _id(id)
+		{
+		}
+		~Connection()
+		{
+			Disconnect();
+		}
+		void Disconnect()
+		{
+			if (_connected)
+			{
+				_event.Unsubscribe(_id);
+				_connected = false;
+			}
+		};
+
+	private:
+		bool _connected = true;
+		UI_Delegate& _event;
+		size_t _id;
+	};
+
+	explicit UI_Delegate() : _lockPolicy(std::make_unique<NoLock>())
+	{
+	};
+
+	explicit UI_Delegate(std::unique_ptr<mutex_type> lockPolicy) : _lockPolicy(std::move(lockPolicy))
+	{
+	};
+
+	
+	[[nodiscard]] ScopedConnection operator+=(HandlerType handler)
+	{
+		std::lock_guard lock(*_lockPolicy);
+		auto id = _nextId++;
+		_handlers[id] = std::move(handler);
+		
+		return ScopedConnection([this, id]() { Unsubscribe(id); });
+	};
+
+	
+	template <typename T>
+	[[nodiscard]] ScopedConnection Bind(std::weak_ptr<T> weakObj, void (T::* method)(Args...))
+	{
+		return *this 
+			+= [weakObj, method](Args... args) 
+				{
+					if (auto obj = weakObj.lock()) 
+					{  
+						// Ensure object is still alive
+						(obj.get()->*method)(args...);
+					}
+				};
+	}
+
+	void operator-=(const std::shared_ptr<Connection>& connection)
+	{
+		if (connection)
+		{
+			std::lock_guard lock(*_lockPolicy);
+			Unsubscribe(connection->_id);
+		}
+	};
+
+	void operator()(Args... args) const
+	{
+		std::lock_guard lock(*_lockPolicy);
+		for (const auto& [id, handler] : _handlers)
+		{
+			handler(args...);
+		}
+	};
+
+private:
+	void Unsubscribe(size_t id)
+	{
+		_handlers.erase(id);
+	};
+
+	mutable std::unordered_map<size_t, HandlerType> _handlers;
+	size_t _nextId = 0;
+	std::unique_ptr<mutex_type> _lockPolicy;
+};
+
+template<typename mutex_type, typename T>
+	requires Lockable<mutex_type>
+class Bindable 
+{
+public:
+	using CallbackType = std::function<void(const T&)>;
+
+	explicit Bindable(T value) : _value(std::move(value)), _changeEvent(std::make_shared<UI_Delegate<mutex_type, const T&>>())
+	{
+	};
+
+	explicit Bindable(T value, std::unique_ptr<mutex_type> lockPolicy) : _value(std::move(value)), _changeEvent(std::make_shared<UI_Delegate<mutex_type, const T&>>(std::move(lockPolicy)))
+	{
+	};
+
+	void set(const T& newValue)
+	{
+		if (_value != newValue)
+		{
+			_value = newValue;
+			notify();
+		}
+	};
+	const T& get() const { return _value; }
+	std::shared_ptr<UI_Delegate<mutex_type, const T&>> onChange() { return _changeEvent; }
+
+private:
+	void notify()
+	{
+		(*_changeEvent)(_value);
+	};
+
+	T _value;
+	std::shared_ptr<UI_Delegate<mutex_type, const T&>> _changeEvent;
 };
