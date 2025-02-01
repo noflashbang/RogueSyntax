@@ -81,8 +81,16 @@ void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
 						_highlighting = false;
 					}
 					char character = (char)cmd.flags;
-					_text.insert(_cursorPosition, 1, character);
-					_cursorPosition++;
+					if (_cursorPosition >= _text.length())
+					{
+						_text.push_back(character);
+						_cursorPosition = _text.length();
+					}
+					else
+					{
+						_text.insert(_cursorPosition, 1, character);
+						_cursorPosition++;
+					}
 					break;
 				}
 				case INPUT_DELETE:
@@ -215,19 +223,24 @@ void UI_Textbox::LayoutTextbox(uint16_t offset, uint16_t length)
 			_hasFocus = true;
 		}
 
-
-
-		for (auto index = offset; index < length; index++)
+		if (offset >= length)
 		{
-			char* character = (char*)_text.data() + index;
-			if (character != nullptr && *character != '\0' && *character != '\n')
-			{
-				CreateChar(index, character);
-			}
+			CreatePlaceHolderChar(0, &_cursorPlaceholder);
 		}
+		else
+		{
+			for (auto index = offset; index < length; index++)
+			{
+				char* character = (char*)_text.data() + index;
+				if (character != nullptr && *character != '\0' && *character != '\n')
+				{
+					CreateChar(index, character);
+				}
+			}
 
-		//for drawing the cursor at the end of the line - also handles clicks at the end of the line
-		CreatePlaceHolderChar(length+1, &_cursorPlaceholder);
+			//for drawing the cursor at the end of the line - also handles clicks at the end of the line
+			CreatePlaceHolderChar(length, &_cursorPlaceholder);
+		}
 	}
 }
 void UI_Textbox::CreateChar(size_t index, const char* character)

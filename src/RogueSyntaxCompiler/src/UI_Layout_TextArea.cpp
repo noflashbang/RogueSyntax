@@ -34,6 +34,10 @@ UI_TextArea::UI_TextArea(const UIConfig& config, const std::string name, std::sh
 void UI_TextArea::Layout()
 {
 	_hasFocus = _eventCurrentFocusObserver->GetEventData() == _name;
+
+	auto currentFocus = _eventTextboxFocus.GetEventData();
+	std::cout << "Current Focus: " << currentFocus << std::endl;
+
 	if (!_highlighting)
 	{
 		for (auto& textbox : _textboxes)
@@ -302,7 +306,7 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 			}
 		}
 
-		if (cmd.type == INPUT_CURSOR_LEFT || cmd.type == INPUT_CURSOR_RIGHT || cmd.type == INPUT_CURSOR_DOWN || cmd.type == INPUT_CURSOR_UP || cmd.type == INPUT_CURSOR_HOME || cmd.type == INPUT_CURSOR_END || cmd.type == INPUT_NEWLINE)
+		if (cmd.type == INPUT_INSERT || cmd.type == INPUT_CURSOR_LEFT || cmd.type == INPUT_CURSOR_RIGHT || cmd.type == INPUT_CURSOR_DOWN || cmd.type == INPUT_CURSOR_UP || cmd.type == INPUT_CURSOR_HOME || cmd.type == INPUT_CURSOR_END || cmd.type == INPUT_NEWLINE)
 		{
 			ScrollCursorIntoView();
 		}
@@ -589,6 +593,8 @@ void UI_TextArea::ScrollCursorIntoView()
 
 	//do horizontal scroll
 	auto maxChars = GetViewPortWidth();
+	//auto longestElm = std::max_element(_textboxes.begin(), _textboxes.end(), [](const auto& lhs, const auto& rhs) { return lhs->GetText().length() < rhs->GetText().length(); });
+	//auto maxLength = longestElm->get()->GetText().length();
 	if (_cursorPosition.column >= _scrollOffset.column + maxChars)
 	{
 		_scrollOffset.column = _cursorPosition.column - maxChars + 1;
