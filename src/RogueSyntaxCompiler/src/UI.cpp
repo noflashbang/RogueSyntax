@@ -23,7 +23,7 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
 	_testArea = std::make_unique<UI_TextArea>(config, "Test", _eventCurrentFocus.Subscribe(), std::make_unique<SimpleLineNumbering>(config));
-	_testArea->SetText("let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ");
+	_testArea->SetText("0123456789 0123456789 0123456789 0123456789 \n\n\n\n 0123456789 0123456789 0123456789 0123456789 \n 0123456789 0123456789 0123456789 0123456789 \n 0123456789 0123456789 0123456789 0123456789 \n 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 \n0123456789 0123456789 0123456789 0123456789 \n0123456789 0123456789 0123456789 0123456789 \n0123456789 0123456789 0123456789 0123456789 \n \n 0123456789 0123456789 0123456789 0123456789 \n let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ");
 
 	_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
 	_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
