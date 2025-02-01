@@ -65,11 +65,6 @@ private:
 	//menu
 	std::unique_ptr<UI_MenuBar> _menuBar;
 
-	std::unique_ptr<UI_TextArea> _testArea;
-
-	//std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
-
-
 	double _mouseBtnOneDownTime = 0.0;
 
 	std::vector<InputCmd> _inputCmds;

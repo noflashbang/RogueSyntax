@@ -40,6 +40,8 @@ public:
 													  _cursorPosition.column = std::clamp(position.column, (uint16_t)0, (uint16_t)_textboxes.at(_cursorPosition.line)->GetText().size()); };
 
 	CursorPosition GetCursorPosition() { return _cursorPosition; };
+	CursorPosition GetHighlightPosition() { return _highlightPosition; };
+	CursorPosition GetHoverPosition() { return _hoverPosition; };
 
 private:
 	uint32_t textboxId = 0;
@@ -50,6 +52,9 @@ private:
 	void LayoutScrollbarV();
 	void ScrollCursorIntoView();
 	void NormalizeScrollOffset();
+
+	uint16_t GetViewPortWidth();
+	uint16_t GetViewPortHeight();
 
 	void CreateLine(size_t index);
 

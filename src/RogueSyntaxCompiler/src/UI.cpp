@@ -4,9 +4,7 @@
 
 UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subscribe()), _outputForm("Output",config, _eventCurrentFocus.Subscribe()), _infoForm("Info", config, _eventCurrentFocus.Subscribe()),  _config(config)
 {
-	InputFormConfigurator(&_editorForm).With(new SimpleLineNumbering(config)).With(new BarCursorStrategy(config));
-	InputFormConfigurator(&_outputForm).With(new HighlightCursorStrategy(config));
-	InputFormConfigurator(&_infoForm).With(new BarCursorStrategy(config));
+	
 
 	_details = "";
 	_output = ":>";
@@ -21,9 +19,6 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 600, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
 
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
-
-	_testArea = std::make_unique<UI_TextArea>(config, "Test", _eventCurrentFocus.Subscribe(), std::make_unique<SimpleLineNumbering>(config));
-	_testArea->SetText("0123456789 0123456789 0123456789 0123456789 \n\n\n\n 0123456789 0123456789 0123456789 0123456789 \n 0123456789 0123456789 0123456789 0123456789 \n 0123456789 0123456789 0123456789 0123456789 \n 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 0123456789 \n0123456789 0123456789 0123456789 0123456789 \n0123456789 0123456789 0123456789 0123456789 \n0123456789 0123456789 0123456789 0123456789 \n \n 0123456789 0123456789 0123456789 0123456789 \n let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ");
 
 	_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
 	_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
@@ -44,7 +39,6 @@ void UI::DoLayout()
 		_editorForm.ProcessInputCommand(cmd);
 		_outputForm.ProcessInputCommand(cmd);
 		_infoForm.ProcessInputCommand(cmd);
-		_testArea->ProcessInputCommand(cmd);
 	}
 	
 	if (_editorForm.IsHighlighting())
@@ -88,9 +82,6 @@ void UI::CreateRoot()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		_testArea->SetLayoutDimensions({ 400,400 });
-		_testArea->Layout();
-
 		_menuBar->Layout();
 
 		CreateActionBar();
