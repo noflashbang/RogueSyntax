@@ -23,6 +23,7 @@ public:
 	~EditorForm();
 
 	void SetContent(const std::string& content);
+	std::string GetContent() { return _textArea->GetText(); };
 	void ProcessInputCommand(const InputCmd& cmd);
 
 	void Layout();

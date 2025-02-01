@@ -14,9 +14,9 @@ void HandleClayErrors(Clay_ErrorData errorData) {
 	printf("%s", errorData.errorText.chars);
 }
 
-Clay_RenderCommandArray CreateLayout(UI& ui) {
+Clay_RenderCommandArray CreateLayout(UI* ui) {
     Clay_BeginLayout();
-	ui.DoLayout();
+	ui->DoLayout();
     return Clay_EndLayout();
 }
 
@@ -25,7 +25,7 @@ bool debugEnabled = false;
 double accumulatedTime = 0.0;
 bool cursorBlink = false;
 
-void UpdateDrawFrame(UI& ui)
+void UpdateDrawFrame(UI* ui)
 {
     Vector2 mouseWheelDelta = GetMouseWheelMoveV();
     float mouseWheelX = mouseWheelDelta.x;
@@ -63,6 +63,12 @@ void UpdateDrawFrame(UI& ui)
 
 bool reinitializeClay = false;
 
+UI* pUi;
+InteractiveCompiler* pConsole;
+bool _closeWindow = false;
+void OnCommand(std::string cmd);
+
+
 int main(int argc, char* argv[])
 {
     Clay_SetMaxElementCount(8192 * 3);
@@ -99,11 +105,13 @@ int main(int argc, char* argv[])
 
 	config.colors = DEFAULT_PALETTE;
 
-    InteractiveCompiler console;
-	UI ui(config);
+    pConsole = new InteractiveCompiler();
+	pUi  = new UI(config);
 
-    ui.SetOutput(console.GetPrompt());
-    
+    pUi->SetOutputPrompt(pConsole->GetPrompt());
+
+	auto conn = pUi->onCmd() += OnCommand;
+
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         if (reinitializeClay) {
@@ -113,8 +121,40 @@ int main(int argc, char* argv[])
             Clay_Initialize(clayMemory, { (float)GetScreenWidth(), (float)GetScreenHeight() }, { HandleClayErrors });
             reinitializeClay = false;
         }
-        UpdateDrawFrame(ui);
+        UpdateDrawFrame(pUi);
+
+		if (_closeWindow) 
+        {
+			CloseWindow();
+		}
     }
+
+	delete pUi;
+	delete pConsole;
+
 	return 0;
+}
+
+void OnCommand(std::string cmd)
+{
+	printf("Command: %s\n", cmd.c_str());
+
+	if (cmd == "!q")
+	{
+        _closeWindow = true;
+	}
+    if (cmd == "!r")
+    {
+		std::string code = pUi->GetEditorText();
+		auto byteCode = pConsole->Compile(code);
+        pConsole->Run(byteCode);
+		pUi->AddOutputText(pConsole->GetResult());
+    }
+    if (cmd == "!dp")
+    {
+        std::string code = pUi->GetEditorText();
+        auto byteCode = pConsole->Compile(code);
+		pUi->SetInfoText(pConsole->Decompile(byteCode));
+    }
 }
 

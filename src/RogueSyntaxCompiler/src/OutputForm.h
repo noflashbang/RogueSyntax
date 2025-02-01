@@ -26,6 +26,7 @@ public:
 	
 	std::string GetCommand() { return _cmdBox->GetText(); };
 	std::string GetOutput() { return _outputArea->GetText(); };
+	void AddHistory(const std::string& history) { _history += history + '\n'; };
 
 	void ProcessInputCommand(const InputCmd& cmd);
 

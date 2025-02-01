@@ -1,5 +1,7 @@
 #include "clay_renderer_raylib.h"
-
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
 
 Raylib_Font Clay_RayLib_Render::Raylib_fonts[10];
 Camera Clay_RayLib_Render::Raylib_camera;
@@ -96,6 +98,7 @@ void Clay_RayLib_Render::Clay_Raylib_Initialize(int width, int height, const cha
 
 void Clay_RayLib_Render::Clay_Raylib_Render(Clay_RenderCommandArray renderCommands)
 {
+    char buffer[1024];
     for (int j = 0; j < renderCommands.length; j++)
     {
         Clay_RenderCommand* renderCommand = Clay_RenderCommandArray_Get(&renderCommands, j);
@@ -103,15 +106,31 @@ void Clay_RayLib_Render::Clay_Raylib_Render(Clay_RenderCommandArray renderComman
         switch (renderCommand->commandType)
         {
         case CLAY_RENDER_COMMAND_TYPE_TEXT: {
-            // Raylib uses standard C strings so isn't compatible with cheap slices, we need to clone the string to append null terminator
-            Clay_StringSlice text = renderCommand->text;
-            char* cloned = (char*)malloc(text.length + 1);
-            memcpy(cloned, text.chars, text.length);
+			
+			if (renderCommand->text.length >= 1024)
+            {
+                // Raylib uses standard C strings so isn't compatible with cheap slices, we need to clone the string to append null terminator
+                Clay_StringSlice text = renderCommand->text;
+                char* cloned = (char*)malloc(text.length + 1);
+                memcpy(cloned, text.chars, text.length);
 
-            cloned[text.length] = '\0';
-            Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
-            DrawTextEx(fontToUse, cloned, { boundingBox.x, boundingBox.y }, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));
-            free(cloned);
+                cloned[text.length] = '\0';
+                Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
+                DrawTextEx(fontToUse, cloned, { boundingBox.x, boundingBox.y }, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));
+                free(cloned);
+                _CrtDumpMemoryLeaks();
+			}
+            else
+            {
+                // Raylib uses standard C strings so isn't compatible with cheap slices, we need to clone the string to append null terminator
+                Clay_StringSlice text = renderCommand->text;
+                memcpy(buffer, text.chars, text.length);
+
+                buffer[text.length] = '\0';
+                Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
+                DrawTextEx(fontToUse, buffer, { boundingBox.x, boundingBox.y }, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));
+            }
+            
             break;
         }
         case CLAY_RENDER_COMMAND_TYPE_IMAGE: {

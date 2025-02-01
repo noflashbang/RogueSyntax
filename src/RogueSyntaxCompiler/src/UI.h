@@ -33,10 +33,16 @@ public:
 	void DoLayout();
 
 	void SetDetails(const std::string& details) { _infoForm.SetContent(details); }
-	void SetOutput(const std::string& output) { _outputForm.SetPrompt(output); }
+	void SetOutputPrompt(const std::string& output) { _outputForm.SetPrompt(output); }
+	void AddOutputText(const std::string& output) { _outputForm.AddHistory(output); };
 	void SetEditor(const std::string& editor) { _editorForm.SetContent(editor); }
+	void SetInfoText(const std::string& info) { _infoForm.SetContent(info); }
+
+	std::string GetEditorText() { return _editorForm.GetContent(); };
+	
 
 	void SetInfo(const std::string& info) { _info = info; }
+	UI_Delegate<NoLock, const std::string&>& onCmd() { return _outputForm.onReturn(); };
 
 protected:
 
@@ -51,9 +57,7 @@ protected:
 
 	void CreateInputCommands();
 
-	void SetLastCmd(const std::string& cmd) { LastCmd = cmd; _infoForm.SetContent(LastCmd); }
-	std::unique_ptr<ScopedConnection> _onReturnConnection;
-	std::string LastCmd = "";
+
 
 private:
 	
