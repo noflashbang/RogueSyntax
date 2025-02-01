@@ -9,6 +9,7 @@
 #include <numeric>
 #include <ranges>
 #include "InputCmd.h"
+#include "UI_Layout_Util.h"
 #include "UI_Layout_Structs.h"
 #include "UI_Layout_Event.h"
 #include "UI_Layout_Cursor.h"
@@ -36,8 +37,8 @@ public:
 	bool HasFocus() { return _hasFocus; };
 	bool IsHighlighting() { return _highlighting; };
 	void SetHighlighting(bool highlight) { _highlighting = highlight; };
-	void SetCursorPosition(CursorPosition position) { _cursorPosition.line = std::clamp(position.line, (uint16_t)0, (uint16_t)_textboxes.size());
-													  _cursorPosition.column = std::clamp(position.column, (uint16_t)0, (uint16_t)_textboxes.at(_cursorPosition.line)->GetText().size()); };
+	void SetCursorPosition(CursorPosition position) { _cursorPosition.line = SafeClampLow(position.line, (uint16_t)0, (uint16_t)_textboxes.size());
+													  _cursorPosition.column = SafeClampLow(position.column, (uint16_t)0, (uint16_t)_textboxes.at(_cursorPosition.line)->GetText().size()); };
 
 	CursorPosition GetCursorPosition() { return _cursorPosition; };
 	CursorPosition GetHighlightPosition() { return _highlightPosition; };
@@ -50,6 +51,8 @@ private:
 	void LayoutTextArea();
 	void LayoutScrollbarH();
 	void LayoutScrollbarV();
+	void UpdateCursorPosition(int lineDelta, int columnDelta);
+	void UpdateScrollOffset();
 	void ScrollCursorIntoView();
 	void NormalizeScrollOffset();
 
@@ -61,6 +64,11 @@ private:
 	std::string GetHighlightedText();
 	void DeleteHighlightedText();
 	void InsertText(const std::string& text);
+
+	void HandleDeleteCommand(const InputCmd& cmd);
+	void HandleNewlineCommand();
+	void ClearAllHighlighting();
+	void HighlightText();
 
 	std::unique_ptr<ILineNumberingStrategy> _lineNumberingStrategy;
 

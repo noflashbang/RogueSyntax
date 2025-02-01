@@ -7,6 +7,7 @@
 #include <functional>
 #include <algorithm>
 
+#include "UI_Layout_Util.h"
 #include "UI_Layout_Structs.h"
 #include "UIConfig.h"
 

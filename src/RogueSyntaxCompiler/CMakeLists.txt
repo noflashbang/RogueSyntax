@@ -59,6 +59,7 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clayex.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Util.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Structs.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Cursor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_LineNumber.h
@@ -95,7 +96,7 @@ if(CMAKE_TIDY_ENABLED)
     set(CMAKE_CXX_CLANG_TIDY clang-tidy -checks=-*,readability-*,modernize-*,bugprone-*,cppcoreguidelines-*,performance-*)
 endif()
 
-add_executable(RogueSyntaxCompiler ${testSource} ${externHeaders} ${compilerHeaders} "src/UI_Layout_Splitter.cpp")
+add_executable(RogueSyntaxCompiler ${testSource} ${externHeaders} ${compilerHeaders})
 target_link_libraries(RogueSyntaxCompiler PRIVATE raylib)
 target_link_libraries(RogueSyntaxCompiler PUBLIC RogueSyntax)
 
