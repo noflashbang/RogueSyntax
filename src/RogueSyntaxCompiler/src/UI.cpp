@@ -28,8 +28,6 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 
 UI::~UI()
 {
-	//must release connections before destruction of the children
-	_onReturnConnection->~ScopedConnection();
 }
 
 void UI::DoLayout()

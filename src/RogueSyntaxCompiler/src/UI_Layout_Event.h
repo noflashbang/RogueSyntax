@@ -108,19 +108,28 @@ class ScopedConnection
 public:
 	using DisconnectFn = std::function<void()>;
 
-	ScopedConnection()
-	{
-		_disconnect = nullptr;
-	};
-
-	explicit ScopedConnection(DisconnectFn disconnect) : _disconnect(std::move(disconnect))
+	ScopedConnection() : _disconnect(nullptr), _delayedUnsubscribeGuard()
 	{
 	};
 
-	~ScopedConnection() { if (_disconnect != nullptr) { _disconnect(); } };
+	explicit ScopedConnection(DisconnectFn disconnect, std::weak_ptr<size_t> parentGuard) : _disconnect(std::move(disconnect)), _delayedUnsubscribeGuard(parentGuard)
+	{
+	};
+
+	~ScopedConnection() 
+	{ 
+		if (_disconnect != nullptr) 
+		{ 
+			if (auto guard = _delayedUnsubscribeGuard.lock())
+			{
+				_disconnect();
+			}
+		} 
+	};
 
 private:
 	DisconnectFn _disconnect;
+	std::weak_ptr<size_t> _delayedUnsubscribeGuard;
 };
 
 
@@ -170,10 +179,9 @@ public:
 		std::lock_guard lock(*_lockPolicy);
 		auto id = _nextId++;
 		_handlers[id] = std::move(handler);
-		return std::make_unique<ScopedConnection>([this, id]() { Unsubscribe(id); });
+		return std::make_unique<ScopedConnection>([this, id]() { Unsubscribe(id); }, _delayedUnsubscribeGuard);
 	};
 
-	
 	template <typename T>
 	[[nodiscard]] std::unique_ptr<ScopedConnection> Bind(std::weak_ptr<T> weakObj, void (T::* method)(Args...))
 	{
@@ -215,6 +223,7 @@ private:
 	mutable std::unordered_map<size_t, HandlerType> _handlers;
 	size_t _nextId = 0;
 	std::unique_ptr<mutex_type> _lockPolicy;
+	std::shared_ptr<size_t> _delayedUnsubscribeGuard = std::make_unique<size_t>(0);
 };
 
 template<typename mutex_type, typename T>
