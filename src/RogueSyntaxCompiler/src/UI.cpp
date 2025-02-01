@@ -4,8 +4,6 @@
 
 UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subscribe()), _outputForm("Output",config, _eventCurrentFocus.Subscribe()), _infoForm("Info", config, _eventCurrentFocus.Subscribe()),  _config(config)
 {
-	
-
 	_details = "";
 	_output = ":>";
 	

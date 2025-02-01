@@ -33,7 +33,6 @@ UI_TextArea::UI_TextArea(const UIConfig& config, const std::string name, std::sh
 
 void UI_TextArea::Layout()
 {
-	_hasFocus = _eventCurrentFocusObserver->GetEventData() == _name;
 	if (!_highlighting)
 	{
 		for (auto& textbox : _textboxes)
@@ -54,20 +53,25 @@ void UI_TextArea::Layout()
 
 void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 {
-    if (_hasFocus)
+
+	for (auto& textbox : _textboxes)
+	{
+		textbox->ProcessInputCommand(cmd);
+	}
+
+    if (HasFocus())
     {
+		_eventCurrentFocusObserver->SetEventData(_name);
         auto oldPos = _cursorPosition;
         switch (cmd.type)
         {
             case INPUT_CURSOR_LEFT:
                 _highlighting = cmd.flags == FLAG_HIGHLIGHT;
-                _textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
                 _cursorPosition.column = _textboxes.at(_cursorPosition.line)->GetCursorPosition();
                 break;
 
             case INPUT_CURSOR_RIGHT:
                 _highlighting = cmd.flags == FLAG_HIGHLIGHT;
-                _textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
                 _cursorPosition.column = _textboxes.at(_cursorPosition.line)->GetCursorPosition();
                 break;
 
@@ -85,7 +89,6 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
                 _highlighting = cmd.flags == FLAG_HIGHLIGHT;
                 _cursorPosition = _hoverPosition;
                 _textboxes.at(_cursorPosition.line)->SetCursorPosition(_cursorPosition.column);
-                _textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
                 if (!_highlighting)
                 {
                     _highlightPosition = _cursorPosition;
@@ -99,7 +102,6 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
                 }
                 _highlighting = true;
                 _cursorPosition = _hoverPosition;
-                _textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
                 break;
 
             case INPUT_INSERT:
@@ -112,7 +114,6 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
                     DeleteHighlightedText();
                     _highlighting = false;
                 }
-                _textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
                 _cursorPosition.column = _textboxes.at(_cursorPosition.line)->GetCursorPosition();
                 break;
 
@@ -130,13 +131,11 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
 
             case INPUT_CURSOR_HOME:
                 _highlighting = cmd.flags == FLAG_HIGHLIGHT;
-                _textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
                 _cursorPosition.column = 0;
                 break;
 
             case INPUT_CURSOR_END:
                 _highlighting = cmd.flags == FLAG_HIGHLIGHT;
-                _textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
                 _cursorPosition.column = _textboxes.at(_cursorPosition.line)->GetText().length();
                 break;
 
@@ -213,6 +212,10 @@ void UI_TextArea::ProcessInputCommand(const InputCmd& cmd)
             _textboxes.at(_cursorPosition.line)->SetFocus();
         }
     }
+	else
+	{
+		_eventTextboxFocus.SetEventData("");
+	}
 }
 
 
@@ -262,15 +265,18 @@ void UI_TextArea::LayoutWithScrollbars()
 			CLAY_RECTANGLE({ .color = _config.colors.background })
 		)
 		{
-			uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
-			uint16_t start_line = _scrollOffset.line;
-
-			std::vector<uint16_t> linesToDisplay(_textboxes.size());
-			std::iota(linesToDisplay.begin(), linesToDisplay.end(), 0);
-			auto lineView = linesToDisplay | std::views::drop(start_line) | std::views::take(maxLines);
-			for (auto iter : lineView)
+			if (_lineNumberingStrategy)
 			{
-				_lineNumberingStrategy->LayoutLineNumbering(iter);
+				uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
+				uint16_t start_line = _scrollOffset.line;
+
+				std::vector<uint16_t> linesToDisplay(_textboxes.size());
+				std::iota(linesToDisplay.begin(), linesToDisplay.end(), 0);
+				auto lineView = linesToDisplay | std::views::drop(start_line) | std::views::take(maxLines);
+				for (auto iter : lineView)
+				{
+					_lineNumberingStrategy->LayoutLineNumbering(iter);
+				}
 			}
 		}
 
@@ -315,7 +321,6 @@ void UI_TextArea::LayoutTextArea()
 		{
 			//observe focus
 			_eventCurrentFocusObserver->SetEventData(_name);
-			_hasFocus = true;
 		}
 
 		uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
@@ -615,7 +620,7 @@ void UI_TextArea::HandleDeleteCommand(const InputCmd& cmd)
 	{
 		if (!_textboxes.at(_cursorPosition.line)->CursorAtEnd())
 		{
-			_textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
+			//noop
 		}
 		else if (_cursorPosition.line < _textboxes.size() - 1)
 		{
@@ -628,7 +633,7 @@ void UI_TextArea::HandleDeleteCommand(const InputCmd& cmd)
 	{
 		if (!_textboxes.at(_cursorPosition.line)->CursorAtStart())
 		{
-			_textboxes.at(_cursorPosition.line)->ProcessInputCommand(cmd);
+			//noop
 		}
 		else if (_cursorPosition.line > 0)
 		{

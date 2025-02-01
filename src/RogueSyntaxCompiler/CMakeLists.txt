@@ -70,7 +70,9 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputCmd.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/InfoForm.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/OutputForm.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/EditorForm.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UIConfig.h
 
 
@@ -88,7 +90,9 @@ set( compilerSource
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Textbox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/InputForm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/InfoForm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/OutputForm.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/EditorForm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/RogueSyntaxCompiler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.cpp
 )

@@ -16,18 +16,17 @@
 #include "UI_Layout_Textbox.h"
 #include "UI_Layout_TextArea.h"
 
-class InputForm
+class InfoForm
 {
 public:
-	InputForm(const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged);
-	~InputForm();
+	InfoForm(const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged);
+	~InfoForm();
 
 	void SetContent(const std::string& content);
 	void ProcessInputCommand(const InputCmd& cmd);
 
 	void Layout();
 	const std::string& Name() { return _name; };
-
 
 	CursorPosition GetCursorPosition() { return _textArea->GetCursorPosition(); };
 	CursorPosition GetHighlightPosition() { return _textArea->GetHighlightPosition(); };
@@ -37,7 +36,7 @@ public:
 	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim;};
 
 private:
-
+	UIEventAgent<std::string> _eventCurrentFocusAgent;
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 	std::unique_ptr<UI_TextArea> _textArea;
 	LayoutDimensions _layoutDimensions;

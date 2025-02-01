@@ -4,7 +4,6 @@ UI_Textbox::UI_Textbox(const UIConfig& config, const std::string name, std::shar
 	: _config(config), _eventCurrentFocusObserver(focusChanged), _name(name), _cursorStrategy(std::move(cursorType))
 {
 	_text = "";
-	_hasFocus = false;
 }
 
 void UI_Textbox::Layout()
@@ -29,8 +28,9 @@ void UI_Textbox::Layout(uint16_t offset, uint16_t length)
 
 void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
 {
-	if (_hasFocus)
+	if (HasFocus())
 	{
+			_eventCurrentFocusObserver->SetEventData(_name);
 			switch (cmd.type)
 			{
 				case INPUT_CURSOR_LEFT:
@@ -174,7 +174,6 @@ void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
 void UI_Textbox::SetFocus()
 {
 	_eventCurrentFocusObserver->SetEventData(_name);
-	_hasFocus = true;
 	if (!_highlighting)
 	{
 		_highlightPosition = _cursorPosition;
@@ -198,7 +197,7 @@ void UI_Textbox::LayoutCursor(size_t index)
 {
 	if (_cursorStrategy != nullptr)
 	{
-		if (_hasFocus && (_cursorPosition == index))
+		if (HasFocus() && (_cursorPosition == index))
 		{
 			_cursorStrategy->LayoutCursor();
 		}
@@ -207,8 +206,6 @@ void UI_Textbox::LayoutCursor(size_t index)
 
 void UI_Textbox::LayoutTextbox(uint16_t offset, uint16_t length)
 {
-	_hasFocus = _eventCurrentFocusObserver->GetEventData() == _name;
-
 	CLAY(
 		CLAY_ID_LOCAL("TEXTBOX"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
@@ -220,7 +217,6 @@ void UI_Textbox::LayoutTextbox(uint16_t offset, uint16_t length)
 		{
 			//observe focus
 			_eventCurrentFocusObserver->SetEventData(_name);
-			_hasFocus = true;
 		}
 
 		if (offset >= length)

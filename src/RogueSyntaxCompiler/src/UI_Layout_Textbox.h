@@ -29,7 +29,7 @@ public:
 	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim; };
 	void SetText(const std::string& text) { _text = text; };
 	const std::string& GetText() { return _text; };
-	bool HasFocus() { return _hasFocus; };
+	bool HasFocus() { return _eventCurrentFocusObserver->GetEventData() == _name; };
 	void SetFocus();
 	bool IsHighlighting() { return _highlighting; };
 	void SetHighlighting(bool highlight) { _highlighting = highlight; };
@@ -58,7 +58,6 @@ private:
 	std::string _name;
 	
 	std::string _text;
-	bool _hasFocus = false;
 	bool _highlighting = false;
 	uint16_t _cursorPosition = 0;
 	uint16_t _hoverPosition;

@@ -34,7 +34,7 @@ public:
 	void SetLayoutDimensions(const LayoutDimensions& dim);
 	void SetText(const std::string& text);
 	const std::string& GetText();
-	bool HasFocus() { return _hasFocus; };
+	bool HasFocus() { return _eventCurrentFocusObserver->GetEventData() == _name; };
 	bool IsHighlighting() { return _highlighting; };
 	void SetHighlighting(bool highlight) { _highlighting = highlight; };
 	void SetCursorPosition(CursorPosition position) { _cursorPosition.line = SafeClampLow(position.line, (uint16_t)0, (uint16_t)_textboxes.size());
@@ -78,7 +78,6 @@ private:
 	std::string _text;
 	
 	std::vector<std::unique_ptr<UI_Textbox>> _textboxes;
-	bool _hasFocus = false;
 	bool _highlighting = false;
 	CursorPosition _cursorPosition;
 	CursorPosition _hoverPosition;

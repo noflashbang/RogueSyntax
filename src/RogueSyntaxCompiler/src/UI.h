@@ -10,13 +10,16 @@
 #include <algorithm>
 #include <format>
 #include "InputCmd.h"
-#include "InputForm.h"
 #include "UIConfig.h"
 #include "UI_Layout_Structs.h"
 #include "UI_Layout_Splitter.h"
 #include "UI_Layout_Menu.h"
 #include "UI_Layout_Event.h"
 #include "UI_Layout_Textbox.h"
+
+#include "InfoForm.h"
+#include "OutputForm.h"
+#include "EditorForm.h"
 
 #define RAYLIB_VECTOR2_TO_CLAY_VECTOR2(vector) { .x = vector.x, .y = vector.y }
 
@@ -30,7 +33,7 @@ public:
 	void DoLayout();
 
 	void SetDetails(const std::string& details) { _infoForm.SetContent(details); }
-	void SetOutput(const std::string& output) { _outputForm.SetContent(output); }
+	void SetOutput(const std::string& output) { _outputForm.SetPrompt(output); }
 	void SetEditor(const std::string& editor) { _editorForm.SetContent(editor); }
 
 	void SetInfo(const std::string& info) { _info = info; }
@@ -54,9 +57,9 @@ private:
 	UIEventAgent<std::string> _eventCurrentFocus;
 
 	//more complex ui elements
-	InputForm _editorForm;
-	InputForm _outputForm;
-	InputForm _infoForm;
+	EditorForm _editorForm;
+	OutputForm _outputForm;
+	InfoForm _infoForm;
 
 	//splitters
 	std::unique_ptr<UI_Splitter> _mainFormSplitter;
