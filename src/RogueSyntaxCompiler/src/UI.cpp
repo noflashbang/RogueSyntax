@@ -6,6 +6,8 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 {
 	_details = "";
 	_output = ":>";
+
+	_onReturnConnection = _outputForm.onReturn() += [this](const std::string& cmd) { this->SetLastCmd(cmd); };
 	
 	_editor = "let five = 5;\n let ten = 10;\n let add = fn(x, y) { x + y; };\n let result = add(five, ten);\n ";
 	_editorForm.SetContent(_editor);
@@ -26,6 +28,8 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 
 UI::~UI()
 {
+	//must release connections before destruction of the children
+	_onReturnConnection->~ScopedConnection();
 }
 
 void UI::DoLayout()

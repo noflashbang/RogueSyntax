@@ -7,6 +7,7 @@ OutputForm::OutputForm(const std::string& name, UIConfig config, std::shared_ptr
 	_name = name;
 	_outputArea = std::make_unique<UI_TextArea>(_config, _name + "area", _eventCurrentFocusAgent.Subscribe(), nullptr);
 	_cmdBox = std::make_unique<UI_Textbox>(_config, _name + "cmd", _eventCurrentFocusAgent.Subscribe(), std::make_unique<HighlightCursorStrategy>(_config));
+	_onReturnConnection = _cmdBox->onReturn() += [this](const std::string& cmd) { _onReturn(cmd); };
 }
 
 OutputForm::~OutputForm()

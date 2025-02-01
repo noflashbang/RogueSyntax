@@ -108,11 +108,16 @@ class ScopedConnection
 public:
 	using DisconnectFn = std::function<void()>;
 
+	ScopedConnection()
+	{
+		_disconnect = nullptr;
+	};
+
 	explicit ScopedConnection(DisconnectFn disconnect) : _disconnect(std::move(disconnect))
 	{
 	};
 
-	~ScopedConnection() { _disconnect(); };
+	~ScopedConnection() { if (_disconnect != nullptr) { _disconnect(); } };
 
 private:
 	DisconnectFn _disconnect;
@@ -160,18 +165,17 @@ public:
 	};
 
 	
-	[[nodiscard]] ScopedConnection operator+=(HandlerType handler)
+	[[nodiscard]] std::unique_ptr<ScopedConnection> operator+=(HandlerType handler)
 	{
 		std::lock_guard lock(*_lockPolicy);
 		auto id = _nextId++;
 		_handlers[id] = std::move(handler);
-		
-		return ScopedConnection([this, id]() { Unsubscribe(id); });
+		return std::make_unique<ScopedConnection>([this, id]() { Unsubscribe(id); });
 	};
 
 	
 	template <typename T>
-	[[nodiscard]] ScopedConnection Bind(std::weak_ptr<T> weakObj, void (T::* method)(Args...))
+	[[nodiscard]] std::unique_ptr<ScopedConnection> Bind(std::weak_ptr<T> weakObj, void (T::* method)(Args...))
 	{
 		return *this 
 			+= [weakObj, method](Args... args) 
@@ -220,11 +224,11 @@ class Bindable
 public:
 	using CallbackType = std::function<void(const T&)>;
 
-	explicit Bindable(T value) : _value(std::move(value)), _changeEvent(std::make_shared<UI_Delegate<mutex_type, const T&>>())
+	explicit Bindable(T value) : _value(std::move(value)), _changeEvent(UI_Delegate<mutex_type, const T&>())
 	{
 	};
 
-	explicit Bindable(T value, std::unique_ptr<mutex_type> lockPolicy) : _value(std::move(value)), _changeEvent(std::make_shared<UI_Delegate<mutex_type, const T&>>(std::move(lockPolicy)))
+	explicit Bindable(T value, std::unique_ptr<mutex_type> lockPolicy) : _value(std::move(value)), _changeEvent(UI_Delegate<mutex_type, const T&>(std::move(lockPolicy)))
 	{
 	};
 
@@ -237,14 +241,14 @@ public:
 		}
 	};
 	const T& get() const { return _value; }
-	std::shared_ptr<UI_Delegate<mutex_type, const T&>> onChange() { return _changeEvent; }
+	UI_Delegate<mutex_type, const T&>& onChange() { return _changeEvent; }
 
 private:
 	void notify()
 	{
-		(*_changeEvent)(_value);
+		_changeEvent(_value);
 	};
 
 	T _value;
-	std::shared_ptr<UI_Delegate<mutex_type, const T&>> _changeEvent;
+	UI_Delegate<mutex_type, const T&> _changeEvent;
 };

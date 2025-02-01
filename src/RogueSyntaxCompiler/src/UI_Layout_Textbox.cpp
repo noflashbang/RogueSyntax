@@ -30,136 +30,137 @@ void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
 {
 	if (HasFocus())
 	{
-			_eventCurrentFocusObserver->SetEventData(_name);
-			switch (cmd.type)
+		auto oldText = _text;
+		_eventCurrentFocusObserver->SetEventData(_name);
+		switch (cmd.type)
+		{
+		case INPUT_CURSOR_LEFT:
+		{
+			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+			if (_cursorPosition > 0)
 			{
-				case INPUT_CURSOR_LEFT:
+				_cursorPosition--;
+			}
+			break;
+		}
+		case INPUT_CURSOR_RIGHT:
+		{
+			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+			if (_cursorPosition < _text.length())
+			{
+				_cursorPosition++;
+			}
+			break;
+		}
+		case INPUT_CURSOR_MOVE:
+		{
+			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+			_cursorPosition = _hoverPosition;
+
+			if (!_highlighting)
+			{
+				_highlightPosition = _cursorPosition;
+			}
+
+			break;
+		}
+		case INPUT_CURSOR_DRAG:
+		{
+			if (!_highlighting)
+			{
+				_highlightPosition = _cursorPosition;
+			}
+			_highlighting = true;
+			_cursorPosition = _hoverPosition;
+			break;
+		}
+		case INPUT_INSERT:
+		{
+			if (_highlighting)
+			{
+				DeleteHighlightedText();
+				_highlighting = false;
+			}
+			char character = (char)cmd.flags;
+			if (_cursorPosition >= _text.length())
+			{
+				_text.push_back(character);
+				_cursorPosition = _text.length();
+			}
+			else
+			{
+				_text.insert(_cursorPosition, 1, character);
+				_cursorPosition++;
+			}
+			break;
+		}
+		case INPUT_DELETE:
+		{
+			if (_highlighting)
+			{
+				DeleteHighlightedText();
+				_highlighting = false;
+			}
+			else
+			{
+				if (cmd.flags == FLAG_DELETE_FWD)
 				{
-					_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+					if (_cursorPosition < _text.length())
+					{
+						_text.erase(_cursorPosition, 1);
+					}
+				}
+				else if (cmd.flags == FLAG_DELETE_BWD)
+				{
 					if (_cursorPosition > 0)
 					{
 						_cursorPosition--;
+						_text.erase(_cursorPosition, 1);
 					}
-					break;
 				}
-				case INPUT_CURSOR_RIGHT:
-				{
-					_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-					if (_cursorPosition < _text.length())
-					{
-						_cursorPosition++;
-					}
-					break;
-				}
-				case INPUT_CURSOR_MOVE:
-				{
-					_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-					_cursorPosition = _hoverPosition;
-
-					if (!_highlighting)
-					{
-						_highlightPosition = _cursorPosition;
-					}
-
-					break;
-				}
-				case INPUT_CURSOR_DRAG:
-				{
-					if (!_highlighting)
-					{
-						_highlightPosition = _cursorPosition;
-					}
-					_highlighting = true;
-					_cursorPosition = _hoverPosition;
-					break;
-				}
-				case INPUT_INSERT:
-				{
-					if (_highlighting)
-					{
-						DeleteHighlightedText();
-						_highlighting = false;
-					}
-					char character = (char)cmd.flags;
-					if (_cursorPosition >= _text.length())
-					{
-						_text.push_back(character);
-						_cursorPosition = _text.length();
-					}
-					else
-					{
-						_text.insert(_cursorPosition, 1, character);
-						_cursorPosition++;
-					}
-					break;
-				}
-				case INPUT_DELETE:
-				{
-					if (_highlighting)
-					{
-						DeleteHighlightedText();
-						_highlighting = false;
-					}
-					else
-					{
-						if (cmd.flags == FLAG_DELETE_FWD)
-						{
-							if (_cursorPosition < _text.length())
-							{
-								_text.erase(_cursorPosition, 1);
-							}
-						}
-						else if (cmd.flags == FLAG_DELETE_BWD)
-						{
-							if (_cursorPosition > 0)
-							{
-								_cursorPosition--;
-								_text.erase(_cursorPosition, 1);
-							}
-						}
-					}
-					break;
-				}
-				case INPUT_CURSOR_HOME:
-				{
-					_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-					_cursorPosition = 0;
-					break;
-				}
-				case INPUT_CURSOR_END:
-				{
-					_highlighting = cmd.flags == FLAG_HIGHLIGHT;
-					_cursorPosition = _text.length();
-					break;
-				}
-				case INPUT_NEWLINE:
-				{
-					//callback?
-					break;
-				}
-				case INPUT_CURSOR_COPY:
-				{
-					_copyBuffer = GetHighlightedText();
-					break;
-				}
-				case INPUT_CURSOR_CUT:
-				{
-					_copyBuffer = GetHighlightedText();
-					DeleteHighlightedText();
-					_highlighting = false;
-					break;
-				}
-				case INPUT_CURSOR_PASTE:
-				{
-					if (_highlighting)
-					{
-						DeleteHighlightedText();
-						_highlighting = false;
-					}
-					InsertText(_copyBuffer);
-					_highlighting = false;
-					break;
-				}
+			}
+			break;
+		}
+		case INPUT_CURSOR_HOME:
+		{
+			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+			_cursorPosition = 0;
+			break;
+		}
+		case INPUT_CURSOR_END:
+		{
+			_highlighting = cmd.flags == FLAG_HIGHLIGHT;
+			_cursorPosition = _text.length();
+			break;
+		}
+		case INPUT_NEWLINE:
+		{
+			_onReturn(_text);
+			break;
+		}
+		case INPUT_CURSOR_COPY:
+		{
+			_copyBuffer = GetHighlightedText();
+			break;
+		}
+		case INPUT_CURSOR_CUT:
+		{
+			_copyBuffer = GetHighlightedText();
+			DeleteHighlightedText();
+			_highlighting = false;
+			break;
+		}
+		case INPUT_CURSOR_PASTE:
+		{
+			if (_highlighting)
+			{
+				DeleteHighlightedText();
+				_highlighting = false;
+			}
+			InsertText(_copyBuffer);
+			_highlighting = false;
+			break;
+		}
 		}
 
 		//update the last cursor position
@@ -167,7 +168,10 @@ void UI_Textbox::ProcessInputCommand(const InputCmd& cmd)
 		{
 			_highlightPosition = _cursorPosition;
 		}
-
+		if (oldText != _text)
+		{
+			UpdateText();
+		}
 	}
 }
 

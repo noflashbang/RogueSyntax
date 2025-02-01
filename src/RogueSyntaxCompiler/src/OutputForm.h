@@ -34,11 +34,16 @@ public:
 
 	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim;};
 
+	UI_Delegate<NoLock, const std::string&>& onReturn() { return _onReturn; };
+
 private:
 	UIEventAgent<std::string> _eventCurrentFocusAgent;
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 	std::unique_ptr<UI_TextArea> _outputArea;
 	std::unique_ptr<UI_Textbox> _cmdBox;
+	
+	UI_Delegate<NoLock, const std::string&> _onReturn;
+	std::unique_ptr<ScopedConnection> _onReturnConnection;
 
 	LayoutDimensions _layoutDimensions;
 

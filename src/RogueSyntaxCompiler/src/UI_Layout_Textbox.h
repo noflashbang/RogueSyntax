@@ -27,7 +27,7 @@ public:
 	void ProcessInputCommand(const InputCmd& cmds);
 
 	void SetLayoutDimensions(LayoutDimensions dim) { _layoutDimensions = dim; };
-	void SetText(const std::string& text) { _text = text; };
+	void SetText(const std::string& text) { _text = text; UpdateText(); };
 	const std::string& GetText() { return _text; };
 	bool HasFocus() { return _eventCurrentFocusObserver->GetEventData() == _name; };
 	void SetFocus();
@@ -44,6 +44,11 @@ public:
 	void DeleteHighlightedText();
 	void InsertText(const std::string& text);
 
+	void UpdateText() { _bindableText.set(_text); };
+	UI_Delegate<NoLock,const std::string&>& onTextChanged() { return _bindableText.onChange(); };
+	UI_Delegate<NoLock, const std::string&>& onReturn() { return _onReturn; };
+
+
 private:
 	void LayoutCursor(size_t index);
 	void LayoutTextbox(uint16_t offset, uint16_t length);
@@ -58,6 +63,9 @@ private:
 	std::string _name;
 	
 	std::string _text;
+	Bindable<NoLock, std::string> _bindableText = Bindable<NoLock, std::string>("");
+	UI_Delegate<NoLock, const std::string&> _onReturn;
+
 	bool _highlighting = false;
 	uint16_t _cursorPosition = 0;
 	uint16_t _hoverPosition;

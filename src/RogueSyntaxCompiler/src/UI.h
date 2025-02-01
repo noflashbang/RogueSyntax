@@ -51,6 +51,10 @@ protected:
 
 	void CreateInputCommands();
 
+	void SetLastCmd(const std::string& cmd) { LastCmd = cmd; _infoForm.SetContent(LastCmd); }
+	std::unique_ptr<ScopedConnection> _onReturnConnection;
+	std::string LastCmd = "";
+
 private:
 	
 	UIConfig _config;
