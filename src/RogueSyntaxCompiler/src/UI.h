@@ -39,6 +39,7 @@ public:
 	void SetInfoText(const std::string& info) { _infoForm.SetContent(info); }
 
 	std::string GetEditorText() { return _editorForm.GetContent(); };
+	void ClearCommand() { _outputForm.SetCommand(""); };
 	
 
 	void SetInfo(const std::string& info) { _info = info; }

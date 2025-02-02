@@ -10,6 +10,21 @@
 #include <RogueSyntaxCore.h>
 #include "RogueSyntaxCompiler.h"
 
+#include <iostream>
+#include <cstdlib>
+
+//void* operator new(std::size_t size) {
+//    std::cout << "[Global new] Allocating " << size << " bytes\n";
+//    return std::malloc(size);
+//}
+//
+//void operator delete(void* ptr) noexcept {
+//    std::cout << "[Global delete] Freeing memory\n";
+//    std::free(ptr);
+//}
+
+
+
 void HandleClayErrors(Clay_ErrorData errorData) {
 	printf("%s", errorData.errorText.chars);
 }
@@ -71,7 +86,7 @@ void OnCommand(std::string cmd);
 
 int main(int argc, char* argv[])
 {
-    Clay_SetMaxElementCount(8192 * 3);
+    Clay_SetMaxElementCount(8192 * 6);
     uint64_t totalMemorySize = Clay_MinMemorySize();
     Clay_Arena clayMemory = Clay_CreateArenaWithCapacityAndMemory(totalMemorySize, malloc(totalMemorySize));
     Clay_Initialize(clayMemory, { (float)GetScreenWidth(), (float)GetScreenHeight() }, { HandleClayErrors });
@@ -137,17 +152,23 @@ int main(int argc, char* argv[])
 
 void OnCommand(std::string cmd)
 {
-	printf("Command: %s\n", cmd.c_str());
+	auto log = std::format("{}{}\n", pConsole->GetPrompt(), cmd);
+	pUi->AddOutputText(log);
+    pUi->ClearCommand();
 
 	if (cmd == "!q")
 	{
+        pUi->AddOutputText("Exiting...");
         _closeWindow = true;
 	}
     if (cmd == "!r")
     {
 		std::string code = pUi->GetEditorText();
+        pUi->AddOutputText(std::format("Compiling {} chars", code.length()));
 		auto byteCode = pConsole->Compile(code);
+        pUi->AddOutputText(std::format("Running {} bytes", byteCode.Instructions.size()));
         pConsole->Run(byteCode);
+        pUi->AddOutputText("Result>");
 		pUi->AddOutputText(pConsole->GetResult());
     }
     if (cmd == "!dp")

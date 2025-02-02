@@ -25,8 +25,10 @@ public:
 	void SetPrompt(const std::string& prompt) { _prompt = prompt; };
 	
 	std::string GetCommand() { return _cmdBox->GetText(); };
+	void SetCommand(const std::string& cmd) { _cmdBox->SetText(cmd); };
+
 	std::string GetOutput() { return _outputArea->GetText(); };
-	void AddHistory(const std::string& history) { _history += history + '\n'; };
+	void AddHistory(const std::string& history) { _history += history + '\n'; _outputArea->SetText(_history); };
 
 	void ProcessInputCommand(const InputCmd& cmd);
 

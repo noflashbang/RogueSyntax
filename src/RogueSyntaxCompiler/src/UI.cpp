@@ -13,8 +13,8 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 	_info = "";
 	_infoForm.SetContent(_info);
 
-	_mainFormSplitter = std::make_unique<UI_Splitter>(config, 1300, SPLITTER_VERTICAL, [this]() { this->CreateIDEForm(); }, [this]() { this->CreateInfo(); });
-	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 600, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
+	_mainFormSplitter = std::make_unique<UI_Splitter>(config, 1000, SPLITTER_VERTICAL, [this]() { this->CreateIDEForm(); }, [this]() { this->CreateInfo(); });
+	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 200, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
 
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
@@ -610,7 +610,7 @@ void UI::CreateInputCommands()
 		_inputCmds.push_back(InputCmd{ INPUT_INSERT, (uint32_t)' ' });
 	}
 
-	const std::vector<uint32_t> keyList{ KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J, KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z, KEY_APOSTROPHE, KEY_COMMA, KEY_MINUS, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_EQUAL, KEY_LEFT_BRACKET, KEY_BACKSLASH, KEY_RIGHT_BRACKET, KEY_GRAVE, KEY_SPACE, KEY_TAB, KEY_ZERO, KEY_ONE, KEY_TWO, KEY_THREE, KEY_FOUR, KEY_FIVE, KEY_SIX, KEY_SEVEN, KEY_EIGHT, KEY_NINE, KEY_KP_0, KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4, KEY_KP_5, KEY_KP_6, KEY_KP_7, KEY_KP_8, KEY_KP_9, KEY_KP_DECIMAL, KEY_KP_DIVIDE, KEY_KP_MULTIPLY, KEY_KP_SUBTRACT, KEY_KP_ADD, KEY_KP_EQUAL };
+	static const std::vector<uint32_t> keyList{ KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J, KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z, KEY_APOSTROPHE, KEY_COMMA, KEY_MINUS, KEY_PERIOD, KEY_SLASH, KEY_SEMICOLON, KEY_EQUAL, KEY_LEFT_BRACKET, KEY_BACKSLASH, KEY_RIGHT_BRACKET, KEY_GRAVE, KEY_SPACE, KEY_TAB, KEY_ZERO, KEY_ONE, KEY_TWO, KEY_THREE, KEY_FOUR, KEY_FIVE, KEY_SIX, KEY_SEVEN, KEY_EIGHT, KEY_NINE, KEY_KP_0, KEY_KP_1, KEY_KP_2, KEY_KP_3, KEY_KP_4, KEY_KP_5, KEY_KP_6, KEY_KP_7, KEY_KP_8, KEY_KP_9, KEY_KP_DECIMAL, KEY_KP_DIVIDE, KEY_KP_MULTIPLY, KEY_KP_SUBTRACT, KEY_KP_ADD, KEY_KP_EQUAL };
 	for (auto& key : keyList)
 	{
 		if (IsKeyPressedRepeat(key))

@@ -27,7 +27,7 @@ void UI_Splitter::LayoutVertical()
 	{
 		CLAY(
 			CLAY_ID_LOCAL("SPLITTER_FIRST"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(_size), .height = CLAY_SIZING_GROW(0)}}),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}}),
 			CLAY_RECTANGLE({ .color = _config.colors.background })
 		)
 		{
@@ -36,7 +36,7 @@ void UI_Splitter::LayoutVertical()
 		LayoutSplitter();
 		CLAY(
 			CLAY_ID_LOCAL("SPLITTER_SECOND"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)} }),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(_size), .height = CLAY_SIZING_GROW(0)} }),
 			CLAY_RECTANGLE({ .color = _config.colors.background })
 		)
 		{
@@ -55,7 +55,7 @@ void UI_Splitter::LayoutHorizontal()
 	{
 		CLAY(
 			CLAY_ID_LOCAL("SPLITTER_FIRST"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_size)} }),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)} }),
 			CLAY_RECTANGLE({ .color = _config.colors.background })
 		)
 		{
@@ -66,7 +66,7 @@ void UI_Splitter::LayoutHorizontal()
 		
 		CLAY(
 			CLAY_ID_LOCAL("SPLITTER_SECOND"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)} }),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED(_size)} }),
 			CLAY_RECTANGLE({ .color = _config.colors.background })
 		)
 		{
@@ -106,7 +106,7 @@ void UI_Splitter::LayoutSplitter()
 				_sizing = false;
 			}
 
-			_size += _type == SplitterType::SPLITTER_VERTICAL ? GetMouseDelta().x : GetMouseDelta().y;
+			_size -= _type == SplitterType::SPLITTER_VERTICAL ? GetMouseDelta().x : GetMouseDelta().y;
 		}
 	}
 }

@@ -61,7 +61,7 @@ public:
 	~UIEventObserver() = default;
 
 	void SetEventData(T data) { _agent->SetEventData(data); }
-	T GetEventData() { return _eventData; }
+	T& GetEventData() { return _eventData; }
 
 private:
 	friend class UIEventAgent<T>; //we do this so that the users of the observers don't call the wrong method

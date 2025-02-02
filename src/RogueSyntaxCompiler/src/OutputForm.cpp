@@ -34,14 +34,23 @@ void OutputForm::Layout()
 	}
 
 	CLAY(
+		CLAY_ID_LOCAL("OUTPUT_PARENT_AREA"),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}, .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},  .layoutDirection = CLAY_LEFT_TO_RIGHT }),
+		CLAY_RECTANGLE({ .color = _config.colors.background })
+	)
+	{
+		_outputArea->SetLayoutDimensions(_layoutDimensions);
+		_outputArea->Layout();
+	}
+	CLAY(
 		CLAY_ID_LOCAL("OUTPUT_PARENT"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},  .layoutDirection = CLAY_LEFT_TO_RIGHT }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIT(0)}, .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_CENTER},  .layoutDirection = CLAY_LEFT_TO_RIGHT }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
 		CLAY(
 			CLAY_ID_LOCAL("PROMPT"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIT(0)} }),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIT(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
 			CLAY_RECTANGLE({ .color = _config.colors.background })
 		)
 		{
@@ -50,9 +59,6 @@ void OutputForm::Layout()
 		}
 		_cmdBox->Layout();
 	}
-	
-	_outputArea->SetLayoutDimensions(_layoutDimensions);
-	_outputArea->Layout();
 }
 
 

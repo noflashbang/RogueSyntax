@@ -354,10 +354,18 @@ void RogueVM::Run()
 		case OpCode::Constants::OP_RET_VAL:
 		{
 			auto result = Pop();
-			auto frame = PopFrame();
-			_sp = frame.BasePointer();
-			Pop();
-			Push(result);
+			if(_frameIndex <= 1)
+			{
+				//global frame - load result into output
+				_outputRegister = result;
+			}
+			else
+			{
+				auto frame = PopFrame();
+				_sp = frame.BasePointer();
+				Pop();
+				Push(result);
+			}
 			break;
 		}
 		default:
@@ -385,19 +393,13 @@ const IObject* RogueVM::Pop()
 	{ 
 		throw std::exception("Stack Underflow"); 
 	} 
-	return _stack[--_sp];
+	_outputRegister =  _stack[--_sp];
+	return _outputRegister;
 }
 
 const IObject* RogueVM::LastPopped() const 
 { 
-	if (_sp == 0)
-	{
-		if (_stack[_sp] == nullptr)
-		{
-			return NullObj::NULL_OBJ_REF;
-		}
-	}
-	return _stack[_sp];
+	return _outputRegister;
 }
 
 const Frame& RogueVM::CurrentFrame() const

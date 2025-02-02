@@ -116,6 +116,7 @@ private:
 	TypeCoercer _coercer;
 	std::array<const IObject*, STACK_SIZE> _stack;
 	std::array<const IObject*, GLOBAL_SIZE> _globals;
+	const IObject* _outputRegister = nullptr;
 	std::array<Frame, MAX_FRAMES> _frames;
 	ByteCode _byteCode;
 };

@@ -6,7 +6,7 @@ void InteractiveCompiler::Run(const ByteCode& code)
 	RogueSyntax syntax;
 	auto vm = syntax.MakeVM(code);
 	vm->Run();
-	auto top = vm->Top();
+	auto top = vm->LastPopped();
 	
 	if (top->IsThisA<ErrorObj>())
 	{

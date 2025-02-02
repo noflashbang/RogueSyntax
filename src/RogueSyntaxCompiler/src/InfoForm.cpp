@@ -35,11 +35,17 @@ void InfoForm::Layout()
 		//observe focus
 		_eventCurrentFocusObserver->SetEventData(_name);
 	}
-
-	_textArea->SetLayoutDimensions(_layoutDimensions);
-	//bool hasFocus = _eventCurrentFocusObserver->GetEventData() == _name;
-	//_textArea->HasFocus() = hasFocus;
-	_textArea->Layout();
+	CLAY(
+		CLAY_ID_LOCAL("INFO_PARENT_AREA"),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .childAlignment = {.x = CLAY_ALIGN_X_LEFT, .y = CLAY_ALIGN_Y_BOTTOM},  .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+		CLAY_RECTANGLE({ .color = _config.colors.background })
+	)
+	{
+		_textArea->SetLayoutDimensions(_layoutDimensions);
+		//bool hasFocus = _eventCurrentFocusObserver->GetEventData() == _name;
+		//_textArea->HasFocus() = hasFocus;
+		_textArea->Layout();
+	}
 }
 
 

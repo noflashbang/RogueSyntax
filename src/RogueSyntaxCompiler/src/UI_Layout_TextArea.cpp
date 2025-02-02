@@ -1,5 +1,6 @@
 #include "UI_Layout_TextArea.h"
 #include <iostream>
+#include <array>
 
 std::vector<std::string> GetLinesBySplitor(const std::string& text, char splitor)
 {
@@ -223,7 +224,10 @@ void UI_TextArea::SetLayoutDimensions(const LayoutDimensions& dim)
 {
 	_layoutDimensions = dim;
 	_layoutDimensions.height -= _config.fontSize;
-	_layoutDimensions.width -= _config.fontSize * 2;
+	if (_lineNumberingStrategy)
+	{
+		_layoutDimensions.width -= _config.fontSize * 2;
+	}
 	NormalizeScrollOffset();
 }
 
@@ -267,14 +271,18 @@ void UI_TextArea::LayoutWithScrollbars()
 		{
 			if (_lineNumberingStrategy)
 			{
-				uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
+				uint16_t maxLines = GetViewPortHeight();
 				uint16_t start_line = _scrollOffset.line;
 
-				std::vector<uint16_t> linesToDisplay(_textboxes.size());
+				std::array<uint16_t, 256> linesToDisplay{ 0 };
 				std::iota(linesToDisplay.begin(), linesToDisplay.end(), 0);
 				auto lineView = linesToDisplay | std::views::drop(start_line) | std::views::take(maxLines);
 				for (auto iter : lineView)
 				{
+					if (iter > _textboxes.size()-1)
+					{
+						break;
+					}
 					_lineNumberingStrategy->LayoutLineNumbering(iter);
 				}
 			}
@@ -289,7 +297,7 @@ void UI_TextArea::LayoutWithScrollbars()
 		{
 			CLAY(
 				CLAY_ID_LOCAL("TEXTAREA_CONTAINER_HSCROLL"),
-				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0,_layoutDimensions.width-_config.fontSize), .height = CLAY_SIZING_GROW(0)},  .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+				CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0,_layoutDimensions.width - _config.fontSize), .height = CLAY_SIZING_GROW(0)},  .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 				CLAY_RECTANGLE({ .color = _config.colors.background })
 			)
 			{
@@ -323,10 +331,10 @@ void UI_TextArea::LayoutTextArea()
 			_eventCurrentFocusObserver->SetEventData(_name);
 		}
 
-		uint16_t maxLines = _layoutDimensions.height / _config.fontSize;
+		uint16_t maxLines = GetViewPortHeight();
 		uint16_t start_line = _scrollOffset.line;
 
-		std::vector<uint16_t> linesToDisplay(_textboxes.size());
+		std::array<uint16_t, 256> linesToDisplay{ 0 };
 		std::iota(linesToDisplay.begin(), linesToDisplay.end(), 0);
 		auto lineView = linesToDisplay | std::views::drop(start_line) | std::views::take(maxLines);
 
@@ -504,12 +512,12 @@ void UI_TextArea::NormalizeScrollOffset()
 
 uint16_t UI_TextArea::GetViewPortWidth()
 {
-	return (_layoutDimensions.width - _config.fontSize) / (_config.fontSize / 2);
+	return std::max(0.0f, (_layoutDimensions.width) - _config.fontSize) / (_config.fontSize / 2);
 }
 
 uint16_t UI_TextArea::GetViewPortHeight()
 {
-	return _layoutDimensions.height / _config.fontSize;
+	return std::max(0.0f, _layoutDimensions.height) / _config.fontSize;
 }
 
 
@@ -522,21 +530,24 @@ void UI_TextArea::CreateLine(size_t index)
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		auto maxChars = GetViewPortWidth();
-		uint16_t start_char = _scrollOffset.column;
-		auto maxLength = std::min((int16_t)(_textboxes.at(index)->GetText().length()), (int16_t)(maxChars + start_char));
-
-		if(maxLength < 0)
+		if (index < _textboxes.size())
 		{
-			maxLength = 0;
-		}
+			auto maxChars = GetViewPortWidth();
+			uint16_t start_char = _scrollOffset.column;
+			auto maxLength = std::min((int16_t)(_textboxes.at(index)->GetText().length()), (int16_t)(maxChars + start_char));
 
-		_textboxes.at(index)->Layout(start_char, maxLength);
+			if (maxLength < 0)
+			{
+				maxLength = 0;
+			}
 
-		if (Clay_Hovered())
-		{
-			_hoverPosition.line = index;
-			_hoverPosition.column = _textboxes.at(index)->GetHoverPosition();
+			_textboxes.at(index)->Layout(start_char, maxLength);
+
+			if (Clay_Hovered())
+			{
+				_hoverPosition.line = index;
+				_hoverPosition.column = _textboxes.at(index)->GetHoverPosition();
+			}
 		}
 	}
 }

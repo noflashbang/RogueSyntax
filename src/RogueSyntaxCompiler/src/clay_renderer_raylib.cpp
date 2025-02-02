@@ -1,60 +1,7 @@
 #include "clay_renderer_raylib.h"
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
 
 Raylib_Font Clay_RayLib_Render::Raylib_fonts[10];
 Camera Clay_RayLib_Render::Raylib_camera;
-
-// Get a ray trace from the screen position (i.e mouse) within a specific section of the screen
-Ray Clay_RayLib_Render::GetScreenToWorldPointWithZDistance(Vector2 position, Camera camera, int screenWidth, int screenHeight, float zDistance)
-{
-    Ray ray = { 0 };
-
-    // Calculate normalized device coordinates
-    // NOTE: y value is negative
-    float x = (2.0f * position.x) / (float)screenWidth - 1.0f;
-    float y = 1.0f - (2.0f * position.y) / (float)screenHeight;
-    float z = 1.0f;
-
-    // Store values in a vector
-    Vector3 deviceCoords = { x, y, z };
-
-    // Calculate view matrix from camera look at
-    Matrix matView = MatrixLookAt(camera.position, camera.target, camera.up);
-
-    Matrix matProj = MatrixIdentity();
-
-    if (camera.projection == CAMERA_PERSPECTIVE)
-    {
-        // Calculate projection matrix from perspective
-        matProj = MatrixPerspective(camera.fovy * DEG2RAD, ((double)screenWidth / (double)screenHeight), 0.01f, zDistance);
-    }
-    else if (camera.projection == CAMERA_ORTHOGRAPHIC)
-    {
-        double aspect = (double)screenWidth / (double)screenHeight;
-        double top = camera.fovy / 2.0;
-        double right = top * aspect;
-
-        // Calculate projection matrix from orthographic
-        matProj = MatrixOrtho(-right, right, -top, top, 0.01, 1000.0);
-    }
-
-    // Unproject far/near points
-    Vector3 nearPoint = Vector3Unproject( { deviceCoords.x, deviceCoords.y, 0.0f }, matProj, matView);
-    Vector3 farPoint = Vector3Unproject( { deviceCoords.x, deviceCoords.y, 1.0f }, matProj, matView);
-
-    // Calculate normalized direction vector
-    Vector3 direction = Vector3Normalize(Vector3Subtract(farPoint, nearPoint));
-
-    ray.position = farPoint;
-
-    // Apply calculated vectors to ray
-    ray.direction = direction;
-
-    return ray;
-}
-
 
 Clay_Dimensions Clay_RayLib_Render::Raylib_MeasureText(Clay_StringSlice text, Clay_TextElementConfig* config, uintptr_t userData) {
     // Measure string size for Font
@@ -118,7 +65,6 @@ void Clay_RayLib_Render::Clay_Raylib_Render(Clay_RenderCommandArray renderComman
                 Font fontToUse = Raylib_fonts[renderCommand->config.textElementConfig->fontId].font;
                 DrawTextEx(fontToUse, cloned, { boundingBox.x, boundingBox.y }, (float)renderCommand->config.textElementConfig->fontSize, (float)renderCommand->config.textElementConfig->letterSpacing, CLAY_COLOR_TO_RAYLIB_COLOR(renderCommand->config.textElementConfig->textColor));
                 free(cloned);
-                _CrtDumpMemoryLeaks();
 			}
             else
             {
@@ -193,23 +139,6 @@ void Clay_RayLib_Render::Clay_Raylib_Render(Clay_RenderCommandArray renderComman
             }
             if (config->cornerRadius.bottomRight > 0) {
                 DrawRing( { roundf(boundingBox.x + boundingBox.width - config->cornerRadius.bottomRight), roundf(boundingBox.y + boundingBox.height - config->cornerRadius.bottomRight) }, roundf(config->cornerRadius.bottomRight - config->bottom.width), config->cornerRadius.bottomRight, 0.1, 90, 10, CLAY_COLOR_TO_RAYLIB_COLOR(config->bottom.color));
-            }
-            break;
-        }
-        case CLAY_RENDER_COMMAND_TYPE_CUSTOM: {
-            CustomLayoutElement* customElement = (CustomLayoutElement*)renderCommand->config.customElementConfig->customData;
-            if (!customElement) continue;
-            switch (customElement->type) {
-            case CUSTOM_LAYOUT_ELEMENT_TYPE_3D_MODEL: {
-                Clay_BoundingBox rootBox = renderCommands.internalArray[0].boundingBox;
-                float scaleValue = CLAY__MIN(CLAY__MIN(1, 768 / rootBox.height) * CLAY__MAX(1, rootBox.width / 1024), 1.5f);
-                Ray positionRay = GetScreenToWorldPointWithZDistance( { renderCommand->boundingBox.x + renderCommand->boundingBox.width / 2, renderCommand->boundingBox.y + (renderCommand->boundingBox.height / 2) + 20 }, Raylib_camera, (int)roundf(rootBox.width), (int)roundf(rootBox.height), 140);
-                BeginMode3D(Raylib_camera);
-                DrawModel(customElement->model.model, positionRay.position, customElement->model.scale * scaleValue, WHITE);        // Draw 3d model with texture
-                EndMode3D();
-                break;
-            }
-            default: break;
             }
             break;
         }
