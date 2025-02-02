@@ -14,14 +14,14 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 	_infoForm.SetContent(_info);
 
 	_mainFormSplitter = std::make_unique<UI_Splitter>(config, 1000, SPLITTER_VERTICAL, [this]() { this->CreateIDEForm(); }, [this]() { this->CreateInfo(); });
-	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 200, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
+	_ideFormSplitter = std::make_unique<UI_Splitter>(config, 400, SPLITTER_HORIZONTAL, [this]() { this->CreateEditor(); }, [this]() { this->CreateOutput(); });
 
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
-	_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
-	_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
-	_menuBar->AddMenu("View", { "Zoom In", "Zoom Out", "Full Screen" });
-	_menuBar->AddMenu("Help", { "About", "Help" });
+	//_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
+	//_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
+	//_menuBar->AddMenu("View", { "Zoom In", "Zoom Out", "Full Screen" });
+	//_menuBar->AddMenu("Help", { "About", "Help" });
 }
 
 UI::~UI()
@@ -61,11 +61,11 @@ void UI::DoLayout()
 		_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", cursorPos.line, cursorPos.column, hoverPos.line, hoverPos.column);
 	}
 
-	if (IsMouseButtonPressed(0))
-	{
-		//reset focus
-		_eventCurrentFocus.SetEventData("");
-	}
+	//if (IsMouseButtonPressed(0))
+	//{
+	//	//reset focus
+	//	_eventCurrentFocus.SetEventData("");
+	//}
 
 	SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
@@ -74,9 +74,11 @@ void UI::DoLayout()
 
 void UI::CreateRoot()
 {
+	auto width = (float)GetScreenWidth();
+	auto height = (float)GetScreenHeight();
 	CLAY(
 		CLAY_ID("Root"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_GROW(0)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
+		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIXED(height)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{

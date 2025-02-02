@@ -708,19 +708,22 @@ void UI_TextArea::HighlightText()
 	{
 		for (auto iter = startLine; iter <= endLine; iter++)
 		{
-			if (iter == startLine)
+			if (iter < _textboxes.size() && iter >= 0)
 			{
-				_textboxes.at(iter)->SetHighlightingPosition(startColumn, HIGHLIGHT_END);
+				if (iter == startLine)
+				{
+					_textboxes.at(iter)->SetHighlightingPosition(startColumn, HIGHLIGHT_END);
+				}
+				else if (iter == endLine)
+				{
+					_textboxes.at(iter)->SetHighlightingPosition(endColumn, 0);
+				}
+				else
+				{
+					_textboxes.at(iter)->SetHighlightingPosition(0, HIGHLIGHT_END);
+				}
+				_textboxes.at(iter)->SetHighlighting(true);
 			}
-			else if (iter == endLine)
-			{
-				_textboxes.at(iter)->SetHighlightingPosition(endColumn, 0);
-			}
-			else
-			{
-				_textboxes.at(iter)->SetHighlightingPosition(0, HIGHLIGHT_END);
-			}
-			_textboxes.at(iter)->SetHighlighting(true);
 		}
 	}
 }

@@ -82,6 +82,11 @@ UI* pUi;
 InteractiveCompiler* pConsole;
 bool _closeWindow = false;
 void OnCommand(std::string cmd);
+void OnOpenFile();
+void OnSaveFile();
+void OnSaveAsFile();
+void OnNewFile();
+void OnClose();
 
 
 int main(int argc, char* argv[])
@@ -127,6 +132,13 @@ int main(int argc, char* argv[])
 
 	auto conn = pUi->onCmd() += OnCommand;
 
+	pUi->AddMenu("File", { "New", "Open", "Save", "Save As", "Close" });
+	auto connOpen = pUi->Subscribe("File", "Open", OnOpenFile);
+	auto connSave = pUi->Subscribe("File", "Save", OnSaveFile);
+	auto connSaveAs = pUi->Subscribe("File", "Save As", OnSaveAsFile);
+	auto connNew = pUi->Subscribe("File", "New", OnNewFile);
+	auto connClose = pUi->Subscribe("File", "Close", OnClose);
+
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         if (reinitializeClay) {
@@ -150,6 +162,31 @@ int main(int argc, char* argv[])
 	return 0;
 }
 
+void OnOpenFile()
+{
+	std::cout << "Open file" << std::endl;
+}
+
+void OnSaveFile()
+{
+	std::cout << "Save file" << std::endl;
+}
+
+void OnSaveAsFile()
+{
+	std::cout << "Save as file" << std::endl;
+}
+
+void OnNewFile()
+{
+	std::cout << "New file" << std::endl;
+}
+
+void OnClose()
+{
+    _closeWindow = true;
+}
+
 void OnCommand(std::string cmd)
 {
 	auto log = std::format("{}{}\n", pConsole->GetPrompt(), cmd);
@@ -161,7 +198,7 @@ void OnCommand(std::string cmd)
         pUi->AddOutputText("Exiting...");
         _closeWindow = true;
 	}
-    if (cmd == "!r")
+    else if (cmd == "!r")
     {
 		std::string code = pUi->GetEditorText();
         pUi->AddOutputText(std::format("Compiling {} chars", code.length()));
@@ -171,11 +208,26 @@ void OnCommand(std::string cmd)
         pUi->AddOutputText("Result>");
 		pUi->AddOutputText(pConsole->GetResult());
     }
-    if (cmd == "!dp")
+    else if (cmd == "!dp")
     {
         std::string code = pUi->GetEditorText();
+        pUi->AddOutputText(std::format("Compiling {} chars", code.length()));
         auto byteCode = pConsole->Compile(code);
+        pUi->AddOutputText(std::format("Bytecode is {} bytes", byteCode.Instructions.size()));
 		pUi->SetInfoText(pConsole->Decompile(byteCode));
+    }
+    else if (cmd == "!h")
+    {
+		pUi->AddOutputText("Commands:");
+		pUi->AddOutputText("!q - Quit");
+		pUi->AddOutputText("!r - Run");
+		pUi->AddOutputText("!dp - Decompile");
+        pUi->AddOutputText("!h - Print this menu");
+    }
+    else
+    {
+		pUi->AddOutputText("Unknown command");
+		pUi->AddOutputText("Use !h for help");
     }
 }
 

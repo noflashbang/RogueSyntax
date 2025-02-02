@@ -37,12 +37,18 @@ public:
 	bool HasFocus() { return _eventCurrentFocusObserver->GetEventData() == _name; };
 	bool IsHighlighting() { return _highlighting; };
 	void SetHighlighting(bool highlight) { _highlighting = highlight; };
-	void SetCursorPosition(CursorPosition position) { _cursorPosition.line = SafeClampLow(position.line, (uint16_t)0, (uint16_t)_textboxes.size());
-													  _cursorPosition.column = SafeClampLow(position.column, (uint16_t)0, (uint16_t)_textboxes.at(_cursorPosition.line)->GetText().size()); };
+	void SetCursorPosition(CursorPosition position)
+	{ 
+		_cursorPosition.line = SafeClampLow(position.line, (uint16_t)0, (uint16_t)_textboxes.size());
+	    _cursorPosition.column = SafeClampLow(position.column, (uint16_t)0, (uint16_t)_textboxes.at(_cursorPosition.line-1)->GetText().size());
+		ScrollCursorIntoView();
+	};
 
 	CursorPosition GetCursorPosition() { return _cursorPosition; };
 	CursorPosition GetHighlightPosition() { return _highlightPosition; };
 	CursorPosition GetHoverPosition() { return _hoverPosition; };
+
+	size_t GetLineCount() { return _textboxes.size(); };
 
 private:
 	uint32_t textboxId = 0;

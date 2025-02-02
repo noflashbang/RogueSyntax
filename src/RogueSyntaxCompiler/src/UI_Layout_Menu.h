@@ -20,14 +20,28 @@ public:
 	void AddMenu(const std::string& name, const std::vector<std::string>& items)
 	{
 		_menu.push_back(std::make_pair(name, items));
+
+		//create an event handler for each item
+		for (auto& ii : items)
+		{
+			_menuEvents[name + ii] = UI_Delegate<NoLock>();
+		}
+	};
+
+	std::unique_ptr<ScopedConnection> Subscribe(const std::string& menu, const std::string& item, std::function<void()> handler)
+	{
+		auto& event = _menuEvents[menu + item];
+		return event += handler;
 	};
 
 private:
 
+	std::unordered_map<std::string, UI_Delegate<NoLock>> _menuEvents;
+
 	void CreateMenu();
 	void CreateMenuButton(uint16_t index, const std::string& name, const std::vector<std::string>& items);
-	void CreateMenuDropDown(const std::vector<std::string>& items);
-	void CreateMenuDropDownButton(const std::string& name, uint16_t index);
+	void CreateMenuDropDown(const std::string& name, const std::vector<std::string>& items);
+	void CreateMenuDropDownButton(const std::string& name, const std::string& item, uint16_t index);
 	UIConfig _config;
 
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;

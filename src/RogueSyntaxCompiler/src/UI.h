@@ -41,9 +41,18 @@ public:
 	std::string GetEditorText() { return _editorForm.GetContent(); };
 	void ClearCommand() { _outputForm.SetCommand(""); };
 	
-
 	void SetInfo(const std::string& info) { _info = info; }
 	UI_Delegate<NoLock, const std::string&>& onCmd() { return _outputForm.onReturn(); };
+
+	void AddMenu(const std::string& menu, const std::vector<std::string>& items)
+	{
+		_menuBar->AddMenu(menu, items);
+	};
+
+	std::unique_ptr<ScopedConnection> Subscribe(const std::string& menu, const std::string& item, std::function<void()> handler)
+	{
+		return _menuBar->Subscribe(menu, item, handler);
+	};
 
 protected:
 

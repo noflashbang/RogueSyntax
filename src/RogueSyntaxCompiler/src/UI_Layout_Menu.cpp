@@ -59,7 +59,7 @@ void UI_MenuBar::CreateMenuButton(uint16_t index, const std::string& name, const
 
 			if (_menuIdActive == name && _eventCurrentFocusObserver->GetEventData() == name)
 			{
-				CreateMenuDropDown(items);
+				CreateMenuDropDown(name, items);
 			}
 
 			if (Clay_Hovered())
@@ -74,7 +74,7 @@ void UI_MenuBar::CreateMenuButton(uint16_t index, const std::string& name, const
 	}
 }
 
-void UI_MenuBar::CreateMenuDropDown(const std::vector<std::string>& items)
+void UI_MenuBar::CreateMenuDropDown(const std::string& name, const std::vector<std::string>& items)
 {
 	CLAY(
 		CLAY_ID("MENU"),
@@ -89,22 +89,30 @@ void UI_MenuBar::CreateMenuDropDown(const std::vector<std::string>& items)
 			auto index = 0;
 			for (auto& item : items)
 			{
-				CreateMenuDropDownButton(item, index);
+				CreateMenuDropDownButton(name, item, index);
 				index++;
 			}
 		}
 	}
 }
 
-void UI_MenuBar::CreateMenuDropDownButton(const std::string& name, uint16_t index)
+void UI_MenuBar::CreateMenuDropDownButton(const std::string& name, const std::string& item, uint16_t index)
 {
-	auto strContent = Clay_StringFromStdString(name);
+	auto strContent = Clay_StringFromStdString(item);
 	CLAY(
 		CLAY_IDI_LOCAL("HOVER_CONTAINER", index),
 		CLAY_LAYOUT()
 	)
 	{
 		bool hovered = Clay_Hovered();
+		if (hovered)
+		{
+			if (IsMouseButtonDown(0))
+			{
+				_eventCurrentFocusObserver->SetEventData("");
+				_menuEvents[name + item]();
+			}
+		}
 		CLAY(
 			CLAY_IDI_LOCAL("BUTTON", index),
 			CLAY_LAYOUT({ .sizing = {.width = CLAY_SIZING_GROW(0) }, .padding = _config.padding }),

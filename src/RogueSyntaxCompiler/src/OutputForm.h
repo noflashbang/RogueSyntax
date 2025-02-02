@@ -28,7 +28,7 @@ public:
 	void SetCommand(const std::string& cmd) { _cmdBox->SetText(cmd); };
 
 	std::string GetOutput() { return _outputArea->GetText(); };
-	void AddHistory(const std::string& history) { _history += history + '\n'; _outputArea->SetText(_history); };
+	void AddHistory(const std::string& history) { _history += history + '\n'; _outputArea->SetText(_history); _outputArea->SetCursorPosition({ .line = (uint16_t)_outputArea->GetLineCount(), .column = 0}); };
 
 	void ProcessInputCommand(const InputCmd& cmd);
 
