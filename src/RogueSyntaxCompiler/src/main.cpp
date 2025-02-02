@@ -164,6 +164,7 @@ int main(int argc, char* argv[])
 
 void OnOpenFile()
 {
+	pUi->GetFocusObserver()->SetEventData("TestForm");
 	std::cout << "Open file" << std::endl;
 }
 

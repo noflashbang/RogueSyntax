@@ -16,6 +16,7 @@
 #include "UI_Layout_Menu.h"
 #include "UI_Layout_Event.h"
 #include "UI_Layout_Textbox.h"
+#include "UI_Layout_Form.h"
 
 #include "InfoForm.h"
 #include "OutputForm.h"
@@ -54,6 +55,8 @@ public:
 		return _menuBar->Subscribe(menu, item, handler);
 	};
 
+	std::shared_ptr<UIEventObserver<std::string>> GetFocusObserver() { return _eventCurrentFocus.Subscribe(); };
+
 protected:
 
 	void CreateRoot();
@@ -67,8 +70,6 @@ protected:
 
 	void CreateInputCommands();
 
-
-
 private:
 	
 	UIConfig _config;
@@ -78,6 +79,8 @@ private:
 	EditorForm _editorForm;
 	OutputForm _outputForm;
 	InfoForm _infoForm;
+
+	std::unique_ptr<UI_Layout_Form> _testForm;
 
 	//splitters
 	std::unique_ptr<UI_Splitter> _mainFormSplitter;

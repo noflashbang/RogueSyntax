@@ -68,14 +68,13 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_ScrollBar.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Textbox.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Form.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InputCmd.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InfoForm.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/OutputForm.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/EditorForm.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UIConfig.h
-
-
     ${CMAKE_CURRENT_SOURCE_DIR}/src/clay_renderer_raylib.h
  )
 
@@ -89,6 +88,7 @@ set( compilerSource
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_ScrollBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Textbox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Form.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/InfoForm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/OutputForm.cpp

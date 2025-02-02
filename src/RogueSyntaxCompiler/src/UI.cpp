@@ -18,10 +18,7 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
-	//_menuBar->AddMenu("File", { "New", "Open", "Save", "Save As", "Exit" });
-	//_menuBar->AddMenu("Edit", { "Undo", "Redo", "Cut", "Copy", "Paste" });
-	//_menuBar->AddMenu("View", { "Zoom In", "Zoom Out", "Full Screen" });
-	//_menuBar->AddMenu("Help", { "About", "Help" });
+	_testForm = std::make_unique<UI_Layout_Form>(500,500, "TestForm", config, _eventCurrentFocus.Subscribe());
 }
 
 UI::~UI()
@@ -61,12 +58,6 @@ void UI::DoLayout()
 		_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", cursorPos.line, cursorPos.column, hoverPos.line, hoverPos.column);
 	}
 
-	//if (IsMouseButtonPressed(0))
-	//{
-	//	//reset focus
-	//	_eventCurrentFocus.SetEventData("");
-	//}
-
 	SetMouseCursor(MOUSE_CURSOR_DEFAULT);
 
 	CreateRoot();
@@ -77,11 +68,12 @@ void UI::CreateRoot()
 	auto width = (float)GetScreenWidth();
 	auto height = (float)GetScreenHeight();
 	CLAY(
-		CLAY_ID("Root"),
+		CLAY_ID("ROOT"),
 		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED(width), .height = CLAY_SIZING_FIXED(height)}, .layoutDirection = CLAY_TOP_TO_BOTTOM }),
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
+		_testForm->Layout();
 		_menuBar->Layout();
 
 		CreateActionBar();
