@@ -382,7 +382,7 @@ void RogueVM::Push(const IObject* obj)
 {
 	if (_sp >= _stack.size()) 
 	{ 
-		throw std::exception("Stack Overflow"); 
+		throw std::runtime_error("Stack Overflow"); 
 	}  
 	_stack[_sp++] = obj; 
 }
@@ -391,7 +391,7 @@ const IObject* RogueVM::Pop()
 { 
 	if (_sp == 0) 
 	{ 
-		throw std::exception("Stack Underflow"); 
+		throw std::runtime_error("Stack Underflow"); 
 	} 
 	_outputRegister =  _stack[--_sp];
 	return _outputRegister;
@@ -406,7 +406,7 @@ const Frame& RogueVM::CurrentFrame() const
 {
 	if (_frameIndex == 0)
 	{
-		throw std::exception("No frames");
+		throw std::runtime_error("No frames");
 	}
 	return _frames[_frameIndex - 1];
 }
@@ -415,7 +415,7 @@ void RogueVM::PushFrame(Frame frame)
 {
 	if (_frameIndex >= MAX_FRAMES)
 	{
-		throw std::exception("Frame stack overflow");
+		throw std::runtime_error("Frame stack overflow");
 	}
 	_frames[_frameIndex++] = frame;
 }
@@ -424,7 +424,7 @@ Frame RogueVM::PopFrame()
 {
 	if (_frameIndex == 0)
 	{
-		throw std::exception("Frame stack underflow");
+		throw std::runtime_error("Frame stack underflow");
 	}
 	return _frames[--_frameIndex];
 }

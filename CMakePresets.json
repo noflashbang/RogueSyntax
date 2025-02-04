@@ -55,7 +55,7 @@
         },
         {
             "name": "win-x64-debug",
-            "displayName": "x64 Debug",
+            "displayName": "win-x64 Debug",
             "inherits": "windows-base",
             "architecture": {
                 "value": "x64",
@@ -72,7 +72,7 @@
         },
         {
             "name": "win-x64-debug-tidy",
-            "displayName": "x64 Debug",
+            "displayName": "win-x64 Debug-tidy",
             "inherits": "windows-base",
             "architecture": {
                 "value": "x64",
@@ -89,7 +89,7 @@
         },
         {
             "name": "win-x64-release",
-            "displayName": "x64 Release",
+            "displayName": "win-x64 Release",
             "inherits": "windows-base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
@@ -110,6 +110,7 @@
         },
         {
             "name": "gcc-debug",
+            "hidden": true,
             "inherits": "gcc-base",
             "displayName": "GCC Debug",
             "cacheVariables": {
@@ -119,6 +120,7 @@
         },
         {
             "name": "gcc-release",
+            "hidden": true,
             "inherits": "gcc-base",
             "displayName": "GCC Release",
             "cacheVariables": {
@@ -135,6 +137,7 @@
         },
         {
             "name": "clang-debug",
+            "hidden": true,
             "inherits": "clang-base",
             "displayName": "Clang Debug",
             "cacheVariables": {
@@ -144,6 +147,7 @@
         },
         {
             "name": "clang-release",
+            "hidden": true,
             "inherits": "clang-base",
             "displayName": "Clang Release",
             "cacheVariables": {
@@ -152,7 +156,7 @@
         },
         {
             "name": "gcc-x64-debug",
-            "displayName": "x64 Debug",
+            "displayName": "gcc-x64 Debug",
             "inherits": "gcc-debug",
             "architecture": {
                 "value": "x64",
@@ -165,7 +169,7 @@
         },
         {
             "name": "gcc-x64-release",
-            "displayName": "x64 Release",
+            "displayName": "gcc-x64 Release",
             "inherits": "gcc-release",
             "architecture": {
                 "value": "x64",
@@ -178,7 +182,7 @@
         },
         {
             "name": "clang-x64-debug",
-            "displayName": "x64 Debug",
+            "displayName": "clang-x64 Debug",
             "inherits": "clang-debug",
             "architecture": {
                 "value": "x64",
@@ -191,7 +195,7 @@
         },
         {
             "name": "clang-x64-release",
-            "displayName": "x64 Release",
+            "displayName": "clang-x64 Release",
             "inherits": "clang-release",
             "architecture": {
                 "value": "x64",
@@ -201,23 +205,16 @@
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_TIDY_ENABLED": false
             }
-        },
+        }
+    ],
+    "testPresets": [
         {
-            "name": "win-x64-debug",
-            "displayName": "x64 Debug",
-            "inherits": "windows-base",
-            "architecture": {
-                "value": "x64",
-                "strategy": "external"
-            },
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_TIDY_ENABLED": false
-            },
-            "environment": {
-                "CFLAGS": "/fsanitize=address",
-                "CXXFLAGS": "/fsanitize=address"
-            }
+            "name": "GCC-Debug-Test",
+            "description": "",
+            "displayName": "",
+            "configurePreset": "gcc-x64-debug",
+            "output": {"outputOnFailure": true},
+            "execution": {"noTestsAction": "error", "stopOnFailure": true}
         }
     ]
 }

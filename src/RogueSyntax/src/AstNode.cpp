@@ -28,7 +28,7 @@ void Program::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this, _unitName);
 }
 
-LetStatement::LetStatement(const Token& token, const IExpression* name, const IExpression* value) : IStatement(token), Name(name), Value(value)
+LetStatement::LetStatement(const RSToken& token, const IExpression* name, const IExpression* value) : IStatement(token), Name(name), Value(value)
 {
 	SetUniqueId(this);
 }
@@ -58,7 +58,7 @@ void LetStatement::Compile(Compiler* compiler) const
 }
 
 
-Identifier::Identifier(const ::Token& token, const std::string& value) : IExpression(token), Value(value)
+Identifier::Identifier(const ::RSToken& token, const std::string& value) : IExpression(token), Value(value)
 {
 	SetUniqueId(this);
 }
@@ -79,7 +79,7 @@ void Identifier::Compile(Compiler* compiler) const
 }
 
 
-ReturnStatement::ReturnStatement(const Token& token, const IExpression* returnValue) : IStatement(token), ReturnValue(returnValue)
+ReturnStatement::ReturnStatement(const RSToken& token, const IExpression* returnValue) : IStatement(token), ReturnValue(returnValue)
 {
 	SetUniqueId(this);
 }
@@ -105,7 +105,7 @@ void ReturnStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-ExpressionStatement::ExpressionStatement(const Token& token, const IExpression* expression) : IStatement(token), Expression(expression)
+ExpressionStatement::ExpressionStatement(const RSToken& token, const IExpression* expression) : IStatement(token), Expression(expression)
 {
 	SetUniqueId(this);
 }
@@ -128,7 +128,7 @@ void ExpressionStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-NullLiteral::NullLiteral(const ::Token& token) : IExpression(token)
+NullLiteral::NullLiteral(const ::RSToken& token) : IExpression(token)
 {
 	SetUniqueId(this);
 }
@@ -149,7 +149,7 @@ void NullLiteral::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-IntegerLiteral::IntegerLiteral(const ::Token& token, int value) : IExpression(token), Value(value)
+IntegerLiteral::IntegerLiteral(const ::RSToken& token, int value) : IExpression(token), Value(value)
 {
 	SetUniqueId(this);
 }
@@ -168,7 +168,7 @@ void IntegerLiteral::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-BooleanLiteral::BooleanLiteral(const ::Token& token, bool value) : IExpression(token), Value(value)
+BooleanLiteral::BooleanLiteral(const ::RSToken& token, bool value) : IExpression(token), Value(value)
 {
 	SetUniqueId(this);
 }
@@ -189,7 +189,7 @@ void BooleanLiteral::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-HashLiteral::HashLiteral(const Token& token, const std::map<IExpression*, IExpression*>& pairs) : IExpression(token), Elements(pairs)
+HashLiteral::HashLiteral(const RSToken& token, const std::map<IExpression*, IExpression*>& pairs) : IExpression(token), Elements(pairs)
 {
 	SetUniqueId(this);
 }
@@ -227,7 +227,7 @@ void HashLiteral::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-PrefixExpression::PrefixExpression(const Token& token, const std::string& op, const IExpression* right) : IExpression(token), Operator(op), Right(right)
+PrefixExpression::PrefixExpression(const RSToken& token, const std::string& op, const IExpression* right) : IExpression(token), Operator(op), Right(right)
 {
 	SetUniqueId(this);
 }
@@ -252,7 +252,7 @@ void PrefixExpression::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-InfixExpression::InfixExpression(const Token& token, const IExpression* left, const std::string& op, const IExpression* right) : IExpression(token), Operator(op), Left(left), Right(right)
+InfixExpression::InfixExpression(const RSToken& token, const IExpression* left, const std::string& op, const IExpression* right) : IExpression(token), Operator(op), Left(left), Right(right)
 {
 	SetUniqueId(this);
 }
@@ -279,7 +279,7 @@ void InfixExpression::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-BlockStatement::BlockStatement(const ::Token& token, const std::vector<IStatement*>& statements) : IStatement(token), Statements(statements)
+BlockStatement::BlockStatement(const ::RSToken& token, const std::vector<IStatement*>& statements) : IStatement(token), Statements(statements)
 {
 	SetUniqueId(this);
 }
@@ -307,7 +307,7 @@ void BlockStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-IfStatement::IfStatement(const Token& token, const IExpression* condition, const IStatement* consequence, const IStatement* alternative) : IStatement(token), Condition(condition), Consequence(consequence), Alternative(alternative)
+IfStatement::IfStatement(const RSToken& token, const IExpression* condition, const IStatement* consequence, const IStatement* alternative) : IStatement(token), Condition(condition), Consequence(consequence), Alternative(alternative)
 {
 	SetUniqueId(this);
 }
@@ -337,7 +337,7 @@ void IfStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<IExpression*>& parameters, const IStatement* body) : IExpression(token), Parameters(parameters), Body(body), Name("")
+FunctionLiteral::FunctionLiteral(const RSToken& token, const std::vector<IExpression*>& parameters, const IStatement* body) : IExpression(token), Parameters(parameters), Body(body), Name("")
 {
 	SetUniqueId(this);
 }
@@ -372,7 +372,7 @@ void FunctionLiteral::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-CallExpression::CallExpression(const Token& token, const IExpression* function, const std::vector<IExpression*>& arguments) : IExpression(token), Function(function), Arguments(arguments)
+CallExpression::CallExpression(const RSToken& token, const IExpression* function, const std::vector<IExpression*>& arguments) : IExpression(token), Function(function), Arguments(arguments)
 {
 	SetUniqueId(this);
 }
@@ -407,7 +407,7 @@ void CallExpression::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-WhileStatement::WhileStatement(const Token& token, const IExpression* condition, const IStatement* action) : IStatement(token), Condition(condition), Action(action)
+WhileStatement::WhileStatement(const RSToken& token, const IExpression* condition, const IStatement* action) : IStatement(token), Condition(condition), Action(action)
 {
 	SetUniqueId(this);
 }
@@ -433,7 +433,7 @@ void WhileStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-BreakStatement::BreakStatement(const ::Token& token) : IStatement(token)
+BreakStatement::BreakStatement(const ::RSToken& token) : IStatement(token)
 {
 	SetUniqueId(this);
 }
@@ -454,7 +454,7 @@ void BreakStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-ContinueStatement::ContinueStatement(const ::Token& token) : IStatement(token)
+ContinueStatement::ContinueStatement(const ::RSToken& token) : IStatement(token)
 {
 	SetUniqueId(this);
 }
@@ -473,7 +473,7 @@ void ContinueStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-ForStatement::ForStatement(const Token& token, const IStatement* init, const IExpression* condition, const IStatement* post, const IStatement* action) : IStatement(token), Init(init), Condition(condition), Post(post), Action(action)
+ForStatement::ForStatement(const RSToken& token, const IStatement* init, const IExpression* condition, const IStatement* post, const IStatement* action) : IStatement(token), Init(init), Condition(condition), Post(post), Action(action)
 {
 	SetUniqueId(this);
 }
@@ -505,7 +505,7 @@ void ForStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-StringLiteral::StringLiteral(const Token& token, const std::string& value) : IExpression(token), Value(value)
+StringLiteral::StringLiteral(const RSToken& token, const std::string& value) : IExpression(token), Value(value)
 {
 	SetUniqueId(this);
 }
@@ -527,7 +527,7 @@ void StringLiteral::Compile(Compiler* compiler) const
 }
 
 
-DecimalLiteral::DecimalLiteral(const Token& token, float value) : IExpression(token), Value(value)
+DecimalLiteral::DecimalLiteral(const RSToken& token, float value) : IExpression(token), Value(value)
 {
 	SetUniqueId(this);
 }
@@ -549,7 +549,7 @@ void DecimalLiteral::Compile(Compiler* compiler) const
 }
 
 
-ArrayLiteral::ArrayLiteral(const Token& token, const std::vector<IExpression*>& elements) : IExpression(token), Elements(elements)
+ArrayLiteral::ArrayLiteral(const RSToken& token, const std::vector<IExpression*>& elements) : IExpression(token), Elements(elements)
 {
 	SetUniqueId(this);
 }
@@ -583,7 +583,7 @@ void ArrayLiteral::Compile(Compiler* compiler) const
 }
 
 
-IndexExpression::IndexExpression(const Token& token, const IExpression* left, const IExpression* index) : IExpression(token), Left(left), Index(index)
+IndexExpression::IndexExpression(const RSToken& token, const IExpression* left, const IExpression* index) : IExpression(token), Left(left), Index(index)
 {
 	SetUniqueId(this);
 }

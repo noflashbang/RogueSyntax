@@ -31,14 +31,14 @@ bool TestConstantValues(ConstantValue expected, const IObject* actual)
 
 bool TestConstant(const ConstantValue& expected, const IObject* actual);
 
-bool TestInstructions(const Instructions& expected, const Instructions& actual);
+bool TestInstructions(const RSInstructions& expected, const RSInstructions& actual);
 
 bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector<const IObject*>& actual);
 
-Instructions ConcatInstructions(const std::vector<Instructions>& instructions);
+RSInstructions ConcatInstructions(const std::vector<RSInstructions>& instructions);
 
-bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ByteCode& actual);
+bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<RSInstructions>& expectedInstructions, const ByteCode& actual);
 
-bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input);
+bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<RSInstructions>& expectedInstructions, std::string input);
 
 bool VmTest(std::string input, ConstantValue expected);

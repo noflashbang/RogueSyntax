@@ -59,6 +59,7 @@ bool TypeCoercer::CanCoerceTypes(const IObject* const left, const IObject* const
 			return true;
 		}
 	}
+	return false;
 }
 
 std::tuple<IObject*, IObject*> TypeCoercer::CoerceTypes(const IObject* const left, const IObject* const right) const

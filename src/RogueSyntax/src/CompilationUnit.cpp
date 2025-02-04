@@ -2,7 +2,7 @@
 #include <pch.h>
 
 
-int CompilationUnit::AddInstruction(Instructions instructions)
+int CompilationUnit::AddInstruction(RSInstructions instructions)
 {
 	auto position = UnitInstructions.size();
 	UnitInstructions.insert(UnitInstructions.end(), instructions.begin(), instructions.end());
@@ -41,7 +41,7 @@ void CompilationUnit::ChangeOperand(int position, uint32_t operand)
 	ReplaceInstruction(position, instruction);
 }
 
-void CompilationUnit::ReplaceInstruction(int position, Instructions instructions)
+void CompilationUnit::ReplaceInstruction(int position, RSInstructions instructions)
 {
 	for (const auto& instr : instructions)
 	{
@@ -49,7 +49,7 @@ void CompilationUnit::ReplaceInstruction(int position, Instructions instructions
 	}
 }
 
-void CompilationUnit::SetLastInstruction(const Instructions& instruction)
+void CompilationUnit::SetLastInstruction(const RSInstructions& instruction)
 {
 	PreviousLastInstruction = LastInstruction;
 	LastInstruction = instruction;

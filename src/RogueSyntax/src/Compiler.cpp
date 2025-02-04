@@ -32,6 +32,7 @@ CompilerError Compiler::Compile(INode* node)
 	{
 		return _errorStack.top().Error;
 	}
+	return CompilerError::NoError;
 }
 
 int Compiler::EnterUnit(const std::string& context)
@@ -72,7 +73,7 @@ int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands)
 	return _CompilationUnits.top().AddInstruction(instructions);
 }
 
-int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands, Instructions data)
+int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands, RSInstructions data)
 {
 	auto instructions = OpCode::Make(opcode, operands);
 	instructions.insert(instructions.end(), data.begin(), data.end());
@@ -230,7 +231,7 @@ void Compiler::NodeCompile(const StringLiteral* string)
 	//Emit(OpCode::Constants::OP_CONSTANT, { index });
 	std::string str = string->Value;
 	uint32_t len = str.size();
-	Instructions data;
+	RSInstructions data;
 	for (auto c : str)
 	{
 		data.push_back(c);

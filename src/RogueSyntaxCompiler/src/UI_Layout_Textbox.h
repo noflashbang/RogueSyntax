@@ -57,7 +57,7 @@ private:
 	void CreatePlaceHolderChar(size_t index, const char* character);
 
 
-	static const char _cursorPlaceholder = ' '; //used to draw a text layout when the cursor is at the end of a line, need a valid char* to draw
+	const char _cursorPlaceholder = ' '; //used to draw a text layout when the cursor is at the end of a line, need a valid char* to draw
 	std::unique_ptr<ICursorStrategy> _cursorStrategy;
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 	std::string _name;

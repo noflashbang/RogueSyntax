@@ -7,11 +7,11 @@ class Lexer
 {
 public:
 	Lexer(const std::string& input);
-	Token NextToken(bool skipComments);
+	RSToken NextToken(bool skipComments);
 
 private:
 
-	Token GetCurrentToken();
+	RSToken GetCurrentToken();
 
 	void ReadChar();
 	std::string ReadIdentifier();

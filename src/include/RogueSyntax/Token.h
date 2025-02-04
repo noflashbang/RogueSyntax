@@ -161,16 +161,16 @@ struct TokenLocation
 	void Advance(const char ch);
 };
 
-struct Token
+struct RSToken
 {
 	TokenType Type;
 	std::string Literal;
 	TokenLocation Location;
 
 	//methods for construction - helpers
-	static Token New() { return  Token{ TokenType::TOKEN_ILLEGAL, "" }; };
-	static Token New(const TokenType type, const char literal) { return Token{ type, std::string(1, literal) }; };
-	static Token New(const TokenType type, const std::string& literal) { return  Token{ type, literal }; };
+	static RSToken New() { return  RSToken{ TokenType::TOKEN_ILLEGAL, "" }; };
+	static RSToken New(const TokenType type, const char literal) { return RSToken{ type, std::string(1, literal) }; };
+	static RSToken New(const TokenType type, const std::string& literal) { return  RSToken{ type, literal }; };
 
 	std::string TypeName() const
 	{

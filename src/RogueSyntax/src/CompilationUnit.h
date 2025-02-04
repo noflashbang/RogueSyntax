@@ -19,19 +19,19 @@ struct CompilationUnit
 	{
 	}
 
-	Instructions UnitInstructions;
-	Instructions LastInstruction;
-	Instructions PreviousLastInstruction;
+	RSInstructions UnitInstructions;
+	RSInstructions LastInstruction;
+	RSInstructions PreviousLastInstruction;
 
 	std::stack<LoopJump> LoopJumps;
 
-	void SetLastInstruction(const Instructions& instruction);
-	int AddInstruction(Instructions instructions);
+	void SetLastInstruction(const RSInstructions& instruction);
+	int AddInstruction(RSInstructions instructions);
 
 	void RemoveLastPop();
 	bool LastInstructionIs(OpCode::Constants opcode);
 	void RemoveLastInstruction();
 	void ChangeOperand(int position, uint32_t operand);
-	void ReplaceInstruction(int position, Instructions instructions);
+	void ReplaceInstruction(int position, RSInstructions instructions);
 };
 

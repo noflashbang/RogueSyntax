@@ -10,6 +10,10 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
+include(CTest)
+include(Catch)
+enable_testing()
+
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
@@ -60,9 +64,12 @@ target_sources( RogueSyntaxTest PRIVATE
     ${testSource}
  )
 
+ catch_discover_tests(RogueSyntaxTest)
+
  install(TARGETS RogueSyntaxTest
         RUNTIME           
           COMPONENT Runtime
           DESTINATION RogueSyntaxTest
 )
+
 install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxTest> DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxTest)
