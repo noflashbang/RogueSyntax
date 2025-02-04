@@ -7,7 +7,7 @@ Lexer::Lexer(const std::string& input) : _input(input), _position(0), _readPosit
 	ReadChar();
 }
 
-Token Lexer::NextToken()
+Token Lexer::NextToken(bool skipComments)
 {
 	SkipWhitespace();
 
@@ -18,6 +18,11 @@ Token Lexer::NextToken()
 	token.Location = location;
 
 	ReadChar();
+
+	if(token.Type == TokenType::TOKEN_COMMENT && skipComments)
+	{
+		token = NextToken(true);
+	}
 
 	return token;
 }
@@ -127,6 +132,10 @@ Token Lexer::GetCurrentToken()
 				auto ch = _currentChar;
 				ReadChar();
 				result = Token::New(TokenType::TOKEN_SLASH_ASSIGN, std::string(1, ch) + _currentChar);
+			}
+			else if (_peekChar == '/')
+			{
+				result = Token::New(TokenType::TOKEN_COMMENT, ReadComment());
 			}
 			else
 			{
@@ -347,6 +356,25 @@ std::string Lexer::ReadString()
 	}
 	cnt++;
 	ReadChar();
+
+	return _input.substr(position, cnt);
+}
+
+std::string Lexer::ReadComment()
+{
+	auto position = _position;
+	auto cnt = 1;
+	while (_peekChar != '\n' && _peekChar != '\0')
+	{
+		cnt++;
+		ReadChar();
+	}
+
+	if (_peekChar == '\n')
+	{
+		cnt++;
+		ReadChar();
+	}
 
 	return _input.substr(position, cnt);
 }

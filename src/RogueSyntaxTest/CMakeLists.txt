@@ -10,8 +10,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-
-
 cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set( externHeaders 
@@ -28,7 +26,6 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
     ${PARENT_DIR}/include/RogueSyntax/OpCode.h
-    ${PARENT_DIR}/include/RogueSyntax/Compiler.h
     ${PARENT_DIR}/include/RogueSyntax/VirtualMachine.h
 
 )
@@ -49,6 +46,7 @@ set( testSource
 )
 
 #add_compile_definitions(DO_BENCHMARK)
+#add_compile_definitions(CATCH_CONFIG_CONSOLE_WIDTH=200)
 
 add_executable(RogueSyntaxTest ${testSource} ${externHeaders} ${testHeaders})
 target_link_libraries(RogueSyntaxTest PRIVATE Catch2::Catch2WithMain)
@@ -65,6 +63,6 @@ target_sources( RogueSyntaxTest PRIVATE
  install(TARGETS RogueSyntaxTest
         RUNTIME           
           COMPONENT Runtime
-          DESTINATION test
+          DESTINATION RogueSyntaxTest
 )
-install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxTest> DESTINATION test)
+install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxTest> DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxTest)

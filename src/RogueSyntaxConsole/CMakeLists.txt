@@ -42,6 +42,6 @@ target_sources( RogueSyntaxConsole PRIVATE
  install(TARGETS RogueSyntaxConsole
         RUNTIME           
           COMPONENT Runtime
-          DESTINATION test
+          DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCon
 )
-install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxConsole> DESTINATION test)
+install(FILES $<TARGET_RUNTIME_DLLS:RogueSyntaxConsole> DESTINATION ${CMAKE_INSTALL_PREFIX}/RogueSyntaxCon)

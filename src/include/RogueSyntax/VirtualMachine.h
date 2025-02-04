@@ -40,23 +40,49 @@ public:
 	~RogueVM();
 
 	void Run();
-
-	//stack operations
 	const IObject* Top() const;
+	const IObject* LastPopped() const;
+	const Frame& CurrentFrame() const;
+
+protected:
+
 	void Push(const IObject* obj);
 	const IObject* Pop();
-	const IObject* LastPoppped() const;
 
 	//frame operations
-	inline void IncrementFrameIp() { _frames[_frameIndex-1].IncrementIp(); };
-	inline void IncrementFrameIp(int amount) { _frames[_frameIndex-1].IncrementIp(amount); };
-	inline void SetFrameIp(int ip) { _frames[_frameIndex-1].SetIp(ip); };
+	inline void IncrementFrameIp() { _frames[_frameIndex - 1].IncrementIp(); };
+	inline void IncrementFrameIp(int amount) { _frames[_frameIndex - 1].IncrementIp(amount); };
+	inline void SetFrameIp(int ip) { _frames[_frameIndex - 1].SetIp(ip); };
 
-	const Frame& CurrentFrame() const;
 	void PushFrame(Frame frame);
 	Frame PopFrame();
 
-protected:
+	template<std::integral T>
+	T ReadOperand(uint8_t width)
+	{
+		T operand = 0;
+		int currentOffset = CurrentFrame().Ip();
+		const auto& instructions = CurrentFrame().Instructions();
+		//use switch case to handle different operand widths - fallthrough is intentional
+		switch (width)
+		{
+		case 4:
+			operand = instructions[currentOffset] << 24;
+			currentOffset++;
+		case 3:
+			operand |= instructions[currentOffset] << 16;
+			currentOffset++;
+		case 2:
+			operand |= instructions[currentOffset] << 8;
+			currentOffset++;
+		case 1:
+			operand |= instructions[currentOffset];
+			currentOffset++;
+		}
+		IncrementFrameIp(width);
+		return operand;
+	}
+
 	void ExecuteArithmeticInfix(OpCode::Constants opcode);
 	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right);
 	void ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, const DecimalObj* left, const DecimalObj* right);
@@ -81,7 +107,6 @@ protected:
 
 	void ExecuteGetInstruction(int idx);
 	void ExecuteSetInstruction(int idx);
-	GetSetType GetTypeFromIdx(int idx);
 
 private:
 	int _frameIndex = 0;
@@ -91,6 +116,7 @@ private:
 	TypeCoercer _coercer;
 	std::array<const IObject*, STACK_SIZE> _stack;
 	std::array<const IObject*, GLOBAL_SIZE> _globals;
+	const IObject* _outputRegister = nullptr;
 	std::array<Frame, MAX_FRAMES> _frames;
 	ByteCode _byteCode;
 };

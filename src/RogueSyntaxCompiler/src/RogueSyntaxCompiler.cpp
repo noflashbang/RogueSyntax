@@ -1,67 +1,53 @@
 
 #include "RogueSyntaxCompiler.h"
 
-void InteractiveCompiler::Start()
-{
-	std::string input;
-	while (true)
-	{
-		std::cout << _prompt;
-		std::getline(std::cin, input);
-
-		if(input.empty())
-		{
-			break;
-		}
-		else
-		{
-			_input.append(input);
-		}
-	}
-}
-
-void InteractiveCompiler::Run()
+void InteractiveCompiler::Run(const ByteCode& code)
 {
 	RogueSyntax syntax;
-	auto vm = syntax.MakeVM(syntax.Compile(_input));
+	auto vm = syntax.MakeVM(code);
 	vm->Run();
-	//auto top = vm->LastPoppped();
-	auto top = vm->Top();
-
+	auto top = vm->LastPopped();
+	
 	if (top->IsThisA<ErrorObj>())
 	{
 		auto error = dynamic_cast<const ErrorObj*>(top);
-		std::cout << "Error: " << error->Message << std::endl;
-
-		//print out the source and error location
-		auto location = error->Token.Location;
-		std::cout << _input << std::endl;
-		for (size_t i = 1; i < location.Character; i++)
-		{
-			std::cout << " ";
-		}
-		std::cout << "^" << std::endl;
+		InternalPrintLine("Error: " + error->Message);		
 	}
-
-	//if (top != nullptr)
-	//{
-	//	std::cout << top->Inspect() << std::endl;
-	//}
+	else
+	{
+		_lastResult = top->Inspect();
+		InternalPrintLine(_lastResult);
+	}
 }
 
-void InteractiveCompiler::PrintDecompile()
+std::string InteractiveCompiler::GetResult() const
+{
+	return _lastResult;
+}
+
+ByteCode InteractiveCompiler::Compile(const std::string& input)
 {
 	RogueSyntax syntax;
-	auto compile = syntax.Compile(_input);;
-	std::cout << OpCode::PrintInstructions(compile.Instructions) << std::endl;
-
-	for (const auto& constant : compile.Constants)
-	{
-		if (constant->IsThisA<FunctionCompiledObj>())
-		{
-			auto closure = dynamic_cast<const FunctionCompiledObj*>(constant);
-			std::cout << closure->Inspect() << std::endl;
-		}
-	}
+	auto compile = syntax.Compile(input, "RSUI");
+	auto code = syntax.Link(compile);
+	return code;
 }
+
+std::string InteractiveCompiler::Decompile(const ByteCode& input)
+{
+	RogueSyntax syntax;
+	auto disassemble = syntax.Disassemble(input);
+	return disassemble;
+}
+
+void InteractiveCompiler::InternalPrintLine(const std::string& line)
+{
+	_output.push_back(line);
+}
+
+void InteractiveCompiler::InternalPrintLocation(const std::string& line, const TokenLocation& location)
+{
+	_output.push_back(line + " at " + std::to_string(location.Line) + ":" + std::to_string(location.Column));
+}
+
 

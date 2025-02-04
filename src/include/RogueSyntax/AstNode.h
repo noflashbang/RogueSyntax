@@ -41,16 +41,17 @@ public:
 
 struct Program : IStatement
 {
-	Program(const std::shared_ptr<AstNodeStore>& store) : IStatement(Token::New(TokenType::TOKEN_ILLEGAL, "")), _store(store) { SetUniqueId(this); };
+	Program(const std::shared_ptr<AstNodeStore>& store, const std::string& unitName) : IStatement(Token::New(TokenType::TOKEN_ILLEGAL, "")), _store(store), _unitName(unitName) { SetUniqueId(this); };
 	std::vector<IStatement*> Statements;
 	std::string ToString() const override;
 
 	void Eval(Evaluator* evaluator) const;
 	void Compile(Compiler* compiler) const;
 
-	static std::shared_ptr<Program> New(const std::shared_ptr<AstNodeStore>& store);
+	static std::shared_ptr<Program> New(const std::shared_ptr<AstNodeStore>& store, const std::string& unitName);
 private:
 	std::shared_ptr<AstNodeStore> _store;
+	const std::string& _unitName;
 };
 
 struct Identifier : IExpression

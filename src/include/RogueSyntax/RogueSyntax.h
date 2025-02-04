@@ -9,8 +9,10 @@ public:
 	RogueSyntax();
 	~RogueSyntax();
 
-	std::shared_ptr<Program> Parse(const std::string& input) const;
-	ByteCode Compile(const std::string& input) const;
+	std::shared_ptr<Program> Parse(const std::string& input, const std::string& unit) const;
+	ObjectCode Compile(const std::string& input, const std::string& unit) const;
+	std::string Disassemble(const ByteCode& code) const;
+	ByteCode Link(const ObjectCode& objectCode) const;
 	std::shared_ptr<RogueVM> MakeVM(ByteCode code) const;
 	const IObject* QuickEval(EvaluatorType type, const std::string& input) const;
 	void RegisterBuiltIn(const std::string& name, std::function<IObject* (const ObjectFactory* factory, const std::vector<const IObject*>& args)> func);

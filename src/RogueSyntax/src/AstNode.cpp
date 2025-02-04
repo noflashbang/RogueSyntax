@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "Evaluator.h"
+#include "Compiler.h"
 
 std::string Program::ToString() const
 {
@@ -12,9 +13,9 @@ std::string Program::ToString() const
 	return result;
 }
 
-std::shared_ptr<Program> Program::New(const std::shared_ptr<AstNodeStore>& store)
+std::shared_ptr<Program> Program::New(const std::shared_ptr<AstNodeStore>& store, const std::string& unitName)
 {
-	return std::make_shared<Program>(store);
+	return std::make_shared<Program>(store, unitName);
 }
 
 void Program::Eval(Evaluator* evaluator) const
@@ -24,7 +25,7 @@ void Program::Eval(Evaluator* evaluator) const
 
 void Program::Compile(Compiler* compiler) const
 {
-	compiler->NodeCompile(this);
+	compiler->NodeCompile(this, _unitName);
 }
 
 LetStatement::LetStatement(const Token& token, const IExpression* name, const IExpression* value) : IStatement(token), Name(name), Value(value)

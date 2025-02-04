@@ -71,6 +71,9 @@ const TokenType TokenType::TOKEN_BREAK         = { TokenType::NextTokenNumber++,
 const TokenType TokenType::TOKEN_CONTINUE      = { TokenType::NextTokenNumber++, "CONTINUE" };
 const TokenType TokenType::TOKEN_FOR           = { TokenType::NextTokenNumber++, "FOR" };
 
+//comments
+const TokenType TokenType::TOKEN_COMMENT       = { TokenType::NextTokenNumber++, "//" };
+
 const std::map<std::string, TokenType> TokenType::KEYWORD_TOKEN_MAP = {
 	{"fn",  TokenType::TOKEN_FUNCTION},
 	{"let", TokenType::TOKEN_LET},

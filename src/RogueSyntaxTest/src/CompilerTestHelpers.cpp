@@ -101,7 +101,7 @@ bool TestInstructions(const Instructions& expected, const Instructions& actual)
 		if (expected[i] != actual[i])
 		{
 			const auto print = OpCode::PrintInstuctionsCompared(expected, actual);
-			throw std::runtime_error(std::format("Expected and actual instructions are not the same @offset{}. Expected={} Actual={}\n{}", i, expected[i], actual[i], print));
+			throw std::runtime_error(std::format("Expected and actual instructions are not the same @offset {:0>4}. Expected={} Actual={}\n{}", i, expected[i], actual[i], print));
 		}
 	}
 	return true;
@@ -131,29 +131,33 @@ Instructions ConcatInstructions(const std::vector<Instructions>& instructions)
 	return result;
 }
 
-bool TestByteCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ByteCode& actual)
+bool TestObjectCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ObjectCode& actual)
 {
 	auto flattened = ConcatInstructions(expectedInstructions);
-	return TestInstructions(flattened, actual.Instructions) && TestConstants(expectedConstants, actual.Constants);
+	return TestInstructions(flattened, actual.Instructions);
 }
 
 bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
 {
 	RogueSyntax syn;
-	auto byteCode = syn.Compile(input);
-	return TestByteCode(expectedConstants, expectedInstructions, byteCode);
+	auto byteCode = syn.Compile(input, "COMPILETEST");
+	return TestObjectCode(expectedConstants, expectedInstructions, byteCode);
 }
 
 bool VmTest(std::string input, ConstantValue expected)
 {
 	RogueSyntax syn;
-	auto byteCode = syn.Compile(input);
+	auto objCode = syn.Compile(input, "");
+	auto str = OpCode::PrintInstructions(objCode.Instructions);
+
+	auto byteCode = syn.Link(objCode);
+
 	auto vm = syn.MakeVM(byteCode);
 
 	try
 	{
 		vm->Run();
-		auto actual = vm->LastPoppped();
+		auto actual = vm->LastPopped();
 		REQUIRE(actual != nullptr);
 		return TestConstant(expected, actual);
 	}

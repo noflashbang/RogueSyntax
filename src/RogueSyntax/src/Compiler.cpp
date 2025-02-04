@@ -1,154 +1,5 @@
 #include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
-#include "Compiler.h"
 #include <pch.h>
-
-
-SymbolTable::SymbolTable(std::string scope, std::shared_ptr<BuiltIn> externs)
-	: _scope(scope), _outer(nullptr), _externals(externs)
-{
-}
-
-SymbolTable::SymbolTable(std::shared_ptr<BuiltIn> externs)
-	: _scope(SCOPE_GLOBAL), _outer(nullptr), _externals(externs)
-{
-}
-
-SymbolTable::SymbolTable(std::shared_ptr<SymbolTable> outer)
-	: _outer(outer), _scope(SCOPE_LOCAL), _externals(outer->_externals)
-{
-}
-
-Symbol SymbolTable::Define(const std::string& name)
-{
-	int index = -1;
-	for (int i = _store.size() - 1; i >= 0; i--)
-	{
-		if (_store[i].Name == name)
-		{
-			index = i;
-		}
-	}
-
-	if (index != -1)
-	{
-		return _store[index];
-	}
-	
-	index = _nextIndex++;
-	auto symbol = Symbol{ name, _scope, index };
-	_store.push_back(symbol);
-	return symbol;	
-}
-
-Symbol SymbolTable::DefineFunctionName(const std::string& name)
-{
-	int index = 0; //not used
-	auto symbol = Symbol{ name, SCOPE_FUNCTION, index };
-	_store.push_back(symbol);
-	return symbol;
-}
-
-Symbol SymbolTable::Resolve(const std::string& name)
-{
-	int index = -1;
-	for (int i = _store.size() - 1; i >= 0; i--)
-	{
-		if (_store[i].Name == name)
-		{
-			index = i;
-		}
-	}
-
-	if (index == -1 && _outer != nullptr)
-	{
-		auto upval = _outer->Resolve(name);
-
-		if (upval.Scope == SCOPE_GLOBAL || upval.Scope == SCOPE_EXTERN)
-		{
-			return upval;
-		}
-
-		return DefineFree(upval);
-	}
-
-	if (index == -1)
-	{
-		if (_externals->IsBuiltIn(name))
-		{
-			auto index = _externals->BuiltInIdx(name);
-			return Symbol{ name, SCOPE_EXTERN, index };
-		}
-		throw std::runtime_error("Symbol not found");
-	}
-
-	return _store[index];
-}
-
-Symbol SymbolTable::DefineFree(const Symbol& symbol)
-{
-	_free.push_back(symbol);
-	auto freeSym = Symbol{ symbol.Name, SCOPE_FREE, static_cast<int>(_free.size()-1) };
-	_store.push_back(freeSym);
-	return freeSym;
-}
-
-int CompilationUnit::AddInstruction(Instructions instructions)
-{
-	auto position = UnitInstructions.size();
-	UnitInstructions.insert(UnitInstructions.end(), instructions.begin(), instructions.end());
-
-	SetLastInstruction(instructions);
-	return position;
-}
-
-void CompilationUnit::RemoveLastPop()
-{
-	if (LastInstructionIs(OpCode::Constants::OP_POP))
-	{
-		RemoveLastInstruction();
-	}
-}
-
-bool CompilationUnit::LastInstructionIs(OpCode::Constants opcode)
-{
-	if (LastInstruction.empty())
-	{
-		return false;
-	}
-
-	return LastInstruction[0] == static_cast<uint8_t>(opcode);
-}
-
-void CompilationUnit::RemoveLastInstruction()
-{
-	UnitInstructions.resize(UnitInstructions.size() - LastInstruction.size());
-	SetLastInstruction(PreviousLastInstruction);
-}
-
-void CompilationUnit::ChangeOperand(int position, uint32_t operand)
-{
-	auto instruction = OpCode::Make(static_cast<OpCode::Constants>(UnitInstructions[position]), { operand });
-	ReplaceInstruction(position, instruction);
-}
-
-void CompilationUnit::ReplaceInstruction(int position, Instructions instructions)
-{
-	for (const auto& instr : instructions)
-	{
-		UnitInstructions[position++] = instr;
-	}
-}
-
-void CompilationUnit::SetLastInstruction(const Instructions& instruction)
-{
-	PreviousLastInstruction = LastInstruction;
-	LastInstruction = instruction;
-}
 
 Compiler::Compiler(const std::shared_ptr<ObjectFactory> factory) : _factory(factory)
 {
@@ -158,14 +9,20 @@ Compiler::~Compiler()
 {
 }
 
-ByteCode Compiler::Compile(const std::shared_ptr<Program>& program, const std::shared_ptr<BuiltIn>& externs)
+ObjectCode Compiler::Compile(const std::shared_ptr<Program>&program, const std::shared_ptr<BuiltIn>& externs, const std::string& unitName)
 {
 	_constants.clear();
 	_constants.reserve(128);
 	_externals = externs;
 
+	auto& builtins = _externals->GetBuiltInNames();
+	for (auto& name : builtins)
+	{
+		_symbolTable.DefineExternal(name, _externals->BuiltInIdx(name));
+	}
+
 	Compile(program.get());
-	return ByteCode{ _CompilationUnits.top().UnitInstructions, _constants };
+	return ObjectCode{ _CompilationUnits.top().UnitInstructions, _symbolTable.GetSymbols()};
 }
 
 CompilerError Compiler::Compile(INode* node)
@@ -177,25 +34,30 @@ CompilerError Compiler::Compile(INode* node)
 	}
 }
 
-int Compiler::EnterUnit()
+int Compiler::EnterUnit(const std::string& context)
 {
-	if (_CompilationUnits.empty())
-	{
-		_CompilationUnits.push(CompilationUnit(_externals));
-	}
-	else
-	{
-		auto outer = _CompilationUnits.top().SymbolTable;
-		_CompilationUnits.push(CompilationUnit(outer));
-	}
+	_symbolTable.PushStackContext();
+	EnterScope(context);
+	_CompilationUnits.push(CompilationUnit());	
 	return _CompilationUnits.size() - 1;
 }
 
 CompilationUnit Compiler::ExitUnit()
 {
+	_symbolTable.PopStackContext();
+	ExitScope();
 	auto unit = _CompilationUnits.top();
 	_CompilationUnits.pop();
 	return unit;
+}
+
+void Compiler::EnterScope(const std::string& scope)
+{
+	_symbolTable.PushScopeContext(scope);
+}
+void Compiler::ExitScope()
+{
+	_symbolTable.PopScopeContext();
 }
 
 uint32_t Compiler::AddConstant(const IObject* obj)
@@ -210,57 +72,40 @@ int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands)
 	return _CompilationUnits.top().AddInstruction(instructions);
 }
 
+int Compiler::Emit(OpCode::Constants opcode, std::vector<uint32_t> operands, Instructions data)
+{
+	auto instructions = OpCode::Make(opcode, operands);
+	instructions.insert(instructions.end(), data.begin(), data.end());
+	return _CompilationUnits.top().AddInstruction(instructions);
+}
+
 int Compiler::EmitGet(Symbol symbol)
 {
-	if (symbol.Scope == SCOPE_FUNCTION)
+	if (symbol.Type == ScopeType::SCOPE_FUNCTION)
 	{
-		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
+		return Emit(OpCode::Constants::OP_CUR_CLOSURE, {});
 	}
 	else
 	{
-		return Emit(OpCode::Constants::OP_GET, { GetSymbolIdx(symbol) });
+		return Emit(OpCode::Constants::OP_GET, { symbol.EncodedIdx() });
 	}
 }
 
 int Compiler::EmitSet(Symbol symbol)
 {
-	if (symbol.Scope == SCOPE_FUNCTION)
+	if (symbol.Type == ScopeType::SCOPE_FUNCTION)
 	{
-		return Emit(OpCode::Constants::OP_CURRENT_CLOSURE, {});
+		return Emit(OpCode::Constants::OP_CUR_CLOSURE, {});
 	}
 	else
 	{
-		return Emit(OpCode::Constants::OP_SET, { GetSymbolIdx(symbol) });
+		return Emit(OpCode::Constants::OP_SET, { symbol.EncodedIdx() });
 	}
 }
 
-uint32_t Compiler::GetSymbolIdx(const Symbol& symbol)
+void Compiler::NodeCompile(const Program* program, const std::string& unitName)
 {
-	if (symbol.Scope == SCOPE_GLOBAL)
-	{
-		return (symbol.Index & 0x3FFF);
-	}
-	else if (symbol.Scope == SCOPE_LOCAL)
-	{
-		return ((symbol.Index & 0x3FFF)) | 0x8000;
-	}
-	else if (symbol.Scope == SCOPE_EXTERN)
-	{
-		return ((symbol.Index & 0x3FFF)) | 0x4000;
-	}
-	else if (symbol.Scope == SCOPE_FREE)
-	{
-		return ((symbol.Index & 0x3FFF)) | 0xC000;
-	}
-	else
-	{
-		throw std::runtime_error("Invalid symbol scope");
-	}
-}
-
-void Compiler::NodeCompile(const Program* program)
-{
-	EnterUnit(); // enter global unit
+	EnterUnit(unitName); // enter global unit
 	for (auto& stmt : program->Statements)
 	{
 		stmt->Compile(this);
@@ -273,6 +118,8 @@ void Compiler::NodeCompile(const Program* program)
 
 void Compiler::NodeCompile(const BlockStatement* block)
 {
+	int ln = block->BaseToken.Location.Line;
+	//EnterScope(std::format("BLOCK@{}",ln) ); // enter block unit
 	for (auto& stmt : block->Statements)
 	{
 		stmt->Compile(this);
@@ -281,6 +128,7 @@ void Compiler::NodeCompile(const BlockStatement* block)
 			return;
 		}
 	}
+	//ExitScope();
 }
 
 void Compiler::NodeCompile(const ExpressionStatement* expression)
@@ -301,7 +149,7 @@ void Compiler::NodeCompile(const ReturnStatement* ret)
 	{
 		return;
 	}
-	Emit(OpCode::Constants::OP_RETURN_VALUE, {});
+	Emit(OpCode::Constants::OP_RET_VAL, {});
 }
 
 void Compiler::NodeCompile(const LetStatement* let)
@@ -309,7 +157,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 	if (let->Name->IsThisA<Identifier>())
 	{
 		auto* ident = dynamic_cast<const Identifier*>(let->Name);
-		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
+		auto symbol = _symbolTable.Define(ident->Value);
 		let->Value->Compile(this);
 		if (HasErrors())
 		{
@@ -327,7 +175,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 		auto* ident = dynamic_cast<const Identifier*>(index->Left);
-		auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
+		auto symbol = _symbolTable.Resolve(ident->Value);
 
 		//get the lvalue
 		index->Compile(this);
@@ -346,7 +194,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
-		Emit(OpCode::Constants::OP_SET_ASSIGN, { GetSymbolIdx(sym) });
+		Emit(OpCode::Constants::OP_SET_ASSIGN, { symbol.EncodedIdx() });
 	}
 	else
 	{
@@ -356,15 +204,18 @@ void Compiler::NodeCompile(const LetStatement* let)
 
 void Compiler::NodeCompile(const Identifier* ident)
 {
-	auto sym = _CompilationUnits.top().SymbolTable->Resolve(ident->Value);
+	auto sym = _symbolTable.Resolve(ident->Value);
 	EmitGet(sym);
 }
 
 void Compiler::NodeCompile(const IntegerLiteral* integer)
 {
-	auto obj = _factory->New<IntegerObj>(integer->Value);
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	//auto obj = _factory->New<IntegerObj>(integer->Value);
+	//auto index = AddConstant(obj);
+	//Emit(OpCode::Constants::OP_CONSTANT, { index });
+	int intVal = integer->Value;
+	uint32_t val = reinterpret_cast<uint32_t&>(intVal);
+	Emit(OpCode::Constants::OP_LINT, { val });
 }
 
 void Compiler::NodeCompile(const BooleanLiteral* boolean)
@@ -374,16 +225,28 @@ void Compiler::NodeCompile(const BooleanLiteral* boolean)
 
 void Compiler::NodeCompile(const StringLiteral* string)
 {
-	auto obj = _factory->New<StringObj>(string->Value);
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	//auto obj = _factory->New<StringObj>(string->Value);
+	//auto index = AddConstant(obj);
+	//Emit(OpCode::Constants::OP_CONSTANT, { index });
+	std::string str = string->Value;
+	uint32_t len = str.size();
+	Instructions data;
+	for (auto c : str)
+	{
+		data.push_back(c);
+	}
+	Emit(OpCode::Constants::OP_LSTRING, { len }, data);
 }
 
 void Compiler::NodeCompile(const DecimalLiteral* decimal)
 {
-	auto obj = _factory->New<DecimalObj>(decimal->Value);
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CONSTANT, { index });
+	//auto obj = _factory->New<DecimalObj>(decimal->Value);
+	//auto index = AddConstant(obj);
+	//Emit(OpCode::Constants::OP_CONSTANT, { index });
+
+	float decVal = decimal->Value;
+	uint32_t val = reinterpret_cast<uint32_t&>(decVal);
+	Emit(OpCode::Constants::OP_LDECIMAL, { val });
 }
 
 void Compiler::NodeCompile(const PrefixExpression* prefix)
@@ -468,35 +331,35 @@ void Compiler::NodeCompile(const InfixExpression* infix)
 	}
 	else if (infix->Operator == "==")
 	{
-		Emit(OpCode::Constants::OP_EQUAL, {});
+		Emit(OpCode::Constants::OP_EQ, {});
 	}
 	else if (infix->Operator == "!=")
 	{
-		Emit(OpCode::Constants::OP_NOT_EQUAL, {});
+		Emit(OpCode::Constants::OP_NEQ, {});
 	}
 	else if (infix->Operator == ">")
 	{
-		Emit(OpCode::Constants::OP_GREATER_THAN, {});
+		Emit(OpCode::Constants::OP_GT, {});
 	}
 	else if (infix->Operator == ">=")
 	{
-		Emit(OpCode::Constants::OP_GREATER_THAN_EQUAL, {});
+		Emit(OpCode::Constants::OP_GTE, {});
 	}
 	else if (infix->Operator == "<")
 	{
-		Emit(OpCode::Constants::OP_LESS_THAN, {});
+		Emit(OpCode::Constants::OP_LT, {});
 	}
 	else if (infix->Operator == "<=")
 	{
-		Emit(OpCode::Constants::OP_LESS_THAN_EQUAL, {});
+		Emit(OpCode::Constants::OP_LTE, {});
 	}
 	else if (infix->Operator == "&&")
 	{
-		Emit(OpCode::Constants::OP_BOOL_AND, {});
+		Emit(OpCode::Constants::OP_AND, {});
 	}
 	else if (infix->Operator == "||")
 	{
-		Emit(OpCode::Constants::OP_BOOL_OR, {});
+		Emit(OpCode::Constants::OP_OR, {});
 	}
 	else
 	{
@@ -512,7 +375,7 @@ void Compiler::NodeCompile(const IfStatement* ifExpr)
 		return;
 	}
 
-	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	//
 	ifExpr->Consequence->Compile(this);
 	if (HasErrors())
@@ -543,11 +406,13 @@ void Compiler::NodeCompile(const IfStatement* ifExpr)
 
 void Compiler::NodeCompile(const FunctionLiteral* function)
 {
-	EnterUnit();
+	EnterUnit(function->Name);
+
+	auto stackContext = _symbolTable.CurrentStackContext();
 
 	if (!function->Name.empty())
 	{
-		auto fnSymbol = _CompilationUnits.top().SymbolTable->DefineFunctionName(function->Name);
+		auto fnSymbol = _symbolTable.DefineFunctionName(function->Name);
 	}
 
 	for (auto* param : function->Parameters)
@@ -558,7 +423,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 			_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownError, "Expected identifier"));
 			return;
 		}
-		auto symbol = _CompilationUnits.top().SymbolTable->Define(ident->Value);
+		auto symbol = _symbolTable.Define(ident->Value);
 	}
 
 	function->Body->Compile(this);
@@ -566,10 +431,9 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	{
 		return;
 	}
-
 	auto unit = ExitUnit();
 
-	auto frees = unit.SymbolTable->FreeSymbols();
+	auto frees = _symbolTable.FreeSymbolsInContext(stackContext);
 	for (auto& sym : frees)
 	{
 		EmitGet(sym);
@@ -578,16 +442,18 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	if (unit.LastInstructionIs(OpCode::Constants::OP_POP))
 	{
 		unit.RemoveLastPop();
-		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN_VALUE, {}));
+		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RET_VAL, {}));
 	}
 
-	if (!unit.LastInstructionIs(OpCode::Constants::OP_RETURN_VALUE))
+	if (!unit.LastInstructionIs(OpCode::Constants::OP_RET_VAL))
 	{
 		unit.AddInstruction(OpCode::Make(OpCode::Constants::OP_RETURN, {}));
 	}
-	auto obj = _factory->New<FunctionCompiledObj>(unit.UnitInstructions, unit.SymbolTable->NumberOfSymbols(), static_cast<int>(function->Parameters.size()));
-	auto index = AddConstant(obj);
-	Emit(OpCode::Constants::OP_CLOSURE, { index, static_cast<uint32_t>(frees.size())});
+	//auto obj = _factory->New<FunctionCompiledObj>(unit.UnitInstructions, _symbolTable.NumberOfSymbolsInContext(stackContext), static_cast<int>(function->Parameters.size()));
+	//auto index = AddConstant(obj);
+
+	Emit(OpCode::Constants::OP_LFUN, { static_cast<uint32_t>(_symbolTable.NumberOfSymbolsInContext(stackContext)), static_cast<uint32_t>(function->Parameters.size()), static_cast<uint32_t>(unit.UnitInstructions.size()) }, unit.UnitInstructions);
+	Emit(OpCode::Constants::OP_CLOSURE, { static_cast<uint32_t>(frees.size())});
 }
 
 void Compiler::NodeCompile(const CallExpression* call)
@@ -670,7 +536,7 @@ void Compiler::NodeCompile(const WhileStatement* whileExp)
 		return;
 	}
 
-	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	//
 	whileExp->Action->Compile(this);
 	if (HasErrors())
@@ -714,7 +580,7 @@ void Compiler::NodeCompile(const ForStatement* forExp)
 		return;
 	}
 
-	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMP_IF_FALSE, { 9999 });
+	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	forExp->Action->Compile(this);
 	if (HasErrors())
 	{
