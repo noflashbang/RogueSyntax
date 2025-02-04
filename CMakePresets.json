@@ -1,78 +1,223 @@
-﻿{
+{
     "version": 3,
-  "configurePresets": [
-    {
-      "name": "windows-base",
-      "hidden": true,
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/out/build/${presetName}",
-      "installDir": "${sourceDir}/out/install/${presetName}",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "cl.exe",
-        "CMAKE_CXX_COMPILER": "cl.exe"
-      },
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Windows"
-      },
-      "vendor": {
-        "microsoft.com/VisualStudioSettings/CMake/1.0": {
-          "enableMicrosoftCodeAnalysis": true,
-          "enableMicrosoftCodeAnalysisOnConfiguration": {
-            "Debug": true,
-            "Release": true
-          },
-          "enableMicrosoftCodeAnalysisOnFile": {
-            "CMakeLists.txt": true,
-            "src/*.cpp": true
-          },
-          "codeAnalysisRuleset": "Microsoft-CodeAnalysis-2019.ruleset"
-
+    "configurePresets": [
+        {
+            "name": "windows-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl.exe",
+                "CMAKE_CXX_COMPILER": "cl.exe"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "enableMicrosoftCodeAnalysis": true,
+                    "enableMicrosoftCodeAnalysisOnConfiguration": {
+                        "Debug": true,
+                        "Release": true
+                    },
+                    "enableMicrosoftCodeAnalysisOnFile": {
+                        "CMakeLists.txt": true,
+                        "src/*.cpp": true
+                    },
+                    "codeAnalysisRuleset": "Microsoft-CodeAnalysis-2019.ruleset"
+                }
+            }
+        },
+        {
+            "name": "linux-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "installDir": "${sourceDir}/out/install/${presetName}",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            },
+            "vendor": {
+                "microsoft.com/VisualStudioSettings/CMake/1.0": {
+                    "hostOS": [
+                        "Linux"
+                    ]
+                },
+                "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+                    "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
+                }
+            }
+        },
+        {
+            "name": "win-x64-debug",
+            "displayName": "x64 Debug",
+            "inherits": "windows-base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TIDY_ENABLED": false
+            },
+            "environment": {
+                "CFLAGS": "/fsanitize=address",
+                "CXXFLAGS": "/fsanitize=address"
+            }
+        },
+        {
+            "name": "win-x64-debug-tidy",
+            "displayName": "x64 Debug",
+            "inherits": "windows-base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TIDY_ENABLED": true
+            },
+            "environment": {
+                "CFLAGS": "/fsanitize=address",
+                "CXXFLAGS": "/fsanitize=address"
+            }
+        },
+        {
+            "name": "win-x64-release",
+            "displayName": "x64 Release",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "gcc-base",
+            "hidden": true,
+            "inherits": "linux-base",
+            "displayName": "GCC 13.3.0 x86_64-linux-gnu",
+            "description": "Using compilers: C = /usr/bin/gcc, CXX = /usr/bin/g++",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/out/install/${presetName}",
+                "CMAKE_C_COMPILER": "/usr/bin/gcc",
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++"
+            }
+        },
+        {
+            "name": "gcc-debug",
+            "inherits": "gcc-base",
+            "displayName": "GCC Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TP_THREAD_SANITIZER": "ON"
+            }
+        },
+        {
+            "name": "gcc-release",
+            "inherits": "gcc-base",
+            "displayName": "GCC Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "clang-base",
+            "hidden": true,
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER": "clang++"
+            }
+        },
+        {
+            "name": "clang-debug",
+            "inherits": "clang-base",
+            "displayName": "Clang Debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "TP_THREAD_SANITIZER": "ON"
+            }
+        },
+        {
+            "name": "clang-release",
+            "inherits": "clang-base",
+            "displayName": "Clang Release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release"
+            }
+        },
+        {
+            "name": "gcc-x64-debug",
+            "displayName": "x64 Debug",
+            "inherits": "gcc-debug",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TIDY_ENABLED": false
+            }
+        },
+        {
+            "name": "gcc-x64-release",
+            "displayName": "x64 Release",
+            "inherits": "gcc-release",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_TIDY_ENABLED": false
+            }
+        },
+        {
+            "name": "clang-x64-debug",
+            "displayName": "x64 Debug",
+            "inherits": "clang-debug",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TIDY_ENABLED": false
+            }
+        },
+        {
+            "name": "clang-x64-release",
+            "displayName": "x64 Release",
+            "inherits": "clang-release",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_TIDY_ENABLED": false
+            }
+        },
+        {
+            "name": "win-x64-debug",
+            "displayName": "x64 Debug",
+            "inherits": "windows-base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_TIDY_ENABLED": false
+            },
+            "environment": {
+                "CFLAGS": "/fsanitize=address",
+                "CXXFLAGS": "/fsanitize=address"
+            }
         }
-      }
-    },
-    {
-      "name": "x64-debug",
-      "displayName": "x64 Debug",
-      "inherits": "windows-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_TIDY_ENABLED": false
-      },
-      "environment": {
-        "CFLAGS": "/fsanitize=address",
-        "CXXFLAGS": "/fsanitize=address"
-      }
-    },
-    {
-      "name": "x64-debug-tidy",
-      "displayName": "x64 Debug",
-      "inherits": "windows-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_TIDY_ENABLED": true
-      },
-      "environment": {
-        "CFLAGS": "/fsanitize=address",
-        "CXXFLAGS": "/fsanitize=address"
-      }
-    },
-    {
-      "name": "x64-release",
-      "displayName": "x64 Release",
-      "inherits": "x64-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
-      }
-    }
-  ]
+    ]
 }

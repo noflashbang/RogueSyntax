@@ -3,6 +3,10 @@
 #include "StandardLib.h"
 #include <RogueSyntaxCore.h>
 
+#ifndef FLT_EPSILON
+#define FLT_EPSILON 1.19209290E-07F
+#endif
+
 enum class EvaluatorType
 {
 	Stack,

@@ -14,7 +14,7 @@ set( externHeaders
     ${PARENT_DIR}/include/RogueSyntax/Evaluator.h
     ${PARENT_DIR}/include/RogueSyntax/Environment.h
     ${PARENT_DIR}/include/RogueSyntax/Builtin.h
-    ${PARENT_DIR}/include/RogueSyntax/Opcode.h
+    ${PARENT_DIR}/include/RogueSyntax/OpCode.h
     ${PARENT_DIR}/include/RogueSyntax/Compiler.h
 )
 

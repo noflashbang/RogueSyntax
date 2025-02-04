@@ -115,13 +115,13 @@ IObject* TypeCoercer::EvalAsBoolean(const IObject* const obj) const
 
 	if (obj->IsThisA<IntegerObj>())
 	{
-		auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
+		auto value = dynamic_cast<const IntegerObj* const>(obj)->Value;
 		result = value == 0 ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
 	}
 
 	if (obj->IsThisA<DecimalObj>())
 	{
-		auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
+		auto value = dynamic_cast<const DecimalObj* const>(obj)->Value;
 		result = abs(value) <= FLT_EPSILON ? BooleanObj::FALSE_OBJ_REF : BooleanObj::TRUE_OBJ_REF;
 	}
 
@@ -140,19 +140,19 @@ IObject* TypeCoercer::EvalAsDecimal(const IObject* const obj) const
 	{
 		if (obj->IsThisA<IntegerObj>())
 		{
-			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
+			auto value = dynamic_cast<const IntegerObj* const>(obj)->Value;
 			result = _factory->New<DecimalObj>(static_cast<float>(value));
 		}
 
 		if (obj->IsThisA<BooleanObj>())
 		{
-			auto value = dynamic_cast<const BooleanObj const *>(obj)->Value;
+			auto value = dynamic_cast<const BooleanObj* const>(obj)->Value;
 			result = _factory->New<DecimalObj>(value ? 1.0f : 0.0f);
 		}
 	}
 	else
 	{
-		auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
+		auto value = dynamic_cast<const DecimalObj* const>(obj)->Value;
 		result = _factory->New<DecimalObj>(value);
 	}
 
@@ -171,19 +171,19 @@ IObject* TypeCoercer::EvalAsInteger(const IObject* const obj) const
 	{
 		if (obj->IsThisA<DecimalObj>())
 		{
-			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
+			auto value = dynamic_cast<const DecimalObj* const>(obj)->Value;
 			result = _factory->New<IntegerObj>(static_cast<int>(value));
 		}
 
 		if (obj->IsThisA<BooleanObj>())
 		{
-			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
+			auto value = dynamic_cast<const BooleanObj* const>(obj)->Value;
 			result = _factory->New<IntegerObj>(value ? 1 : 0);
 		}
 	}
 	else
 	{
-		auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
+		auto value = dynamic_cast<const IntegerObj* const>(obj)->Value;
 		result = _factory->New<IntegerObj>(value);
 	}
 
@@ -202,28 +202,28 @@ IObject* TypeCoercer::EvalAsString(const IObject* const obj) const
 	{
 		if (obj->IsThisA<IntegerObj>())
 		{
-			auto value = dynamic_cast<const IntegerObj const*>(obj)->Value;
+			auto value = dynamic_cast<const IntegerObj* const>(obj)->Value;
 			result = _factory->New<StringObj>(std::to_string(value));
 		}
 		else if (obj->IsThisA<DecimalObj>())
 		{
-			auto value = dynamic_cast<const DecimalObj const*>(obj)->Value;
+			auto value = dynamic_cast<const DecimalObj* const>(obj)->Value;
 			result = _factory->New<StringObj>(std::to_string(value));
 		}
 		else if (obj->IsThisA<BooleanObj>())
 		{
-			auto value = dynamic_cast<const BooleanObj const*>(obj)->Value;
+			auto value = dynamic_cast<const BooleanObj* const>(obj)->Value;
 			result = _factory->New<StringObj>(value ? "true" : "false");
 		}
 		else if (obj->IsThisA<ArrayObj>())
 		{
-			auto value = dynamic_cast<const ArrayObj const*>(obj)->Inspect();
+			auto value = dynamic_cast<const ArrayObj* const>(obj)->Inspect();
 			result = _factory->New<StringObj>(value);
 		}
 	}
 	else
 	{
-		auto value = dynamic_cast<const StringObj const*>(obj)->Value;
+		auto value = dynamic_cast<const StringObj* const>(obj)->Value;
 		result = _factory->New<StringObj>(value);
 	}
 

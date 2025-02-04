@@ -45,7 +45,7 @@ void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (c
 	_builtins.push_back(func);
 
 	//sanity check
-	_ASSERT(_builtinNames.size() == _builtins.size());
+	assert((_builtinNames.size() == _builtins.size()));
 }
 
 IObject* BuiltIn::Len(const ObjectFactory* factory, const std::vector<const IObject*>& args)
