@@ -1,18 +1,19 @@
-#include "UI_Layout_Form.h"
+#include "UI_Layout_SaveForm.h"
 
 
-UI_Layout_Form::UI_Layout_Form(uint16_t width, uint16_t height, const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged) : _config(config), _eventCurrentFocusObserver(focusChanged)
+UI_Layout_SaveForm::UI_Layout_SaveForm(uint16_t width, uint16_t height, const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged) : _config(config), _eventCurrentFocusObserver(focusChanged)
 {
 	_layoutDimensions.width = width;
 	_layoutDimensions.height = height;
 	_name = name;
+	_title = "Save File";
 }
 
-UI_Layout_Form::~UI_Layout_Form()
+UI_Layout_SaveForm::~UI_Layout_SaveForm()
 {
 }
 
-void UI_Layout_Form::ProcessInputCommand(const InputCmd& cmd)
+void UI_Layout_SaveForm::ProcessInputCommand(const InputCmd& cmd)
 {
 	//_textArea->ProcessInputCommand(cmd);
 
@@ -21,7 +22,7 @@ void UI_Layout_Form::ProcessInputCommand(const InputCmd& cmd)
 	}
 }
 
-void UI_Layout_Form::Layout()
+void UI_Layout_SaveForm::Layout()
 {
 	if (HasFocus())
 	{
@@ -35,7 +36,7 @@ void UI_Layout_Form::Layout()
 				CLAY_BORDER_OUTSIDE({ .width = 2, .color = _config.colors.highlight })
 			)
 			{
-				LayoutTitle();
+			LayoutTitle();
 			//if (Clay_Hovered() && IsMouseButtonDown(0))
 			//{
 			//	//observe focus
@@ -47,7 +48,7 @@ void UI_Layout_Form::Layout()
 	//_textArea->Layout();
 }
 
-void UI_Layout_Form::LayoutTitle()
+void UI_Layout_SaveForm::LayoutTitle()
 {
 	CLAY(
 		CLAY_ID_LOCAL("TITLECONTAINER"),
@@ -84,8 +85,7 @@ void UI_Layout_Form::LayoutTitle()
 	}
 }
 
-void UI_Layout_Form::LayoutContent()
+void UI_Layout_SaveForm::LayoutContent()
 {
 }
-
 

@@ -77,6 +77,7 @@ void UpdateDrawFrame(UI* ui)
 }
 
 bool reinitializeClay = false;
+std::string fileName = "";
 
 UI* pUi;
 InteractiveCompiler* pConsole;
@@ -88,6 +89,45 @@ void OnSaveAsFile();
 void OnNewFile();
 void OnClose();
 
+
+static std::string GetFileAsString(const std::string& filename)
+{
+    std::ifstream file(filename);
+    char readBuffer[256];
+    std::string file_contents;
+
+	memset(readBuffer, 0, 256);
+
+	if (file.is_open())
+	{
+        while (file.read(readBuffer, 256).good())
+        {
+			file_contents.append(readBuffer);
+			memset(readBuffer, 0, 256);
+        };
+
+		file_contents.append(readBuffer, file.gcount());
+	}
+	else
+	{
+		std::cout << "Could not open file " << filename << std::endl;
+	}
+    return file_contents;
+};
+
+static void SaveFile(const std::string& filename, const std::string& content)
+{
+	std::ofstream file(filename, std::ios::trunc);
+	if (file.is_open())
+	{
+		file << content;
+		file.close();
+	}
+	else
+	{
+		std::cout << "Could not open file " << filename << std::endl;
+	}
+}
 
 int main(int argc, char* argv[])
 {
@@ -164,23 +204,36 @@ int main(int argc, char* argv[])
 
 void OnOpenFile()
 {
-	pUi->GetFocusObserver()->SetEventData("TestForm");
+	pUi->GetFocusObserver()->SetEventData("OpenForm");
 	std::cout << "Open file" << std::endl;
 }
 
 void OnSaveFile()
 {
 	std::cout << "Save file" << std::endl;
+	if (fileName.empty())
+	{
+		OnSaveAsFile();
+	}
+	else
+	{
+		std::string code = pUi->GetEditorText();
+		SaveFile(fileName, code);
+	}
 }
 
 void OnSaveAsFile()
 {
 	std::cout << "Save as file" << std::endl;
+    pUi->GetFocusObserver()->SetEventData("SaveForm");
 }
 
 void OnNewFile()
 {
 	std::cout << "New file" << std::endl;
+	pUi->ClearCommand();
+	pUi->SetEditor("");
+	fileName = "";
 }
 
 void OnClose()

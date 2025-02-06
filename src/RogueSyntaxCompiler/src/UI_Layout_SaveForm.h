@@ -16,11 +16,11 @@
 #include "UI_Layout_Textbox.h"
 #include "UI_Layout_TextArea.h"
 
-class UI_Layout_Form
+class UI_Layout_SaveForm
 {
 public:
-	UI_Layout_Form(uint16_t width, uint16_t height, const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged);
-	~UI_Layout_Form();
+	UI_Layout_SaveForm(uint16_t width, uint16_t height, const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged);
+	~UI_Layout_SaveForm();
 
 	void ProcessInputCommand(const InputCmd& cmd);
 	void Layout();
@@ -39,7 +39,6 @@ public:
 		_eventCurrentFocusObserver->SetEventData("");
 		_hadFocus = false;
 	};
-
 
 	void LayoutTitle();
 	void LayoutContent();

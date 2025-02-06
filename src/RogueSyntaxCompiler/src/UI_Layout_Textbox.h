@@ -48,7 +48,6 @@ public:
 	UI_Delegate<NoLock,const std::string&>& onTextChanged() { return _bindableText.onChange(); };
 	UI_Delegate<NoLock, const std::string&>& onReturn() { return _onReturn; };
 
-
 private:
 	void LayoutCursor(size_t index);
 	void LayoutTextbox(uint16_t offset, uint16_t length);

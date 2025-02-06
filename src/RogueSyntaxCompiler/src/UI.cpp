@@ -18,7 +18,8 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
-	_testForm = std::make_unique<UI_Layout_Form>(500,500, "TestForm", config, _eventCurrentFocus.Subscribe());
+	_saveForm = std::make_unique<UI_Layout_SaveForm>(500,500, "SaveForm", config, _eventCurrentFocus.Subscribe());
+	_openForm = std::make_unique<UI_Layout_OpenForm>(500, 500, "OpenForm", config, _eventCurrentFocus.Subscribe());
 }
 
 UI::~UI()
@@ -73,7 +74,8 @@ void UI::CreateRoot()
 		CLAY_RECTANGLE({ .color = _config.colors.background })
 	)
 	{
-		_testForm->Layout();
+		_saveForm->Layout();
+		_openForm->Layout();
 		_menuBar->Layout();
 
 		CreateActionBar();

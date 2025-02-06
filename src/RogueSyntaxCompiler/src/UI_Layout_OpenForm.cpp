@@ -1,18 +1,19 @@
-#include "UI_Layout_Form.h"
+#include "UI_Layout_OpenForm.h"
 
 
-UI_Layout_Form::UI_Layout_Form(uint16_t width, uint16_t height, const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged) : _config(config), _eventCurrentFocusObserver(focusChanged)
+UI_Layout_OpenForm::UI_Layout_OpenForm(uint16_t width, uint16_t height, const std::string& name, UIConfig config, std::shared_ptr<UIEventObserver<std::string>> focusChanged) : _config(config), _eventCurrentFocusObserver(focusChanged)
 {
 	_layoutDimensions.width = width;
 	_layoutDimensions.height = height;
 	_name = name;
+	_title = "Open File";
 }
 
-UI_Layout_Form::~UI_Layout_Form()
+UI_Layout_OpenForm::~UI_Layout_OpenForm()
 {
 }
 
-void UI_Layout_Form::ProcessInputCommand(const InputCmd& cmd)
+void UI_Layout_OpenForm::ProcessInputCommand(const InputCmd& cmd)
 {
 	//_textArea->ProcessInputCommand(cmd);
 
@@ -21,7 +22,7 @@ void UI_Layout_Form::ProcessInputCommand(const InputCmd& cmd)
 	}
 }
 
-void UI_Layout_Form::Layout()
+void UI_Layout_OpenForm::Layout()
 {
 	if (HasFocus())
 	{
@@ -35,7 +36,7 @@ void UI_Layout_Form::Layout()
 				CLAY_BORDER_OUTSIDE({ .width = 2, .color = _config.colors.highlight })
 			)
 			{
-				LayoutTitle();
+			LayoutTitle();
 			//if (Clay_Hovered() && IsMouseButtonDown(0))
 			//{
 			//	//observe focus
@@ -47,7 +48,7 @@ void UI_Layout_Form::Layout()
 	//_textArea->Layout();
 }
 
-void UI_Layout_Form::LayoutTitle()
+void UI_Layout_OpenForm::LayoutTitle()
 {
 	CLAY(
 		CLAY_ID_LOCAL("TITLECONTAINER"),
@@ -55,7 +56,7 @@ void UI_Layout_Form::LayoutTitle()
 		CLAY_RECTANGLE({ .color = _config.colors.accent })
 	)
 	{
-
+		
 		CLAY(
 			CLAY_ID_LOCAL("TITLE"),
 			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_GROW(0), .height = CLAY_SIZING_FIXED((float)_config.fontSize)}, .layoutDirection = CLAY_LEFT_TO_RIGHT }),
@@ -73,7 +74,7 @@ void UI_Layout_Form::LayoutTitle()
 		{
 			if (Clay_Hovered() && IsMouseButtonDown(0))
 			{
-
+				
 			}
 
 			if (IsMouseButtonReleased(0))
@@ -84,7 +85,7 @@ void UI_Layout_Form::LayoutTitle()
 	}
 }
 
-void UI_Layout_Form::LayoutContent()
+void UI_Layout_OpenForm::LayoutContent()
 {
 }
 

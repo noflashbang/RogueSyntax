@@ -16,7 +16,8 @@
 #include "UI_Layout_Menu.h"
 #include "UI_Layout_Event.h"
 #include "UI_Layout_Textbox.h"
-#include "UI_Layout_Form.h"
+#include "UI_Layout_SaveForm.h"
+#include "UI_Layout_OpenForm.h"
 
 #include "InfoForm.h"
 #include "OutputForm.h"
@@ -80,7 +81,8 @@ private:
 	OutputForm _outputForm;
 	InfoForm _infoForm;
 
-	std::unique_ptr<UI_Layout_Form> _testForm;
+	std::unique_ptr<UI_Layout_SaveForm> _saveForm;
+	std::unique_ptr<UI_Layout_OpenForm> _openForm;
 
 	//splitters
 	std::unique_ptr<UI_Splitter> _mainFormSplitter;
