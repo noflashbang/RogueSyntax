@@ -7,6 +7,11 @@ UI_Layout_OpenForm::UI_Layout_OpenForm(uint16_t width, uint16_t height, const st
 	_layoutDimensions.height = height;
 	_name = name;
 	_title = "Open File";
+
+	_closeBtn = std::make_unique<UI_Button>(config, "closeButton");
+	_closeBtn->SetLayoutDimensions(LayoutDimensions{ (float)_config.fontSize, (float)_config.fontSize });
+	_closeBtn->SetText("X");
+	_closeBtnConnection = _closeBtn->onClick() += [this]() { this->Close(); };
 }
 
 UI_Layout_OpenForm::~UI_Layout_OpenForm()
@@ -37,15 +42,8 @@ void UI_Layout_OpenForm::Layout()
 			)
 			{
 			LayoutTitle();
-			//if (Clay_Hovered() && IsMouseButtonDown(0))
-			//{
-			//	//observe focus
-			//	_eventCurrentFocusObserver->SetEventData(_name);
-			//}
 			}
 	}
-	//_textArea->SetLayoutDimensions(_layoutDimensions);
-	//_textArea->Layout();
 }
 
 void UI_Layout_OpenForm::LayoutTitle()
@@ -63,25 +61,10 @@ void UI_Layout_OpenForm::LayoutTitle()
 			CLAY_RECTANGLE({ .color = _config.colors.accent })
 		)
 		{
-			Clay_String name = Clay_String{ .length = (int)_title.length(), .chars = _title.c_str() };
+			Clay_String name = Clay_StringFromStdString(_title);
 			CLAY_TEXT(name, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
 		}
-		CLAY(
-			CLAY_ID_LOCAL("BTNCLOSE"),
-			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-			CLAY_RECTANGLE({ .color = _config.colors.highlight })
-		)
-		{
-			if (Clay_Hovered() && IsMouseButtonDown(0))
-			{
-				
-			}
-
-			if (IsMouseButtonReleased(0))
-			{
-
-			}
-		}
+		_closeBtn->Layout();
 	}
 }
 

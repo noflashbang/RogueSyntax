@@ -15,6 +15,7 @@
 #include "UI_Layout_ScrollBar.h"
 #include "UI_Layout_Textbox.h"
 #include "UI_Layout_TextArea.h"
+#include "UI_Layout_Button.h"
 
 class UI_Layout_OpenForm
 {
@@ -47,6 +48,10 @@ private:
 
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 	LayoutDimensions _layoutDimensions;
+
+	//elements
+	std::unique_ptr<UI_Button> _closeBtn;
+	std::unique_ptr<ScopedConnection> _closeBtnConnection;
 
 	//ui font and colors, sizes
 	UIConfig _config;

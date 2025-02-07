@@ -53,5 +53,7 @@ private:
 	UIConfig _config;
 	std::string _name;
 	std::string _title;
+
+	bool _closeBtnClicked = false;
 	bool _hadFocus = false;
 };
