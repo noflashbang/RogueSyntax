@@ -8,6 +8,7 @@
 #include <ranges>
 #include <vector>
 #include <format>
+#include <filesystem>
 #include "UI_Layout_Structs.h"
 #include "UI_Layout_Cursor.h"
 #include "UI_Layout_LineNumber.h"
@@ -33,7 +34,13 @@ public:
 		return _hadFocus || _eventCurrentFocusObserver->GetEventData() == _name;
 	};
 
+	void SetFileExplorer();
 
+	void Open()
+	{
+		_path = _pathTxt->GetText();
+		Close();
+	};
 
 	void Close()
 	{
@@ -46,6 +53,7 @@ public:
 
 private:
 
+	UIEventAgent<std::string> _eventCurrentFocus;
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
 	LayoutDimensions _layoutDimensions;
 
@@ -53,9 +61,18 @@ private:
 	std::unique_ptr<UI_Button> _closeBtn;
 	std::unique_ptr<ScopedConnection> _closeBtnConnection;
 
+	std::unique_ptr<UI_Textbox> _pathTxt;
+	std::unique_ptr<UI_TextArea> _filesArea;
+
+	std::unique_ptr<UI_Button> _openBtn;
+	std::unique_ptr<ScopedConnection> _openBtnConnection;
+
 	//ui font and colors, sizes
 	UIConfig _config;
 	std::string _name;
 	std::string _title;
+	
+	std::string _path;
+
 	bool _hadFocus = false;
 };

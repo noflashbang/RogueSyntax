@@ -32,6 +32,8 @@ void UI::DoLayout()
 
 	for (auto& cmd : _inputCmds)
 	{
+		_saveForm->ProcessInputCommand(cmd);
+		_openForm->ProcessInputCommand(cmd);
 		_editorForm.ProcessInputCommand(cmd);
 		_outputForm.ProcessInputCommand(cmd);
 		_infoForm.ProcessInputCommand(cmd);
