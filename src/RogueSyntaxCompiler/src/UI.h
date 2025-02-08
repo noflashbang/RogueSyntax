@@ -58,6 +58,9 @@ public:
 
 	std::shared_ptr<UIEventObserver<std::string>> GetFocusObserver() { return _eventCurrentFocus.Subscribe(); };
 
+	UI_Layout_OpenForm* GetOpenForm() { return _openForm.get(); };
+	UI_Layout_SaveForm* GetSaveForm() { return _saveForm.get(); };
+
 protected:
 
 	void CreateRoot();

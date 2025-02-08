@@ -19,7 +19,7 @@ UI::UI(UIConfig config) : _editorForm("Editor", config, _eventCurrentFocus.Subsc
 	_menuBar = std::make_unique<UI_MenuBar>(config, _eventCurrentFocus.Subscribe());
 
 	_saveForm = std::make_unique<UI_Layout_SaveForm>(500,500, "SaveForm", config, _eventCurrentFocus.Subscribe());
-	_openForm = std::make_unique<UI_Layout_OpenForm>(500, 500, "OpenForm", config, _eventCurrentFocus.Subscribe());
+	_openForm = std::make_unique<UI_Layout_OpenForm>(1400, 600, "OpenForm", config, _eventCurrentFocus.Subscribe());
 }
 
 UI::~UI()

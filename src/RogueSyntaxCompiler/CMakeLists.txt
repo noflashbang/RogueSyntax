@@ -67,6 +67,7 @@ set( compilerHeaders
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Splitter.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_ScrollBar.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Textbox.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Listbox.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Button.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Form.h
@@ -90,6 +91,7 @@ set( compilerSource
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Splitter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_ScrollBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Textbox.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Listbox.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_TextArea.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Button.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/UI_Layout_Form.cpp

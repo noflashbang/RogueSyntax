@@ -19,22 +19,37 @@ void UI_Button::ProcessInputCommand(const InputCmd& cmd)
 void UI_Button::LayoutButton()
 {
 	CLAY(
-		CLAY_ID_LOCAL("BUTTON"),
-		CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_config.fontSize), .height = CLAY_SIZING_FIXED((float)_config.fontSize)} }),
-		CLAY_RECTANGLE({ .color = _config.colors.highlight })
+		CLAY_ID_LOCAL("HOVER_CONTAINER"),
+		CLAY_LAYOUT()
 	)
 	{
-		Clay_String name = Clay_StringFromStdString(_text);
-		CLAY_TEXT(name, CLAY_TEXT_CONFIG({ .textColor = _config.colors.background, .fontId = _config.fontId, .fontSize = _config.fontSize }));
-		if (Clay_Hovered() && IsMouseButtonDown(0))
+		uint32_t borderSize = 2;
+		Clay_Color borderColor = _config.colors.accentText;
+		if (Clay_Hovered())
 		{
-			_buttonIsClicked = true;
+			borderSize = 3;
+			borderColor = _config.colors.highlight;
 		}
 
-		if (Clay_Hovered() && IsMouseButtonReleased(0))
+		CLAY(
+			CLAY_ID_LOCAL("BUTTON"),
+			CLAY_LAYOUT({ .sizing = Clay_Sizing{.width = CLAY_SIZING_FIXED((float)_layoutDimensions.width), .height = CLAY_SIZING_FIXED((float)_layoutDimensions.height)}, .childAlignment = {.x = CLAY_ALIGN_X_CENTER, .y = CLAY_ALIGN_Y_CENTER } }),
+			CLAY_BORDER_OUTSIDE({ .width = borderSize, .color = borderColor }),
+			CLAY_RECTANGLE({ .color = _config.colors.background })
+		)
 		{
-			_buttonIsClicked = false;
-			_onClick();
+			Clay_String name = Clay_StringFromStdString(_text);
+			CLAY_TEXT(name, CLAY_TEXT_CONFIG({ .textColor = _config.colors.text, .fontId = _config.fontId, .fontSize = _config.fontSize }));
+			if (Clay_Hovered() && IsMouseButtonDown(0))
+			{
+				_buttonIsClicked = true;
+			}
+
+			if (Clay_Hovered() && IsMouseButtonReleased(0))
+			{
+				_buttonIsClicked = false;
+				_onClick();
+			}
 		}
 	}
 }

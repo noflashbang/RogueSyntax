@@ -48,10 +48,10 @@ void UpdateDrawFrame(UI* ui)
 
 	accumulatedTime += GetFrameTime();
 
-    if (IsKeyPressed(KEY_D)) {
-        debugEnabled = !debugEnabled;
-        Clay_SetDebugModeEnabled(debugEnabled);
-    }
+    //if (IsKeyPressed(KEY_D)) {
+    //    debugEnabled = !debugEnabled;
+    //    Clay_SetDebugModeEnabled(debugEnabled);
+    //}
     //----------------------------------------------------------------------------------
     // Handle scroll containers
     Clay_Vector2 mousePosition = RAYLIB_VECTOR2_TO_CLAY_VECTOR2(GetMousePosition());
@@ -84,6 +84,7 @@ InteractiveCompiler* pConsole;
 bool _closeWindow = false;
 void OnCommand(std::string cmd);
 void OnOpenFile();
+void OnOpenFormClosed(const std::string& filename);
 void OnSaveFile();
 void OnSaveAsFile();
 void OnNewFile();
@@ -96,17 +97,16 @@ static std::string GetFileAsString(const std::string& filename)
     char readBuffer[256];
     std::string file_contents;
 
-	memset(readBuffer, 0, 256);
+	memset(readBuffer, 0, sizeof(readBuffer));
 
 	if (file.is_open())
 	{
-        while (file.read(readBuffer, 256).good())
-        {
-			file_contents.append(readBuffer);
-			memset(readBuffer, 0, 256);
-        };
-
-		file_contents.append(readBuffer, file.gcount());
+		while (!file.eof())
+		{
+			file.read(readBuffer, sizeof(readBuffer));
+			file_contents.append(readBuffer, file.gcount());
+		}
+		file.close();
 	}
 	else
 	{
@@ -178,6 +178,7 @@ int main(int argc, char* argv[])
 	auto connSaveAs = pUi->Subscribe("File", "Save As", OnSaveAsFile);
 	auto connNew = pUi->Subscribe("File", "New", OnNewFile);
 	auto connClose = pUi->Subscribe("File", "Close", OnClose);
+	auto connOnOpenClosed = pUi->GetOpenForm()->onFormClosed() += OnOpenFormClosed;
 
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
@@ -206,6 +207,17 @@ void OnOpenFile()
 {
 	pUi->GetFocusObserver()->SetEventData("OpenForm");
 	std::cout << "Open file" << std::endl;
+}
+
+void OnOpenFormClosed(const std::string& filename)
+{
+    std::cout << "Loading file contents" << std::endl;
+    pUi->ClearCommand();
+
+	auto fileContents = GetFileAsString(filename);
+
+    pUi->SetEditor(fileContents);
+    fileName = filename;
 }
 
 void OnSaveFile()

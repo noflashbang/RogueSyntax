@@ -15,7 +15,7 @@
 #include "UI_Layout_Event.h"
 #include "UI_Layout_ScrollBar.h"
 #include "UI_Layout_Textbox.h"
-#include "UI_Layout_TextArea.h"
+#include "UI_Layout_Listbox.h"
 #include "UI_Layout_Button.h"
 
 class UI_Layout_OpenForm
@@ -34,6 +34,8 @@ public:
 		return _hadFocus || _eventCurrentFocusObserver->GetEventData() == _name;
 	};
 
+	UI_Delegate<NoLock, const std::string&>& onFormClosed() { return _onClosed; };
+
 	void SetFileExplorer();
 
 	void Open()
@@ -46,12 +48,19 @@ public:
 	{
 		_eventCurrentFocusObserver->SetEventData("");
 		_hadFocus = false;
+
+		if (!_path.empty())
+		{
+			_onClosed(_path);
+		}
 	};
 
 	void LayoutTitle();
 	void LayoutContent();
 
 private:
+
+	UI_Delegate<NoLock, const std::string&> _onClosed;
 
 	UIEventAgent<std::string> _eventCurrentFocus;
 	std::shared_ptr<UIEventObserver<std::string>> _eventCurrentFocusObserver;
@@ -62,7 +71,8 @@ private:
 	std::unique_ptr<ScopedConnection> _closeBtnConnection;
 
 	std::unique_ptr<UI_Textbox> _pathTxt;
-	std::unique_ptr<UI_TextArea> _filesArea;
+	std::unique_ptr<UI_Textbox> _dirTxt;
+	std::unique_ptr<UI_Listbox> _filesArea;
 
 	std::unique_ptr<UI_Button> _openBtn;
 	std::unique_ptr<ScopedConnection> _openBtnConnection;
@@ -73,6 +83,7 @@ private:
 	std::string _title;
 	
 	std::string _path;
+	std::string _dir;
 
 	bool _hadFocus = false;
 };
