@@ -24,8 +24,6 @@ struct CompilerErrorInfo
 	}
 };
 
-
-
 class Compiler
 {
 public:
@@ -73,6 +71,8 @@ protected:
 	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands, Instructions data);
 	int EmitGet(Symbol symbol);
 	int EmitSet(Symbol symbol);
+
+	void EmitDebugSymbol(const  INode* node);
 
 private:
 	SymbolTable _symbolTable;

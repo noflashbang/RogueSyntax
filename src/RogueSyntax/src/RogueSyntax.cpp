@@ -33,8 +33,12 @@ ObjectCode RogueSyntax::Compile(const std::string& input, const std::string& uni
 	return compiler.Compile(program, _builtIn, "PRG");
 }
 
-std::string RogueSyntax::Disassemble(const ByteCode& code) const
+std::string RogueSyntax::Disassemble(const ByteCode& code, bool includeDebugSymbols) const
 {
+	if (includeDebugSymbols)
+	{
+		return OpCode::PrintInstructionsWithDebug(code);
+	}
 	return OpCode::PrintInstructions(code.Instructions);
 }
 

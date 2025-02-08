@@ -1,3 +1,5 @@
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
 #include "pch.h"
 
 RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>& factory)
@@ -24,6 +26,60 @@ RogueVM::~RogueVM()
 
 void RogueVM::Run()
 {	
+	ProtectedRun();
+}
+
+const IObject* RogueVM::Top() const 
+{ 
+	return _sp > 0 ? _stack[_sp - 1] : NullObj::NULL_OBJ_REF; 
+}
+void RogueVM::Push(const IObject* obj) 
+{
+	if (_sp >= _stack.size()) 
+	{ 
+		throw std::exception("Stack Overflow"); 
+	}  
+	_stack[_sp++] = obj; 
+}
+
+const IObject* RogueVM::Pop() 
+{ 
+	if (_sp == 0) 
+	{ 
+		throw std::exception("Stack Underflow"); 
+	} 
+	_outputRegister =  _stack[--_sp];
+	return _outputRegister;
+}
+
+const IObject* RogueVM::LastPopped() const 
+{ 
+	return _outputRegister;
+}
+
+const Frame& RogueVM::CurrentFrame() const
+{
+	if (_frameIndex == 0)
+	{
+		throw std::exception("No frames");
+	}
+	return _frames[_frameIndex - 1];
+}
+
+void RogueVM::ProtectedRun()
+{
+	try
+	{
+		Execute();
+	}
+	catch (const std::exception& ex)
+	{
+		_outputRegister = _factory->New<StringObj>(ex.what());
+	}
+}
+
+void RogueVM::Execute()
+{
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
 		const auto& instructions = CurrentFrame().Instructions();
@@ -227,7 +283,7 @@ void RogueVM::Run()
 						auto arrayObj = dynamic_cast<ArrayObj*>(arrayClone);
 						auto rValueClone = _factory->Clone(rValue);
 						arrayObj->Elements[index->Value] = rValueClone;
-						
+
 						Push(arrayObj);
 						ExecuteSetInstruction(idx);
 						Push(rValueClone);
@@ -249,9 +305,9 @@ void RogueVM::Run()
 				auto key = HashKey{ indexValue->Type(), indexValue->Inspect() };
 
 				auto rValueClone = _factory->Clone(rValue);
-				
+
 				auto keyClone = _factory->Clone(indexValue);
-				
+
 				auto entry = HashEntry{ keyClone, rValueClone };
 				hash->Elements[key] = entry;
 
@@ -271,10 +327,10 @@ void RogueVM::Run()
 			auto left = Pop();
 
 			ExecuteIndexOperation(left, index);
-			
+
 			break;
 		}
-		
+
 		case OpCode::Constants::OP_CALL:
 		{
 			auto numArgs = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
@@ -325,7 +381,7 @@ void RogueVM::Run()
 
 			//auto fn = dynamic_cast<const FunctionCompiledObj*>(constants[idx]);
 			auto fn = dynamic_cast<const FunctionCompiledObj*>(Pop());
-			
+
 			std::vector<const IObject*> free;
 			free.reserve(numFree);
 			for (int i = 0; i < numFree; i++)
@@ -354,7 +410,7 @@ void RogueVM::Run()
 		case OpCode::Constants::OP_RET_VAL:
 		{
 			auto result = Pop();
-			if(_frameIndex <= 1)
+			if (_frameIndex <= 1)
 			{
 				//global frame - load result into output
 				_outputRegister = result;
@@ -372,43 +428,6 @@ void RogueVM::Run()
 			throw std::runtime_error("Unknown opcode");
 		}
 	}
-}
-
-const IObject* RogueVM::Top() const 
-{ 
-	return _sp > 0 ? _stack[_sp - 1] : NullObj::NULL_OBJ_REF; 
-}
-void RogueVM::Push(const IObject* obj) 
-{
-	if (_sp >= _stack.size()) 
-	{ 
-		throw std::exception("Stack Overflow"); 
-	}  
-	_stack[_sp++] = obj; 
-}
-
-const IObject* RogueVM::Pop() 
-{ 
-	if (_sp == 0) 
-	{ 
-		throw std::exception("Stack Underflow"); 
-	} 
-	_outputRegister =  _stack[--_sp];
-	return _outputRegister;
-}
-
-const IObject* RogueVM::LastPopped() const 
-{ 
-	return _outputRegister;
-}
-
-const Frame& RogueVM::CurrentFrame() const
-{
-	if (_frameIndex == 0)
-	{
-		throw std::exception("No frames");
-	}
-	return _frames[_frameIndex - 1];
 }
 
 void RogueVM::PushFrame(Frame frame)

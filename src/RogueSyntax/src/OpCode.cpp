@@ -1,4 +1,5 @@
 #include "OpCode.h"
+#include "OpCode.h"
 #include <pch.h>
 
 const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
@@ -302,6 +303,91 @@ std::string OpCode::PrintInstructions(const Instructions& instructions)
 		auto raw = instructionsSpan.subspan(offset, readOffset - offset);
 		rawByteCode += InstructionsToHex(raw);
 		result += rawByteCode + " : " + decompiled + "\n";
+		offset = readOffset;
+	}
+	result.pop_back();
+	return result;
+}
+
+std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
+{
+	std::string result{};
+	size_t offset{};
+	std::span instructionsSpan(code.Instructions);
+
+	while (offset < code.Instructions.size())
+	{
+		std::string decompiled;
+		std::string rawByteCode;
+		auto [op, operands, readOffset] = OpCode::ReadOperand(code.Instructions, offset);
+		decompiled += std::format("{:0>4}:  {:16}", offset, std::get<Definition>(OpCode::Lookup(op)).Name);
+		if (operands.size() == 1)
+		{
+			decompiled += std::format("{: <18}", operands[0]);
+		}
+		else if (operands.size() == 2)
+		{
+			decompiled += std::format("{: <6}", operands[0]);
+			decompiled += std::format("{: <6}", operands[1]);
+			decompiled += "      ";
+
+		}
+		else if (operands.size() == 3)
+		{
+			decompiled += std::format("{: <6}", operands[0]);
+			decompiled += std::format("{: <6}", operands[1]);
+			decompiled += std::format("{: <6}", operands[2]);
+		}
+		else
+		{
+			for (const auto& operand : operands)
+			{
+				decompiled += std::format("{: <6}", operand);
+			}
+		}
+
+		if (op == OpCode::Constants::OP_GET || op == OpCode::Constants::OP_SET)
+		{
+			auto adjustedIdx = AdjustIdx(operands[0]);
+			auto type = GetTypeFromIdx(operands[0]);
+			switch (type)
+			{
+			case ScopeType::SCOPE_GLOBAL:
+				decompiled += std::format(" // {: <6} {: <2}", "GLOBAL", adjustedIdx);
+				break;
+			case ScopeType::SCOPE_LOCAL:
+				decompiled += std::format(" // {: <6} {: <2}", "LOCAL", adjustedIdx);
+				break;
+			case ScopeType::SCOPE_EXTERN:
+				decompiled += std::format(" // {: <6} {: <2}", "EXTERN", adjustedIdx);
+				break;
+			case ScopeType::SCOPE_FREE:
+				decompiled += std::format(" // {: <6} {: <2}", "FREE", adjustedIdx);
+				break;
+			}
+		}
+
+		if (HasData(op))
+		{
+			auto data = OpCode::ReadData({ op, operands, readOffset }, code.Instructions);
+			if (op == OpCode::Constants::OP_LSTRING)
+			{
+				std::string str(data.begin(), data.end());
+				decompiled += std::format(" // '{}'", str);
+				readOffset += data.size();
+			}
+		}
+
+		std::string debugInfo = "";
+		auto debug = std::find_if(code.DebugSymbols.begin(), code.DebugSymbols.end(), [offset](const auto& symbol) { return symbol.Offset == offset; });
+		if (debug != code.DebugSymbols.end())
+		{
+			debugInfo += std::format(" /* {} */ LN:{} CH:{}", debug->SourceAst, debug->BaseToken.Location.Line, debug->BaseToken.Location.Character);
+		}
+
+		auto raw = instructionsSpan.subspan(offset, readOffset - offset);
+		rawByteCode += InstructionsToHex(raw);
+		result += rawByteCode + " : " + decompiled + debugInfo + "\n";
 		offset = readOffset;
 	}
 	result.pop_back();

@@ -46,6 +46,10 @@ public:
 
 protected:
 
+	void ProtectedRun();
+	void Execute();
+
+	//stack operations
 	void Push(const IObject* obj);
 	const IObject* Pop();
 

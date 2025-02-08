@@ -2,12 +2,87 @@
 #include <StandardLib.h>
 #include <variant>
 
+#include <Token.h>
+
 typedef std::vector<uint8_t> Instructions;
 
 struct Definition
 {
 	std::string Name;
 	std::vector<uint16_t> OperandWidths;
+};
+
+class IObject;
+
+enum class ScopeType : uint8_t
+{
+	SCOPE_GLOBAL,
+	SCOPE_LOCAL,
+	SCOPE_EXTERN,
+	SCOPE_FREE,
+	SCOPE_FUNCTION,
+};
+
+static inline ScopeType GetTypeFromIdx(int idx)
+{
+	auto flags = idx & 0xC000;
+	if (flags == 0x0000)
+	{
+		return ScopeType::SCOPE_GLOBAL;
+	}
+	else if (flags == 0x8000)
+	{
+		return ScopeType::SCOPE_LOCAL;
+	}
+	else if (flags == 0x4000)
+	{
+		return ScopeType::SCOPE_EXTERN;
+	}
+	else if (flags == 0xC000)
+	{
+		return ScopeType::SCOPE_FREE;
+	}
+	else
+	{
+		throw std::runtime_error("Invalid index");
+	}
+}
+
+static inline int AdjustIdx(int idx)
+{
+	return idx & 0x3FFF;
+}
+
+struct Symbol
+{
+	ScopeType Type;
+	std::string Name;
+	std::string MangledName;
+	std::string Context;
+	uint32_t stackContext;
+	int Index;
+
+	uint32_t EncodedIdx();
+};
+
+struct DebugSymbol
+{
+	size_t Offset;
+	Token BaseToken;
+	std::string SourceAst;
+};
+
+struct ObjectCode
+{
+	Instructions Instructions;
+	std::vector<Symbol> Symbols;
+	std::vector<DebugSymbol> DebugSymbols;
+};
+
+struct ByteCode
+{
+	Instructions Instructions;
+	std::vector<DebugSymbol> DebugSymbols;
 };
 
 struct OpCode
@@ -88,72 +163,11 @@ struct OpCode
 	static std::vector<uint8_t> ReadData(std::tuple<Constants, std::vector<uint32_t>, size_t>, const Instructions& instructions);
 	static Constants GetOpcode(const Instructions& instructions, size_t offset);
 	static std::string PrintInstructions(const Instructions& instructions);
+	static std::string PrintInstructionsWithDebug(const ByteCode& code);
 
 	static std::string PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions);
 	static std::string InstructionsToHex(std::span<const uint8_t> bytes);
 	
 };
 
-class IObject;
 
-enum class ScopeType : uint8_t
-{
-	SCOPE_GLOBAL,
-	SCOPE_LOCAL,
-	SCOPE_EXTERN,
-	SCOPE_FREE,
-	SCOPE_FUNCTION,
-};
-
-static inline ScopeType GetTypeFromIdx(int idx)
-{
-	auto flags = idx & 0xC000;
-	if (flags == 0x0000)
-	{
-		return ScopeType::SCOPE_GLOBAL;
-	}
-	else if (flags == 0x8000)
-	{
-		return ScopeType::SCOPE_LOCAL;
-	}
-	else if (flags == 0x4000)
-	{
-		return ScopeType::SCOPE_EXTERN;
-	}
-	else if (flags == 0xC000)
-	{
-		return ScopeType::SCOPE_FREE;
-	}
-	else
-	{
-		throw std::runtime_error("Invalid index");
-	}
-}
-
-static inline int AdjustIdx(int idx)
-{
-	return idx & 0x3FFF;
-}
-
-struct Symbol
-{
-	ScopeType Type;
-	std::string Name;
-	std::string MangledName;
-	std::string Context;
-	uint32_t stackContext;
-	int Index;
-
-	uint32_t EncodedIdx();
-};
-
-struct ObjectCode
-{
-	Instructions Instructions;
-	std::vector<Symbol> Symbols;
-};
-
-struct ByteCode
-{
-	Instructions Instructions;
-};

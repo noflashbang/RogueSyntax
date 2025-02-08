@@ -11,7 +11,7 @@ public:
 
 	std::shared_ptr<Program> Parse(const std::string& input, const std::string& unit) const;
 	ObjectCode Compile(const std::string& input, const std::string& unit) const;
-	std::string Disassemble(const ByteCode& code) const;
+	std::string Disassemble(const ByteCode& code, bool includeDebugSymbols) const;
 	ByteCode Link(const ObjectCode& objectCode) const;
 	std::shared_ptr<RogueVM> MakeVM(ByteCode code) const;
 	const IObject* QuickEval(EvaluatorType type, const std::string& input) const;

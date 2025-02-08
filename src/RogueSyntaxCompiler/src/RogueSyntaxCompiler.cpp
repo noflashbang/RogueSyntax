@@ -36,7 +36,7 @@ ByteCode InteractiveCompiler::Compile(const std::string& input)
 std::string InteractiveCompiler::Decompile(const ByteCode& input)
 {
 	RogueSyntax syntax;
-	auto disassemble = syntax.Disassemble(input);
+	auto disassemble = syntax.Disassemble(input, true);
 	return disassemble;
 }
 

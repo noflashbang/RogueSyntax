@@ -49,6 +49,16 @@ void CompilationUnit::ReplaceInstruction(int position, Instructions instructions
 	}
 }
 
+void CompilationUnit::AddDebugSymbol(const Token& baseToken, const std::string& astStr)
+{
+	DebugSymbols.push_back(DebugSymbol{ UnitInstructions.size(), baseToken, astStr });
+}
+
+void CompilationUnit::AddDebugSymbol(size_t offest, const Token& baseToken, const std::string& astStr)
+{
+	DebugSymbols.push_back(DebugSymbol{ offest, baseToken, astStr });
+}
+
 void CompilationUnit::SetLastInstruction(const Instructions& instruction)
 {
 	PreviousLastInstruction = LastInstruction;

@@ -33,5 +33,9 @@ struct CompilationUnit
 	void RemoveLastInstruction();
 	void ChangeOperand(int position, uint32_t operand);
 	void ReplaceInstruction(int position, Instructions instructions);
+
+	std::vector<DebugSymbol> DebugSymbols;
+	void AddDebugSymbol(const Token& baseToken, const std::string& astStr);
+	void AddDebugSymbol(size_t offest, const Token& baseToken, const std::string& astStr);
 };
 

@@ -31,4 +31,7 @@ void Linker::LinkInstructions(ByteCode& code, const ObjectCode& objectCode)
 {
 	code.Instructions.reserve(objectCode.Instructions.size());
 	code.Instructions = objectCode.Instructions;
+
+	code.DebugSymbols.reserve(objectCode.DebugSymbols.size());
+	code.DebugSymbols = objectCode.DebugSymbols;
 }
