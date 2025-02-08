@@ -46,6 +46,9 @@ public:
 
 protected:
 
+	std::string GetRuntimeInfo() const;
+	std::string PrintStack() const;
+
 	void ProtectedRun();
 	void Execute();
 
@@ -118,8 +121,8 @@ private:
 	std::shared_ptr<ObjectFactory> _factory;
 	std::shared_ptr<BuiltIn> _externals;
 	TypeCoercer _coercer;
-	std::array<const IObject*, STACK_SIZE> _stack;
-	std::array<const IObject*, GLOBAL_SIZE> _globals;
+	std::array<const IObject*, STACK_SIZE> _stack{0};
+	std::array<const IObject*, GLOBAL_SIZE> _globals{0};
 	const IObject* _outputRegister = nullptr;
 	std::array<Frame, MAX_FRAMES> _frames;
 	ByteCode _byteCode;

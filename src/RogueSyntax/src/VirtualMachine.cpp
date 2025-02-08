@@ -1,5 +1,7 @@
 #include "VirtualMachine.h"
 #include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
 #include "pch.h"
 
 RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>& factory)
@@ -66,6 +68,50 @@ const Frame& RogueVM::CurrentFrame() const
 	return _frames[_frameIndex - 1];
 }
 
+std::string RogueVM::GetRuntimeInfo() const
+{
+	std::string info;
+	auto frameidx = 0;
+	while (frameidx < _frameIndex)
+	{
+		auto basePointer = 0;
+		auto baseClosure = _frames[frameidx].Closure();
+		if (baseClosure != nullptr)
+		{
+			auto fn = baseClosure->Function;
+			if (fn != nullptr)
+			{
+				basePointer = fn->FuncOffset;
+			}
+		}
+		
+		info += std::format("Frame: {}, Offset:@{}+{} ({})\n", frameidx, basePointer, _frames[frameidx].Ip(), (basePointer + _frames[frameidx].Ip()));
+		frameidx++;
+	}
+
+	return info;
+}
+
+std::string RogueVM::PrintStack() const
+{
+	std::string stack;
+	for (int i = 0; i < _sp; i++)
+	{
+		if (i > 0)
+		{
+			if (_stack[i] != nullptr)
+			{
+				stack += std::format("{:0>2} : {}\n", i, _stack[i]->Inspect());
+			}
+			else
+			{
+				stack += std::format("{:0>2} : NULL\n", i);
+			}
+		}
+	}
+	return stack;
+}
+
 void RogueVM::ProtectedRun()
 {
 	try
@@ -130,6 +176,7 @@ void RogueVM::Execute()
 				IncrementFrameIp(1);
 			}
 			auto function = _factory->New<FunctionCompiledObj>(fnInstructions, numLocals, numParameters);
+			function->FuncOffset = CurrentFrame().Ip() - numInstructions;
 			//auto closure = _factory->New<ClosureObj>(function, std::vector<const IObject*>{});
 			Push(function);
 			break;
@@ -290,7 +337,7 @@ void RogueVM::Execute()
 					}
 					else
 					{
-						throw std::runtime_error("Index out of bounds");
+						throw std::runtime_error(std::format("{} -> Index out of bounds value[{}] > {}", GetRuntimeInfo(), index->Value, arr->Elements.size()));
 					}
 				}
 				else
@@ -921,7 +968,7 @@ void RogueVM::ExecuteIndexOperation(const IObject* left, const IObject* index)
 		}
 		if (idx->Value < 0 || idx->Value >= arr->Elements.size())
 		{
-			throw std::runtime_error("Index out of bounds");
+			throw std::runtime_error(std::format("{} -> Index out of bounds value[{}] > {}", GetRuntimeInfo(), idx->Value, arr->Elements.size()));
 		}
 		auto value = arr->Elements[idx->Value];
 		Push(value);

@@ -44,8 +44,8 @@ void UI::DoLayout()
 		auto cursorPos = _editorForm.GetCursorPosition();
 		auto highlightPos = _editorForm.GetHighlightPosition();
 
-		auto startLine = std::min(cursorPos.line, highlightPos.line);
-		auto endLine = std::max(cursorPos.line, highlightPos.line);
+		auto startLine = std::min(cursorPos.line, highlightPos.line) + 1;
+		auto endLine = std::max(cursorPos.line, highlightPos.line) + 1;
 	
 		auto startColumn = std::min(cursorPos.column, highlightPos.column);
 		auto endColumn = std::max(cursorPos.column, highlightPos.column);
@@ -58,7 +58,7 @@ void UI::DoLayout()
 	{
 		auto hoverPos = _editorForm.GetHoverPosition();
 		auto cursorPos = _editorForm.GetCursorPosition();
-		_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", cursorPos.line, cursorPos.column, hoverPos.line, hoverPos.column);
+		_details = std::format("Ln:{:0>2} Col: {:0>2} | Mouse Ln: {:0>2} Col: {:0>2}", cursorPos.line+1, cursorPos.column, hoverPos.line+1, hoverPos.column);
 	}
 
 	SetMouseCursor(MOUSE_CURSOR_DEFAULT);

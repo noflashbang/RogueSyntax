@@ -372,7 +372,7 @@ public:
 class FunctionCompiledObj : public IObject
 {
 public:
-	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) { SetUniqueId(this); }
+	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) { SetUniqueId(this); FuncOffset = 0; }
 	virtual ~FunctionCompiledObj() = default;
 
 	std::string Inspect() const override
@@ -385,6 +385,7 @@ public:
 	Instructions FuncInstructions;
 	int NumLocals;
 	int NumParameters;
+	int FuncOffset;
 };
 
 class ClosureObj : public IObject

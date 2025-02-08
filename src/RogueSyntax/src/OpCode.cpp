@@ -311,9 +311,15 @@ std::string OpCode::PrintInstructions(const Instructions& instructions)
 
 std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
 {
+	std::vector<std::string> decompiledList;
+	std::vector<std::string> debugSymbolsList;
+
 	std::string result{};
 	size_t offset{};
 	std::span instructionsSpan(code.Instructions);
+
+	auto maxDebugLine = std::ranges::max_element(code.DebugSymbols, [](const auto& lhs, const auto& rhs) { return lhs.SourceAst.size() < rhs.SourceAst.size(); }); 
+	auto maxDebugLineSize = maxDebugLine->SourceAst.size() + 6; // -> /* {} */
 
 	while (offset < code.Instructions.size())
 	{
@@ -382,13 +388,40 @@ std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
 		auto debug = std::find_if(code.DebugSymbols.begin(), code.DebugSymbols.end(), [offset](const auto& symbol) { return symbol.Offset == offset; });
 		if (debug != code.DebugSymbols.end())
 		{
-			debugInfo += std::format(" /* {} */ LN:{} CH:{}", debug->SourceAst, debug->BaseToken.Location.Line, debug->BaseToken.Location.Character);
+			debugInfo += std::format("/* {: <{}} */ LN:{} CH:{}", debug->SourceAst, maxDebugLineSize, debug->BaseToken.Location.Line, debug->BaseToken.Location.Character);
 		}
+		else
+		{
+			debugInfo += std::format("/* {: <{}} */", "", maxDebugLineSize);
+		}
+
+		debugSymbolsList.push_back(debugInfo);
 
 		auto raw = instructionsSpan.subspan(offset, readOffset - offset);
 		rawByteCode += InstructionsToHex(raw);
-		result += rawByteCode + " : " + decompiled + debugInfo + "\n";
+
+		auto bytes = InstructionsToHexVec(raw, 5);
+		if (bytes.size() > 1)
+		{
+			for (auto iter = 0; iter < bytes.size() - 1; iter++)
+			{
+				decompiledList.push_back(bytes[iter]);
+				debugSymbolsList.push_back("");
+			}
+		}
+		if (bytes.size() > 0)
+		{
+			decompiledList.push_back(bytes[bytes.size() - 1] + " : " + decompiled);
+		}
+		
 		offset = readOffset;
+	}
+
+	auto maxLength = std::ranges::max_element(decompiledList, [](const auto& lhs, const auto& rhs) { return lhs.size() < rhs.size(); })->size();
+
+	for (size_t i = 0; i < decompiledList.size(); i++)
+	{
+		result += decompiledList[i] + std::string(maxLength - decompiledList[i].size(), ' ') + debugSymbolsList[i] + "\n";
 	}
 	result.pop_back();
 	return result;
@@ -445,20 +478,39 @@ std::string OpCode::PrintInstuctionsCompared(const Instructions& instructions, c
 
 std::string OpCode::InstructionsToHex(std::span<const uint8_t> bytes)
 {
+	auto vec = InstructionsToHexVec(bytes, 5);
+	std::string ret;
+
+	for (auto& str : vec)
+	{
+		ret += str + '\n';
+	}
+
+	ret.pop_back();
+	return ret;
+}
+
+std::vector<std::string> OpCode::InstructionsToHexVec(std::span<const uint8_t> bytes, size_t width)
+{
+	std::vector<std::string> ret;
 	auto cnt = 0;
 	std::ostringstream oss;
 	for (const auto& byte : bytes) {
 		oss << std::format("{:02X} ", byte);
 		cnt++;
-		if (cnt % 5 == 0 && cnt != bytes.size())
+		if (cnt % width == 0 && cnt != bytes.size())
 		{
-			oss << "\n";
+			ret.push_back(oss.str());
+			oss.str("");
+			oss.clear();
 		}
 	}
 
-	if (cnt % 5 != 0)
+	if (cnt % width != 0)
 	{
-		oss << std::string((5 - (cnt % 5)) * 3, ' ');
+		oss << std::string((width - (cnt % width)) * 3, ' ');
+		
 	}
-	return oss.str();
+	ret.push_back(oss.str());
+	return ret;
 }

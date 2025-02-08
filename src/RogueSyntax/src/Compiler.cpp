@@ -388,6 +388,7 @@ void Compiler::NodeCompile(const IfStatement* ifExpr)
 		return;
 	}
 
+	EmitDebugSymbol(ifExpr);
 	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	//
 	ifExpr->Consequence->Compile(this);
@@ -466,13 +467,20 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 	//auto index = AddConstant(obj);
 
 	auto currentOffest = _CompilationUnits.top().UnitInstructions.size();
-	for (auto& dsymbol : unit.DebugSymbols)
-	{
-		_CompilationUnits.top().AddDebugSymbol(currentOffest+dsymbol.Offset, dsymbol.BaseToken, dsymbol.SourceAst);
-	}
-
+	
 	//EmitDebugSymbol(function);
 	Emit(OpCode::Constants::OP_LFUN, { static_cast<uint32_t>(_symbolTable.NumberOfSymbolsInContext(stackContext)), static_cast<uint32_t>(function->Parameters.size()), static_cast<uint32_t>(unit.UnitInstructions.size()) }, unit.UnitInstructions);
+
+	auto afterFunctionPos = _CompilationUnits.top().UnitInstructions.size();
+
+	auto fnOffest = afterFunctionPos - currentOffest - unit.UnitInstructions.size();
+	auto symbolOffset = currentOffest + fnOffest;
+
+	for (auto& dsymbol : unit.DebugSymbols)
+	{
+		_CompilationUnits.top().AddDebugSymbol(symbolOffset + dsymbol.Offset, dsymbol.BaseToken, dsymbol.SourceAst);
+	}
+
 	Emit(OpCode::Constants::OP_CLOSURE, { static_cast<uint32_t>(frees.size())});
 }
 

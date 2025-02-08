@@ -44,7 +44,7 @@ static inline ScopeType GetTypeFromIdx(int idx)
 	}
 	else
 	{
-		throw std::runtime_error("Invalid index");
+		throw std::runtime_error(std::format("Invalid index {}", idx));
 	}
 }
 
@@ -167,6 +167,7 @@ struct OpCode
 
 	static std::string PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions);
 	static std::string InstructionsToHex(std::span<const uint8_t> bytes);
+	static std::vector<std::string> InstructionsToHexVec(std::span<const uint8_t> bytes, size_t width);
 	
 };
 

@@ -2,7 +2,7 @@
 
 SimpleLineNumbering::SimpleLineNumbering(UIConfig config) : _config(config)
 {
-	for (size_t i = 0; i < 99; i++)
+	for (size_t i = 1; i < 99; i++)
 	{
 		_lineNumbers.push_back(std::format("{:0>2}", i));
 	}

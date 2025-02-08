@@ -349,7 +349,7 @@ std::string Lexer::ReadString()
 	auto position = _position;
 	auto cnt = 1;
 
-	while (_peekChar != '"')
+	while (_peekChar != '"' && _peekChar != '\0')
 	{
 		cnt++;
 		ReadChar();
