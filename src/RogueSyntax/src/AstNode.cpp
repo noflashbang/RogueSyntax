@@ -337,7 +337,7 @@ void IfStatement::Compile(Compiler* compiler) const
 	compiler->NodeCompile(this);
 }
 
-FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<IExpression*>& parameters, const IStatement* body) : IExpression(token), Parameters(parameters), Body(body), Name("")
+FunctionLiteral::FunctionLiteral(const Token& token, const std::vector<IExpression*>& parameters, const IStatement* body) : IExpression(token), Parameters(parameters), Body(body), Name("lambda")
 {
 	SetUniqueId(this);
 }
@@ -565,10 +565,13 @@ std::string ArrayLiteral::ToString() const
 			result.append(", ");
 		});
 
-	//remove the last comma
-	result.pop_back();
-	result.pop_back();
-
+	if (result.size() > 2)
+	{
+		//remove the last comma
+		result.pop_back();
+		result.pop_back();
+	}
+	
 	result.append("]");
 	return result;
 }

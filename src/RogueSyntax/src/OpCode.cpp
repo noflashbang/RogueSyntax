@@ -1,4 +1,6 @@
 #include "OpCode.h"
+#include "OpCode.h"
+#include "OpCode.h"
 #include <pch.h>
 
 const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
@@ -232,77 +234,13 @@ OpCode::Constants OpCode::GetOpcode(const Instructions& instructions, size_t off
 std::string OpCode::PrintInstructions(const Instructions& instructions)
 {
 	std::string result{};
-	size_t offset{};
-	std::span instructionsSpan(instructions);
+	
+	auto dissasembly = Disassemble(instructions);
 
-
-	while(offset < instructions.size())
+	for (auto& d : dissasembly)
 	{
-		std::string decompiled;
-		std::string rawByteCode;
-		auto [op, operands, readOffset] = OpCode::ReadOperand(instructions, offset);
-		decompiled += std::format("{:0>4}:  {:16}", offset, std::get<Definition>(OpCode::Lookup(op)).Name);
-		if (operands.size() == 1)
-		{
-			decompiled += std::format("{: <18}", operands[0]);
-		}
-		else if (operands.size() == 2)
-		{
-			decompiled += std::format("{: <6}", operands[0]);
-			decompiled += std::format("{: <6}", operands[1]);
-			decompiled += "      ";
-
-		}
-		else if (operands.size() == 3)
-		{
-			decompiled += std::format("{: <6}", operands[0]);
-			decompiled += std::format("{: <6}", operands[1]);
-			decompiled += std::format("{: <6}", operands[2]);
-		}
-		else
-		{
-			for (const auto& operand : operands)
-			{
-				decompiled += std::format("{: <6}", operand);
-			}
-		}
-
-		if (op == OpCode::Constants::OP_GET || op == OpCode::Constants::OP_SET)
-		{
-			auto adjustedIdx = AdjustIdx(operands[0]);
-			auto type = GetTypeFromIdx(operands[0]);
-			switch (type)
-			{
-			case ScopeType::SCOPE_GLOBAL:
-				decompiled += std::format(" // {: <6} {: <2}", "GLOBAL", adjustedIdx);
-				break;
-			case ScopeType::SCOPE_LOCAL:
-				decompiled += std::format(" // {: <6} {: <2}", "LOCAL", adjustedIdx);
-				break;
-			case ScopeType::SCOPE_EXTERN:
-				decompiled += std::format(" // {: <6} {: <2}", "EXTERN", adjustedIdx);
-				break;
-			case ScopeType::SCOPE_FREE:
-				decompiled += std::format(" // {: <6} {: <2}", "FREE", adjustedIdx);
-				break;
-			}
-		}
-
-		if (HasData(op))
-		{
-			auto data = OpCode::ReadData({ op, operands, readOffset }, instructions);
-			if (op == OpCode::Constants::OP_LSTRING)
-			{
-				std::string str(data.begin(), data.end());
-				decompiled += std::format(" // '{}'", str);
-				readOffset += data.size();
-			}
-		}
-
-		auto raw = instructionsSpan.subspan(offset, readOffset - offset);
-		rawByteCode += InstructionsToHex(raw);
-		result += rawByteCode + " : " + decompiled + "\n";
-		offset = readOffset;
+		auto decompiled = PrintDisassemblyDetail(d);
+		result += decompiled + '\n';
 	}
 	result.pop_back();
 	return result;
@@ -312,77 +250,17 @@ std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
 {
 	std::vector<std::string> decompiledList;
 	std::vector<std::string> debugSymbolsList;
-
 	std::string result{};
-	size_t offset{};
-	std::span instructionsSpan(code.Instructions);
 
 	auto maxDebugLine = std::ranges::max_element(code.DebugSymbols, [](const auto& lhs, const auto& rhs) { return lhs.SourceAst.size() < rhs.SourceAst.size(); }); 
 	auto maxDebugLineSize = std::min(maxDebugLine->SourceAst.size(), (size_t)20);
 
-
-	while (offset < code.Instructions.size())
+	auto dissasembly = Disassemble(code.Instructions);
+	for (auto& d : dissasembly)
 	{
-		std::string decompiled;
-		std::string rawByteCode;
-		auto [op, operands, readOffset] = OpCode::ReadOperand(code.Instructions, offset);
-		decompiled += std::format("{:0>4}:  {:16}", offset, std::get<Definition>(OpCode::Lookup(op)).Name);
-		if (operands.size() == 1)
-		{
-			decompiled += std::format("{: <18}", operands[0]);
-		}
-		else if (operands.size() == 2)
-		{
-			decompiled += std::format("{: <6}", operands[0]);
-			decompiled += std::format("{: <6}", operands[1]);
-			decompiled += "      ";
-
-		}
-		else if (operands.size() == 3)
-		{
-			decompiled += std::format("{: <6}", operands[0]);
-			decompiled += std::format("{: <6}", operands[1]);
-			decompiled += std::format("{: <6}", operands[2]);
-		}
-		else
-		{
-			for (const auto& operand : operands)
-			{
-				decompiled += std::format("{: <6}", operand);
-			}
-		}
-
-		if (op == OpCode::Constants::OP_GET || op == OpCode::Constants::OP_SET)
-		{
-			auto adjustedIdx = AdjustIdx(operands[0]);
-			auto type = GetTypeFromIdx(operands[0]);
-			switch (type)
-			{
-			case ScopeType::SCOPE_GLOBAL:
-				decompiled += std::format(" // {: <6} {: <2}", "GLOBAL", adjustedIdx);
-				break;
-			case ScopeType::SCOPE_LOCAL:
-				decompiled += std::format(" // {: <6} {: <2}", "LOCAL", adjustedIdx);
-				break;
-			case ScopeType::SCOPE_EXTERN:
-				decompiled += std::format(" // {: <6} {: <2}", "EXTERN", adjustedIdx);
-				break;
-			case ScopeType::SCOPE_FREE:
-				decompiled += std::format(" // {: <6} {: <2}", "FREE", adjustedIdx);
-				break;
-			}
-		}
-
-		if (HasData(op))
-		{
-			auto data = OpCode::ReadData({ op, operands, readOffset }, code.Instructions);
-			if (op == OpCode::Constants::OP_LSTRING)
-			{
-				std::string str(data.begin(), data.end());
-				decompiled += std::format(" // '{}'", str);
-				readOffset += data.size();
-			}
-		}
+		auto offset = d.InstructionOffset;
+		auto decompiled = PrintDisassemblyDetail(d);
+		decompiledList.push_back(decompiled);
 
 		std::string debugInfo = "";
 		auto debug = std::find_if(code.DebugSymbols.begin(), code.DebugSymbols.end(), [offset](const auto& symbol) { return symbol.Offset == offset; });
@@ -397,43 +275,136 @@ std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
 				trimmedAst += "...";
 			}
 
-			debugInfo += std::format("/* {: <{}} */ | {: <20} | LN:{:0<2} CH:{:0<2}", trimmedAst, maxDebugLineSize, debug->Symbol, debug->BaseToken.Location.Line, debug->BaseToken.Location.Character);
+			debugInfo += std::format("/* {: <{}} */ | {: <20} | LN:{:0>2} CH:{:0>2}", trimmedAst, maxDebugLineSize, debug->Symbol, debug->BaseToken.Location.Line, debug->BaseToken.Location.Character);
 		}
 		else
 		{
 			debugInfo += std::format("/* {: <{}} */", "", maxDebugLineSize);
 		}
-
 		debugSymbolsList.push_back(debugInfo);
-
-		auto raw = instructionsSpan.subspan(offset, readOffset - offset);
-		rawByteCode += InstructionsToHex(raw);
-
-		auto bytes = InstructionsToHexVec(raw, 5);
-		if (bytes.size() > 1)
-		{
-			for (auto iter = 0; iter < bytes.size() - 1; iter++)
-			{
-				decompiledList.push_back(bytes[iter]);
-				debugSymbolsList.push_back("");
-			}
-		}
-		if (bytes.size() > 0)
-		{
-			decompiledList.push_back(bytes[bytes.size() - 1] + " : " + decompiled);
-		}
-		
-		offset = readOffset;
 	}
 
 	auto maxLength = std::ranges::max_element(decompiledList, [](const auto& lhs, const auto& rhs) { return lhs.size() < rhs.size(); })->size();
 
 	for (size_t i = 0; i < decompiledList.size(); i++)
 	{
+		auto decompiled = decompiledList[i];
 		result += decompiledList[i] + std::string(maxLength - decompiledList[i].size(), ' ') + debugSymbolsList[i] + "\n";
 	}
 	result.pop_back();
 	return result;
+}
+
+std::vector<DissaemblyDetail> OpCode::Disassemble(const Instructions& instructions)
+{
+	std::vector<DissaemblyDetail> result;
+	size_t offset{0};
+	std::span instructionsSpan(instructions);
+
+	while (offset < instructions.size())
+	{
+		DissaemblyDetail detail;
+		std::string decompiled;
+		std::string rawByteCode;
+		auto [op, operands, readOffset] = OpCode::ReadOperand(instructions, offset);
+
+		detail.Instruction = std::get<Definition>(OpCode::Lookup(op)).Name;
+		detail.InstructionOffset = offset;
+		detail.Operands[0] = operands.size();
+		for (auto i = 0; i < operands.size(); i++)
+		{
+			detail.Operands[i + 1] = operands[i];
+		}
+
+		if (op == OpCode::Constants::OP_GET || op == OpCode::Constants::OP_SET)
+		{
+			auto adjustedIdx = AdjustIdx(operands[0]);
+			auto type = GetTypeFromIdx(operands[0]);
+			switch (type)
+			{
+			case ScopeType::SCOPE_GLOBAL:
+				detail.ScopeType = "GLOBAL";
+				detail.Index = adjustedIdx;
+				break;
+			case ScopeType::SCOPE_LOCAL:
+				detail.ScopeType = "LOCAL";
+				detail.Index = adjustedIdx;
+				break;
+			case ScopeType::SCOPE_EXTERN:
+				detail.ScopeType = "EXTERN";
+				detail.Index = adjustedIdx;
+				break;
+			case ScopeType::SCOPE_FREE:
+				detail.ScopeType = "FREE";
+				detail.Index = adjustedIdx;
+				break;
+			}
+		}
+
+		if (HasData(op))
+		{
+			auto data = OpCode::ReadData({ op, operands, readOffset }, instructions);
+			if (op == OpCode::Constants::OP_LSTRING)
+			{
+				detail.Data = std::vector<uint8_t>(data.begin(), data.end());
+				readOffset += data.size();
+			}
+		}
+
+		auto raw = instructionsSpan.subspan(offset, readOffset - offset);
+		detail.ByteCode = InstructionsToHex(raw);
+
+		result.push_back(detail);
+
+		offset = readOffset;
+	}
+	return result;
+}
+
+std::string OpCode::PrintDisassemblyDetail(const DissaemblyDetail& detail)
+{
+	std::string decompiled;
+	decompiled += std::format("{:0>4}:  {:16}", detail.InstructionOffset, detail.Instruction);
+	if (detail.Operands[0] == 1)
+	{
+		decompiled += std::format("{: <18}", detail.Operands[1]);
+	}
+	else if (detail.Operands[0] == 0)
+	{
+		decompiled += std::format("{: <18}", "");
+	}
+	else if (detail.Operands[0] == 2)
+	{
+		decompiled += std::format("{: <6}", detail.Operands[1]);
+		decompiled += std::format("{: <6}", detail.Operands[2]);
+		decompiled += "      ";
+	}
+	else if (detail.Operands[0] == 3)
+	{
+		decompiled += std::format("{: <6}", detail.Operands[1]);
+		decompiled += std::format("{: <6}", detail.Operands[2]);
+		decompiled += std::format("{: <6}", detail.Operands[3]);
+	}
+	else
+	{
+		for (size_t i = 1; i < detail.Operands.size(); i++)
+		{
+			decompiled += std::format("{: <6}", detail.Operands[i]);
+		}
+	}
+	if (detail.Instruction == "OP_GET" || detail.Instruction == "OP_SET")
+	{
+		decompiled += std::format(" // {: <6} {: <2}", detail.ScopeType, detail.Index);
+	}
+	if (detail.Data.size() > 0)
+	{
+		if (detail.Instruction == "OP_LSTRING")
+		{
+			std::string str(detail.Data.begin(), detail.Data.end());
+			decompiled += std::format(" // '{}'", str);
+		}
+	}
+	return decompiled;
 }
 
 std::string OpCode::PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions)

@@ -329,6 +329,25 @@ void OnCommand(std::string cmd)
             auto byteCode = pConsole->Compile(code);
             pUi->AddOutputText(std::format("Bytecode is {} bytes", byteCode.Instructions.size()));
             pUi->SetInfoText(pConsole->Decompile(byteCode));
+		}
+		else if (curCmd == "!st")
+		{
+			pUi->AddOutputText("Stack Trace>");
+			pUi->AddOutputText(pConsole->Get_RTI_StackTrace().ToString());
+		}
+        else if (curCmd == "!br")
+        {
+			std::string idx;
+			std::getline(cmdStream, idx, ' ');
+			if (!idx.empty())
+			{
+				pUi->AddOutputText("Break at ip " + idx);
+				//pConsole->BreakAt(std::stoi(idx));
+			}
+			else
+			{
+				pUi->AddOutputText("!br must have an index");
+			}
         }
         else if (curCmd == "!h")
         {
@@ -336,6 +355,11 @@ void OnCommand(std::string cmd)
             pUi->AddOutputText("!q - Quit");
             pUi->AddOutputText("!r - Run");
             pUi->AddOutputText("!dp - Decompile");
+			pUi->AddOutputText("!e - Display Error information");
+			pUi->AddOutputText("!g # - Global idx#");
+			pUi->AddOutputText("!l # # - Local frame# idx#");
+            pUi->AddOutputText("!st - Stack trace");
+			pUi->AddOutputText("!br # - Break at ip#");
             pUi->AddOutputText("!h - Print this menu");
         }
         else

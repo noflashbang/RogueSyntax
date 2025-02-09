@@ -281,7 +281,7 @@ void RogueVM::Execute()
 				IncrementFrameIp(1);
 			}
 			auto function = _factory->New<FunctionCompiledObj>(fnInstructions, numLocals, numParameters);
-			function->FuncOffset = CurrentFrame().Ip() - numInstructions;
+			function->FuncOffset = CurrentFrame().BaseOffset() + CurrentFrame().Ip() - numInstructions;
 			Push(function);
 			break;
 		}

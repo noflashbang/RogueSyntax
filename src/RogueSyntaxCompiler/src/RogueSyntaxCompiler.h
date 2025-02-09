@@ -16,10 +16,13 @@ public:
 	std::string Decompile(const ByteCode& input);
 	std::string GetPrompt() { return _prompt; };
 
+	StackTrace Get_RTI_StackTrace() const;
 	std::string Get_RTI_Error() const;
 	std::string Get_RTI_Global(size_t idx);
 	std::string Get_RTI_Local(size_t frame, size_t idx);
 
+	std::vector<DissaemblyDetail> Disassemble();
+	std::vector<DebugSymbol> GetDebugSymbols();
 
 private:
 
@@ -36,6 +39,9 @@ private:
 	std::string _input = "";	
 	std::vector<std::string> _output;
 
+	std::string _source;
+	ByteCode _byteCode;
+	StackTrace _stackTrace;
 	bool _hasError = false;
 	RogueVm_RuntimeError _lastError;
 };

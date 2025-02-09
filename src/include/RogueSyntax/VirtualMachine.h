@@ -45,6 +45,7 @@ public:
 	~Frame() {};
 	inline const Instructions& Instructions() const { return _fn->Function->FuncInstructions; };
 	inline int Ip() const { return _ip; };
+	inline int BaseOffset() const { return _fn->Function->FuncOffset; };
 	inline void IncrementIp() { _ip++; };
 	inline void IncrementIp(int amount) { _ip += amount; };
 	inline void SetIp(int ip) { _ip = ip; };

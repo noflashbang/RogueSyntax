@@ -168,7 +168,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
-		EmitDebugSymbol(let, &symbol);
+		EmitDebugSymbol(ident, &symbol);
 		EmitSet(symbol);
 	}
 	else if (let->Name->IsThisA<IndexExpression>())
@@ -468,7 +468,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 
 	auto currentOffest = _CompilationUnits.top().UnitInstructions.size();
 	
-	//EmitDebugSymbol(function);
+	//EmitDebugSymbol(function, &symbol);
 	Emit(OpCode::Constants::OP_LFUN, { static_cast<uint32_t>(_symbolTable.NumberOfSymbolsInContext(stackContext)), static_cast<uint32_t>(function->Parameters.size()), static_cast<uint32_t>(unit.UnitInstructions.size()) }, unit.UnitInstructions);
 
 	auto afterFunctionPos = _CompilationUnits.top().UnitInstructions.size();

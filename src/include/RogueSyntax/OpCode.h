@@ -88,6 +88,17 @@ struct ByteCode
 	std::vector<DebugSymbol> DebugSymbols;
 };
 
+struct DissaemblyDetail
+{
+	size_t InstructionOffset;
+	std::string ByteCode;
+	std::string Instruction;
+	std::array<uint16_t, 4> Operands;
+	std::vector<uint8_t> Data;
+	std::string ScopeType;
+	size_t Index;
+};
+
 struct OpCode
 {
 	typedef uint8_t Opcode;
@@ -167,6 +178,9 @@ struct OpCode
 	static Constants GetOpcode(const Instructions& instructions, size_t offset);
 	static std::string PrintInstructions(const Instructions& instructions);
 	static std::string PrintInstructionsWithDebug(const ByteCode& code);
+
+	static std::vector<DissaemblyDetail> Disassemble(const Instructions& instructions);
+	static std::string PrintDisassemblyDetail(const DissaemblyDetail& detail);
 
 	static std::string PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions);
 	static std::string InstructionsToHex(std::span<const uint8_t> bytes);
