@@ -259,41 +259,90 @@ void OnCommand(std::string cmd)
 	pUi->AddOutputText(log);
     pUi->ClearCommand();
 
-	if (cmd == "!q")
-	{
-        pUi->AddOutputText("Exiting...");
-        _closeWindow = true;
-	}
-    else if (cmd == "!r")
+    std::stringstream cmdStream(cmd);
+    std::string curCmd;
+
+    while (std::getline(cmdStream, curCmd, ' '))
     {
-		std::string code = pUi->GetEditorText();
-        pUi->AddOutputText(std::format("Compiling {} chars", code.length()));
-		auto byteCode = pConsole->Compile(code);
-        pUi->AddOutputText(std::format("Running {} bytes", byteCode.Instructions.size()));
-        pConsole->Run(byteCode);
-        pUi->AddOutputText("Result>");
-		pUi->AddOutputText(pConsole->GetResult());
-    }
-    else if (cmd == "!dp")
-    {
-        std::string code = pUi->GetEditorText();
-        pUi->AddOutputText(std::format("Compiling {} chars", code.length()));
-        auto byteCode = pConsole->Compile(code);
-        pUi->AddOutputText(std::format("Bytecode is {} bytes", byteCode.Instructions.size()));
-		pUi->SetInfoText(pConsole->Decompile(byteCode));
-    }
-    else if (cmd == "!h")
-    {
-		pUi->AddOutputText("Commands:");
-		pUi->AddOutputText("!q - Quit");
-		pUi->AddOutputText("!r - Run");
-		pUi->AddOutputText("!dp - Decompile");
-        pUi->AddOutputText("!h - Print this menu");
-    }
-    else
-    {
-		pUi->AddOutputText("Unknown command");
-		pUi->AddOutputText("Use !h for help");
+        if (curCmd == "!q")
+        {
+            pUi->AddOutputText("Exiting...");
+            _closeWindow = true;
+        }
+        else if (curCmd == "!r")
+        {
+            std::string code = pUi->GetEditorText();
+            pUi->AddOutputText(std::format("Compiling {} chars", code.length()));
+            auto byteCode = pConsole->Compile(code);
+            pUi->AddOutputText(std::format("Running {} bytes", byteCode.Instructions.size()));
+            pConsole->Run(byteCode);
+            pUi->AddOutputText("Result>");
+
+            auto result = pConsole->GetResult();
+
+            for (const auto& line : result)
+            {
+                pUi->AddOutputText(line);
+            }
+        }
+        else if (curCmd == "!e")
+        {
+            pUi->AddOutputText("Error>");
+            pUi->AddOutputText(pConsole->Get_RTI_Error());
+        }
+        else if (curCmd == "!g")
+        {
+            std::string idx;
+            std::getline(cmdStream, idx, ' ');
+
+			if (!idx.empty())
+			{
+				pUi->AddOutputText("Global[" + idx + "]=");
+				pUi->AddOutputText(pConsole->Get_RTI_Global(std::stoi(idx)));
+			}
+			else
+			{
+				pUi->AddOutputText("!g must have an index");
+			}
+        }
+        else if (curCmd == "!l")
+        {
+            std::string frame;
+            std::string idx;
+            std::getline(cmdStream, frame, ' ');
+            std::getline(cmdStream, idx, ' ');
+
+			if (!idx.empty() && !frame.empty())
+			{
+                pUi->AddOutputText("Local [" + frame + "][" + idx + "]=");
+                pUi->AddOutputText(pConsole->Get_RTI_Local(std::stoi(frame), std::stoi(idx)));
+			}
+            else
+            {
+				pUi->AddOutputText("!l must have a frame and index");
+            }
+        }
+        else if (curCmd == "!dp")
+        {
+            std::string code = pUi->GetEditorText();
+            pUi->AddOutputText(std::format("Compiling {} chars", code.length()));
+            auto byteCode = pConsole->Compile(code);
+            pUi->AddOutputText(std::format("Bytecode is {} bytes", byteCode.Instructions.size()));
+            pUi->SetInfoText(pConsole->Decompile(byteCode));
+        }
+        else if (curCmd == "!h")
+        {
+            pUi->AddOutputText("Commands:");
+            pUi->AddOutputText("!q - Quit");
+            pUi->AddOutputText("!r - Run");
+            pUi->AddOutputText("!dp - Decompile");
+            pUi->AddOutputText("!h - Print this menu");
+        }
+        else
+        {
+            pUi->AddOutputText("Unknown command ->" + cmd);
+            pUi->AddOutputText("Use !h for help");
+        }
     }
 }
 

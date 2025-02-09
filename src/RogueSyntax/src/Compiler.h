@@ -72,7 +72,7 @@ protected:
 	int EmitGet(Symbol symbol);
 	int EmitSet(Symbol symbol);
 
-	void EmitDebugSymbol(const  INode* node);
+	void EmitDebugSymbol(const  INode* node, const Symbol* sym);
 
 private:
 	SymbolTable _symbolTable;

@@ -2,23 +2,55 @@
 #include <StandardLib.h>
 #include <OpCode.h>
 
-
 #define STACK_SIZE 2048
 #define GLOBAL_SIZE std::numeric_limits<int16_t>::max()
 #define MAX_FRAMES 1024
+
+struct StackValue
+{
+	std::string Type;
+	std::string Value;
+};
+
+struct FrameTrace
+{
+	size_t FrameIdx;
+	size_t AbsoluteInstructionOffest;
+	size_t BaseInstructionOffset;
+	size_t FrameInstructionOffset;
+
+	std::vector<StackValue> Stack;
+};
+
+struct StackTrace
+{
+	std::vector<FrameTrace> Frames;
+	std::string ToString() const;
+};
+
+struct RogueVm_RuntimeError
+{
+	std::string Message;
+	StackTrace StackTrace;
+
+	std::string ToString() const;
+};
 
 struct Frame
 {
 public:
 	Frame() : _ip(-1), _basePointer(0) {};
-	Frame(const ClosureObj* fn, int basepointer) : _fn(fn), _basePointer(basepointer), _ip(0) {};
-	Frame(const ClosureObj* fn, int ip, int basepointer) : _fn(fn), _ip(ip), _basePointer(basepointer) {};
+	Frame(const ClosureObj* fn, int basepointer) : _fn(fn), _basePointer(basepointer), _ip(0), _beforeIp(0) {};
+	Frame(const ClosureObj* fn, int ip, int basepointer) : _fn(fn), _ip(ip), _beforeIp(0), _basePointer(basepointer) {};
 	~Frame() {};
 	inline const Instructions& Instructions() const { return _fn->Function->FuncInstructions; };
 	inline int Ip() const { return _ip; };
 	inline void IncrementIp() { _ip++; };
 	inline void IncrementIp(int amount) { _ip += amount; };
 	inline void SetIp(int ip) { _ip = ip; };
+	
+	inline void SaveBeforeIp() const { _beforeIp = _ip; };
+	inline int BeforeIp() const { return _beforeIp; };
 
 	inline int BasePointer() const { return _basePointer; };
 	inline void SetBasePointer(int bp) { _basePointer = bp; };
@@ -26,6 +58,7 @@ public:
 	inline const ClosureObj* ClosureRef() const { return _fn; };
 
 private:
+	mutable int _beforeIp;
 	int _ip;
 	const ClosureObj* _fn;
 	int _basePointer;
@@ -40,16 +73,22 @@ public:
 	~RogueVM();
 
 	void Run();
+	void Set_RTI_ErrorCallback(const std::function<void(const RogueVm_RuntimeError&)>& onError);
+	void Set_RTI_BreakCallback(const std::function<void(const StackTrace&)>& onBreak);
+
 	const IObject* Top() const;
 	const IObject* LastPopped() const;
 	const Frame& CurrentFrame() const;
 
 protected:
 
-	std::string GetRuntimeInfo() const;
+	void OnErrorInternal(const RogueVm_RuntimeError& error);
+	void OnBreakInternal(const StackTrace& stack);
+
+	FrameTrace GetFrameTrace(const size_t idx, const Frame& frame) const;
+	StackTrace GetRuntimeInfo() const;
 	std::string PrintStack() const;
 
-	void ProtectedRun();
 	void Execute();
 
 	//stack operations
@@ -116,6 +155,10 @@ protected:
 	void ExecuteSetInstruction(int idx);
 
 private:
+
+	std::function<void(const RogueVm_RuntimeError&)> _onError;
+	std::function<void(const StackTrace&)> _onBreak;
+
 	int _frameIndex = 0;
 	uint16_t _sp = 0;
 	std::shared_ptr<ObjectFactory> _factory;

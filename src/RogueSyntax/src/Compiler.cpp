@@ -103,9 +103,9 @@ int Compiler::EmitSet(Symbol symbol)
 	}
 }
 
-void Compiler::EmitDebugSymbol(const INode* node)
+void Compiler::EmitDebugSymbol(const INode* node, const Symbol* sym)
 {
-	_CompilationUnits.top().AddDebugSymbol(node->BaseToken, node->ToString());
+	_CompilationUnits.top().AddDebugSymbol(node->BaseToken, sym, node->ToString());
 }
 
 void Compiler::NodeCompile(const Program* program, const std::string& unitName)
@@ -141,7 +141,7 @@ void Compiler::NodeCompile(const ExpressionStatement* expression)
 		return;
 	}
 
-	EmitDebugSymbol(expression);
+	EmitDebugSymbol(expression, nullptr);
 	Emit(OpCode::Constants::OP_POP, {});
 }
 
@@ -152,7 +152,7 @@ void Compiler::NodeCompile(const ReturnStatement* ret)
 	{
 		return;
 	}
-	EmitDebugSymbol(ret);
+	EmitDebugSymbol(ret, nullptr);
 	Emit(OpCode::Constants::OP_RET_VAL, {});
 }
 
@@ -168,7 +168,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
-		EmitDebugSymbol(let);
+		EmitDebugSymbol(let, &symbol);
 		EmitSet(symbol);
 	}
 	else if (let->Name->IsThisA<IndexExpression>())
@@ -199,7 +199,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 			return;
 		}
 
-		EmitDebugSymbol(let);
+		EmitDebugSymbol(let, &symbol);
 		Emit(OpCode::Constants::OP_SET_ASSIGN, { symbol.EncodedIdx() });
 	}
 	else
@@ -211,7 +211,7 @@ void Compiler::NodeCompile(const LetStatement* let)
 void Compiler::NodeCompile(const Identifier* ident)
 {
 	auto sym = _symbolTable.Resolve(ident->Value);
-	EmitDebugSymbol(ident);
+	EmitDebugSymbol(ident, &sym);
 	EmitGet(sym);
 }
 
@@ -222,13 +222,13 @@ void Compiler::NodeCompile(const IntegerLiteral* integer)
 	//Emit(OpCode::Constants::OP_CONSTANT, { index });
 	int intVal = integer->Value;
 	uint32_t val = reinterpret_cast<uint32_t&>(intVal);
-	EmitDebugSymbol(integer);
+	EmitDebugSymbol(integer, nullptr);
 	Emit(OpCode::Constants::OP_LINT, { val });
 }
 
 void Compiler::NodeCompile(const BooleanLiteral* boolean)
 {
-	EmitDebugSymbol(boolean);
+	EmitDebugSymbol(boolean, nullptr);
 	boolean->Value ? Emit(OpCode::Constants::OP_TRUE, {}) : Emit(OpCode::Constants::OP_FALSE, {});
 }
 
@@ -244,7 +244,7 @@ void Compiler::NodeCompile(const StringLiteral* string)
 	{
 		data.push_back(c);
 	}
-	EmitDebugSymbol(string);
+	EmitDebugSymbol(string, nullptr);
 	Emit(OpCode::Constants::OP_LSTRING, { len }, data);
 }
 
@@ -256,7 +256,7 @@ void Compiler::NodeCompile(const DecimalLiteral* decimal)
 
 	float decVal = decimal->Value;
 	uint32_t val = reinterpret_cast<uint32_t&>(decVal);
-	EmitDebugSymbol(decimal);
+	EmitDebugSymbol(decimal, nullptr);
 	Emit(OpCode::Constants::OP_LDECIMAL, { val });
 }
 
@@ -268,7 +268,7 @@ void Compiler::NodeCompile(const PrefixExpression* prefix)
 		return;
 	}
 
-	EmitDebugSymbol(prefix);
+	EmitDebugSymbol(prefix, nullptr);
 	if (prefix->Operator == "-")
 	{
 		Emit(OpCode::Constants::OP_NEGATE, {});
@@ -301,7 +301,7 @@ void Compiler::NodeCompile(const InfixExpression* infix)
 		return;
 	}
 
-	EmitDebugSymbol(infix);
+	EmitDebugSymbol(infix, nullptr);
 	if (infix->Operator == "+")
 	{
 		Emit(OpCode::Constants::OP_ADD, {});
@@ -388,7 +388,7 @@ void Compiler::NodeCompile(const IfStatement* ifExpr)
 		return;
 	}
 
-	EmitDebugSymbol(ifExpr);
+	EmitDebugSymbol(ifExpr, nullptr);
 	auto jumpNotTruthyPos = Emit(OpCode::Constants::OP_JUMPIFZ, { 9999 });
 	//
 	ifExpr->Consequence->Compile(this);
@@ -421,12 +421,12 @@ void Compiler::NodeCompile(const IfStatement* ifExpr)
 void Compiler::NodeCompile(const FunctionLiteral* function)
 {
 	EnterUnit(function->Name);
-
+	Symbol symbol;
 	auto stackContext = _symbolTable.CurrentStackContext();
 
 	if (!function->Name.empty())
 	{
-		auto fnSymbol = _symbolTable.DefineFunctionName(function->Name);
+		symbol = _symbolTable.DefineFunctionName(function->Name);
 	}
 
 	for (auto* param : function->Parameters)
@@ -437,7 +437,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 			_errorStack.push(CompilerErrorInfo::New(CompilerError::UnknownError, "Expected identifier"));
 			return;
 		}
-		auto symbol = _symbolTable.Define(ident->Value);
+		auto paramSymbol = _symbolTable.Define(ident->Value);
 	}
 
 	function->Body->Compile(this);
@@ -478,7 +478,7 @@ void Compiler::NodeCompile(const FunctionLiteral* function)
 
 	for (auto& dsymbol : unit.DebugSymbols)
 	{
-		_CompilationUnits.top().AddDebugSymbol(symbolOffset + dsymbol.Offset, dsymbol.BaseToken, dsymbol.SourceAst);
+		_CompilationUnits.top().AddDebugSymbol(symbolOffset + dsymbol.Offset, dsymbol);
 	}
 
 	Emit(OpCode::Constants::OP_CLOSURE, { static_cast<uint32_t>(frees.size())});
@@ -501,7 +501,7 @@ void Compiler::NodeCompile(const CallExpression* call)
 		}
 	}
 
-	EmitDebugSymbol(call);
+	EmitDebugSymbol(call, nullptr);
 	Emit(OpCode::Constants::OP_CALL, { static_cast<uint32_t>(call->Arguments.size())});
 }
 
@@ -515,7 +515,7 @@ void Compiler::NodeCompile(const ArrayLiteral* array)
 			return;
 		}
 	}
-	EmitDebugSymbol(array);
+	EmitDebugSymbol(array, nullptr);
 	Emit(OpCode::Constants::OP_ARRAY, { static_cast<uint32_t>(array->Elements.size()) });
 }
 
@@ -531,7 +531,7 @@ void Compiler::NodeCompile(const IndexExpression* index)
 	{
 		return;
 	}
-	EmitDebugSymbol(index);
+	EmitDebugSymbol(index, nullptr);
 	Emit(OpCode::Constants::OP_INDEX, {});
 }
 
@@ -550,13 +550,13 @@ void Compiler::NodeCompile(const HashLiteral* hash)
 			return;
 		}
 	}
-	EmitDebugSymbol(hash);
+	EmitDebugSymbol(hash, nullptr);
 	Emit(OpCode::Constants::OP_HASH, { static_cast<uint32_t>(hash->Elements.size()) });
 }
 
 void Compiler::NodeCompile(const NullLiteral* null)
 {
-	EmitDebugSymbol(null);
+	EmitDebugSymbol(null, nullptr);
 	Emit(OpCode::Constants::OP_NULL, {});
 }
 
@@ -652,14 +652,14 @@ void Compiler::NodeCompile(const ForStatement* forExp)
 
 void Compiler::NodeCompile(const ContinueStatement* cont)
 {
-	EmitDebugSymbol(cont);
+	EmitDebugSymbol(cont, nullptr);
 	auto location = Emit(OpCode::Constants::OP_JUMP, { 9999 });
 	_CompilationUnits.top().LoopJumps.push({LoopJumpType::LOOP_JUMP_CONTINUE, location});
 }
 
 void Compiler::NodeCompile(const BreakStatement* brk)
 {
-	EmitDebugSymbol(brk);
+	EmitDebugSymbol(brk, nullptr);
 	auto location = Emit(OpCode::Constants::OP_JUMP, { 9999 });
 	_CompilationUnits.top().LoopJumps.push({ LoopJumpType::LOOP_JUMP_BREAK, location });
 }

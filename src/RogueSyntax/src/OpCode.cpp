@@ -1,5 +1,4 @@
 #include "OpCode.h"
-#include "OpCode.h"
 #include <pch.h>
 
 const std::unordered_map<OpCode::Constants, Definition> OpCode::Definitions = {
@@ -319,7 +318,8 @@ std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
 	std::span instructionsSpan(code.Instructions);
 
 	auto maxDebugLine = std::ranges::max_element(code.DebugSymbols, [](const auto& lhs, const auto& rhs) { return lhs.SourceAst.size() < rhs.SourceAst.size(); }); 
-	auto maxDebugLineSize = maxDebugLine->SourceAst.size() + 6; // -> /* {} */
+	auto maxDebugLineSize = std::min(maxDebugLine->SourceAst.size(), (size_t)20);
+
 
 	while (offset < code.Instructions.size())
 	{
@@ -388,7 +388,16 @@ std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
 		auto debug = std::find_if(code.DebugSymbols.begin(), code.DebugSymbols.end(), [offset](const auto& symbol) { return symbol.Offset == offset; });
 		if (debug != code.DebugSymbols.end())
 		{
-			debugInfo += std::format("/* {: <{}} */ LN:{} CH:{}", debug->SourceAst, maxDebugLineSize, debug->BaseToken.Location.Line, debug->BaseToken.Location.Character);
+			std::string trimmedAst = debug->SourceAst.substr(0, maxDebugLineSize);
+			if (trimmedAst.size() < debug->SourceAst.size())
+			{
+				trimmedAst.pop_back();
+				trimmedAst.pop_back();
+				trimmedAst.pop_back();
+				trimmedAst += "...";
+			}
+
+			debugInfo += std::format("/* {: <{}} */ | {: <20} | LN:{:0<2} CH:{:0<2}", trimmedAst, maxDebugLineSize, debug->Symbol, debug->BaseToken.Location.Line, debug->BaseToken.Location.Character);
 		}
 		else
 		{

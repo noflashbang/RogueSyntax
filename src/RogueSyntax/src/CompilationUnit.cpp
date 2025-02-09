@@ -49,14 +49,43 @@ void CompilationUnit::ReplaceInstruction(int position, Instructions instructions
 	}
 }
 
-void CompilationUnit::AddDebugSymbol(const Token& baseToken, const std::string& astStr)
+void CompilationUnit::AddDebugSymbol(const Token& baseToken, const Symbol* sym, const std::string& astStr)
 {
-	DebugSymbols.push_back(DebugSymbol{ UnitInstructions.size(), baseToken, astStr });
+	size_t index = 0;
+	std::string symbol = "";
+	std::string scope = "";
+	if (sym != nullptr)
+	{
+		index = sym->Index;
+		symbol = sym->MangledName;
+		if (sym->Type == ScopeType::SCOPE_FUNCTION)
+		{
+			scope = "FUNCTION";
+		}
+		else if(sym->Type == ScopeType::SCOPE_EXTERN)
+		{
+			scope = "EXTERN";
+		}
+		else if (sym->Type == ScopeType::SCOPE_FREE)
+		{
+			scope = "FREE";
+		}
+		else if (sym->Type == ScopeType::SCOPE_GLOBAL)
+		{
+			scope = "GLOBAL";
+		}
+		else if (sym->Type == ScopeType::SCOPE_LOCAL)
+		{
+			scope = "LOCAL";
+		}
+	}
+
+	DebugSymbols.push_back(DebugSymbol{ UnitInstructions.size(), baseToken, index, symbol, scope, astStr });
 }
 
-void CompilationUnit::AddDebugSymbol(size_t offest, const Token& baseToken, const std::string& astStr)
+void CompilationUnit::AddDebugSymbol(size_t offset, const DebugSymbol& ds)
 {
-	DebugSymbols.push_back(DebugSymbol{ offest, baseToken, astStr });
+	DebugSymbols.push_back(DebugSymbol{ offset, ds.BaseToken, ds.Index, ds.Symbol, ds.Scope, ds.SourceAst });
 }
 
 void CompilationUnit::SetLastInstruction(const Instructions& instruction)

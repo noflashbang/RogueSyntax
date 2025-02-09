@@ -143,7 +143,7 @@ uint32_t SymbolTable::NumberOfSymbolsInContext(uint32_t stackContext)
 	uint32_t cnt = 0;
 	for (auto& it : _store)
 	{
-		if (it.stackContext == stackContext)
+		if (it.stackContext == stackContext && it.Type != ScopeType::SCOPE_FUNCTION)
 		{
 			cnt++;
 		}

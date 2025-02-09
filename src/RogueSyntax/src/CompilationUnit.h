@@ -35,7 +35,7 @@ struct CompilationUnit
 	void ReplaceInstruction(int position, Instructions instructions);
 
 	std::vector<DebugSymbol> DebugSymbols;
-	void AddDebugSymbol(const Token& baseToken, const std::string& astStr);
-	void AddDebugSymbol(size_t offest, const Token& baseToken, const std::string& astStr);
+	void AddDebugSymbol(const Token& baseToken, const Symbol* sym, const std::string& astStr);
+	void AddDebugSymbol(size_t offset, const DebugSymbol& ds);
 };
 

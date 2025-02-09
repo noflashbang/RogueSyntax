@@ -2,10 +2,31 @@
 #include "VirtualMachine.h"
 #include "VirtualMachine.h"
 #include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
 #include "pch.h"
 
+
+std::string StackTrace::ToString() const
+{
+	std::string info = "";
+	for (size_t i = 0; i < Frames.size(); i++)
+	{
+		info += std::format("Frame: {:0>2}, Offset:@{:0>4}+{:0>4} -> |{:0>4}|\n", i, Frames[i].BaseInstructionOffset, Frames[i].FrameInstructionOffset, Frames[i].AbsoluteInstructionOffest);
+	}
+	return info;
+};
+
+std::string RogueVm_RuntimeError::ToString() const
+{
+	return std::format("Runtime Error: {}\n{}", Message, StackTrace.ToString());
+};
+
 RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>& factory)
-	: _byteCode(byteCode), _externals(nullptr), _factory(factory), _coercer(factory)
+	: _byteCode(byteCode), _externals(nullptr), _factory(factory), _coercer(factory), _onError(std::bind(&RogueVM::OnErrorInternal, this, std::placeholders::_1)), _onBreak(std::bind(&RogueVM::OnBreakInternal, this, std::placeholders::_1))
 {
 	//main frame
 	auto function = _factory->New<FunctionCompiledObj>(_byteCode.Instructions, 0, 0);
@@ -14,7 +35,7 @@ RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>&
 	_externals = nullptr;
 }
 
-RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<BuiltIn>& externals, const std::shared_ptr<ObjectFactory>& factory) : _byteCode(byteCode), _externals(externals), _factory(factory), _coercer(factory)
+RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<BuiltIn>& externals, const std::shared_ptr<ObjectFactory>& factory) : _byteCode(byteCode), _externals(externals), _factory(factory), _coercer(factory), _onError(std::bind(&RogueVM::OnErrorInternal, this, std::placeholders::_1)), _onBreak(std::bind(&RogueVM::OnBreakInternal, this, std::placeholders::_1))
 {
 	//main frame
 	auto function = _factory->New<FunctionCompiledObj>(_byteCode.Instructions, 0, 0);
@@ -28,7 +49,31 @@ RogueVM::~RogueVM()
 
 void RogueVM::Run()
 {	
-	ProtectedRun();
+	bool hadError = false;
+	RogueVm_RuntimeError error;
+	try
+	{
+		Execute();
+	}
+	catch (const RogueVm_RuntimeError& ex)
+	{
+		hadError = true;
+		error = ex;;
+	}
+	if (hadError)
+	{
+		_onError(error);
+	}
+}
+
+void RogueVM::Set_RTI_ErrorCallback(const std::function<void(const RogueVm_RuntimeError&)>& onError)
+{
+	_onError = onError;
+}
+
+void RogueVM::Set_RTI_BreakCallback(const std::function<void(const StackTrace&)>& onBreak)
+{
+	_onBreak = onBreak;
 }
 
 const IObject* RogueVM::Top() const 
@@ -68,28 +113,99 @@ const Frame& RogueVM::CurrentFrame() const
 	return _frames[_frameIndex - 1];
 }
 
-std::string RogueVM::GetRuntimeInfo() const
+void RogueVM::OnErrorInternal(const RogueVm_RuntimeError& error)
 {
-	std::string info;
-	auto frameidx = 0;
-	while (frameidx < _frameIndex)
+	_outputRegister = _factory->New<StringObj>(error.ToString());
+}
+
+void RogueVM::OnBreakInternal(const StackTrace& stack)
+{
+}
+
+FrameTrace RogueVM::GetFrameTrace(const size_t idx, const Frame& frame) const
+{
+	FrameTrace trace;
+	auto frameidx = idx;
+	if (frameidx == 0)
 	{
-		auto basePointer = 0;
-		auto baseClosure = _frames[frameidx].Closure();
+		auto baseOffset = 0;
+		auto baseStackPointer = 0;
+		auto baseClosure = frame.Closure();
+
 		if (baseClosure != nullptr)
 		{
 			auto fn = baseClosure->Function;
 			if (fn != nullptr)
 			{
-				basePointer = fn->FuncOffset;
+				baseOffset = fn->FuncOffset;
 			}
 		}
-		
-		info += std::format("Frame: {}, Offset:@{}+{} ({})\n", frameidx, basePointer, _frames[frameidx].Ip(), (basePointer + _frames[frameidx].Ip()));
-		frameidx++;
+		auto baseAdjust = baseOffset;
+		auto ipAdjust = frame.BeforeIp();
+
+		trace.FrameIdx = frameidx;
+		trace.AbsoluteInstructionOffest = baseAdjust + ipAdjust;
+		trace.BaseInstructionOffset = baseAdjust;
+		trace.FrameInstructionOffset = ipAdjust;
+
+		auto i = 0;
+		while (_globals[i] != nullptr)
+		{
+			StackValue value;
+			value.Type = _globals[i]->TypeName();
+			value.Value = _globals[i]->Inspect();
+			trace.Stack.push_back(value);
+			i++;
+		}
+	}
+	else
+	{
+		auto baseOffset = 0;
+		auto baseStackPointer = 0;
+		auto baseClosure = frame.Closure();
+		auto locals = 0;
+		if (baseClosure != nullptr)
+		{
+			auto fn = baseClosure->Function;
+			if (fn != nullptr)
+			{
+				baseOffset = fn->FuncOffset;
+				locals = fn->NumLocals;
+			}
+		}
+		auto baseAdjust = baseOffset >= 9 ? baseOffset - 9 : baseOffset; //9 is the number of bytes for the func instruction - point to the function rather than the first instruction in the function
+		auto ipAdjust = frame.BeforeIp() + 9; //add back the 9 bytes to get the correct offset
+
+		trace.FrameIdx = frameidx;
+		trace.AbsoluteInstructionOffest = baseAdjust + ipAdjust;
+		trace.BaseInstructionOffset = baseAdjust;
+		trace.FrameInstructionOffset = ipAdjust;
+
+		for (int i = frame.BasePointer(); i < frame.BasePointer() + locals; i++)
+		{
+			if (_stack[i] != nullptr)
+			{
+				StackValue value;
+				value.Type = _stack[i]->TypeName();
+				value.Value = _stack[i]->Inspect();
+				trace.Stack.push_back(value);
+			}
+		}
 	}
 
-	return info;
+	return trace;
+}
+
+StackTrace RogueVM::GetRuntimeInfo() const
+{
+	StackTrace trace;
+	auto frameidx = 0;
+	while (frameidx < _frameIndex)
+	{
+		trace.Frames.push_back(GetFrameTrace(frameidx, _frames[frameidx]));
+		frameidx++;
+	}
+	return trace;
 }
 
 std::string RogueVM::PrintStack() const
@@ -112,26 +228,15 @@ std::string RogueVM::PrintStack() const
 	return stack;
 }
 
-void RogueVM::ProtectedRun()
-{
-	try
-	{
-		Execute();
-	}
-	catch (const std::exception& ex)
-	{
-		_outputRegister = _factory->New<StringObj>(ex.what());
-	}
-}
-
 void RogueVM::Execute()
 {
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
 		const auto& instructions = CurrentFrame().Instructions();
+		CurrentFrame().SaveBeforeIp(); //save the ip before the instruction is executed
 		auto opcode = OpCode::GetOpcode(instructions, CurrentFrame().Ip());
 		IncrementFrameIp();
-
+		
 		switch (opcode)
 		{
 		case OpCode::Constants::OP_LINT:
@@ -177,7 +282,6 @@ void RogueVM::Execute()
 			}
 			auto function = _factory->New<FunctionCompiledObj>(fnInstructions, numLocals, numParameters);
 			function->FuncOffset = CurrentFrame().Ip() - numInstructions;
-			//auto closure = _factory->New<ClosureObj>(function, std::vector<const IObject*>{});
 			Push(function);
 			break;
 		}
@@ -337,7 +441,8 @@ void RogueVM::Execute()
 					}
 					else
 					{
-						throw std::runtime_error(std::format("{} -> Index out of bounds value[{}] > {}", GetRuntimeInfo(), index->Value, arr->Elements.size()));
+						auto rti = GetRuntimeInfo();
+						throw RogueVm_RuntimeError{ std::format("Index out of bounds value[{}] > {}", index->Value, arr->Elements.size()), rti };
 					}
 				}
 				else
@@ -968,7 +1073,8 @@ void RogueVM::ExecuteIndexOperation(const IObject* left, const IObject* index)
 		}
 		if (idx->Value < 0 || idx->Value >= arr->Elements.size())
 		{
-			throw std::runtime_error(std::format("{} -> Index out of bounds value[{}] > {}", GetRuntimeInfo(), idx->Value, arr->Elements.size()));
+			auto rti = GetRuntimeInfo();
+			throw RogueVm_RuntimeError{ std::format("Index out of bounds value[{}] > {}", idx->Value, arr->Elements.size()), rti };
 		}
 		auto value = arr->Elements[idx->Value];
 		Push(value);

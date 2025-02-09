@@ -46,12 +46,12 @@ static inline ScopeType GetTypeFromIdx(int idx)
 	{
 		throw std::runtime_error(std::format("Invalid index {}", idx));
 	}
-}
+};
 
 static inline int AdjustIdx(int idx)
 {
 	return idx & 0x3FFF;
-}
+};
 
 struct Symbol
 {
@@ -69,6 +69,9 @@ struct DebugSymbol
 {
 	size_t Offset;
 	Token BaseToken;
+	size_t Index;
+	std::string Symbol;
+	std::string Scope;
 	std::string SourceAst;
 };
 
