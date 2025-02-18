@@ -66,10 +66,16 @@ void UI_Layout_OpenForm::Layout()
 	}
 }
 
-
-
 void UI_Layout_OpenForm::SetFileExplorer()
 {
+	std::string current = _pathTxt->GetText();
+
+	if (current.empty())
+	{
+		_path = _dir + "\\default.mk";
+		_pathTxt->SetText(_path);
+	}
+
 	//see if the path exists
 	if (!std::filesystem::exists(_dir))
 	{

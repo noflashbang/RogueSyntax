@@ -35,10 +35,10 @@ cmake_path(GET CMAKE_CURRENT_SOURCE_DIR PARENT_PATH PARENT_DIR)
 
 set(FONT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/src/resources/anonymous_pro_bold.ttf")
 set(EXAMPLE_FILE 
+     "${CMAKE_CURRENT_SOURCE_DIR}/src/example/default.mk"
      "${CMAKE_CURRENT_SOURCE_DIR}/src/example/bubble.mk"
      "${CMAKE_CURRENT_SOURCE_DIR}/src/example/factorial.mk"
      "${CMAKE_CURRENT_SOURCE_DIR}/src/example/fibonacci.mk"
-     "${CMAKE_CURRENT_SOURCE_DIR}/src/example/heap.mk"
      "${CMAKE_CURRENT_SOURCE_DIR}/src/example/isPrime.mk"
 )
 

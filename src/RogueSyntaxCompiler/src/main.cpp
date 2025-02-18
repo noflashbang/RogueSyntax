@@ -170,6 +170,11 @@ int main(int argc, char* argv[])
 	auto connOnOpenClosed = pUi->GetOpenForm()->onFormClosed() += OnOpenFormClosed;
 	auto connOnSaveAsClosed = pUi->GetSaveForm()->onFormClosed() += OnSaveFormClosed;
 
+    pUi->AddOutputText("Use !h for help");
+
+	pUi->GetOpenForm()->SetFileExplorer();
+	pUi->GetOpenForm()->Close(); //load the default file
+
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
         if (reinitializeClay) {
