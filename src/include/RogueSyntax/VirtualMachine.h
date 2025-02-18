@@ -2,23 +2,56 @@
 #include <StandardLib.h>
 #include <OpCode.h>
 
-
 #define STACK_SIZE 2048
 #define GLOBAL_SIZE std::numeric_limits<int16_t>::max()
 #define MAX_FRAMES 1024
+
+struct StackValue
+{
+	std::string Type;
+	std::string Value;
+};
+
+struct FrameTrace
+{
+	size_t FrameIdx;
+	size_t AbsoluteInstructionOffest;
+	size_t BaseInstructionOffset;
+	size_t FrameInstructionOffset;
+
+	std::vector<StackValue> Stack;
+};
+
+struct StackTrace
+{
+	std::vector<FrameTrace> Frames;
+	std::string ToString() const;
+};
+
+struct RogueVm_RuntimeError
+{
+	std::string Message;
+	StackTrace StackTrace;
+
+	std::string ToString() const;
+};
 
 struct Frame
 {
 public:
 	Frame() : _ip(-1), _basePointer(0) {};
-	Frame(const ClosureObj* fn, int basepointer) : _fn(fn), _basePointer(basepointer), _ip(0) {};
-	Frame(const ClosureObj* fn, int ip, int basepointer) : _fn(fn), _ip(ip), _basePointer(basepointer) {};
+	Frame(const ClosureObj* fn, int basepointer) : _fn(fn), _basePointer(basepointer), _ip(0), _beforeIp(0) {};
+	Frame(const ClosureObj* fn, int ip, int basepointer) : _fn(fn), _ip(ip), _beforeIp(0), _basePointer(basepointer) {};
 	~Frame() {};
-	inline const Instructions& Instructions() const { return _fn->Function->FuncInstructions; };
+	inline const RSInstructions& Instructions() const { return _fn->Function->FuncInstructions; };
 	inline int Ip() const { return _ip; };
+	inline int BaseOffset() const { return _fn->Function->FuncOffset; };
 	inline void IncrementIp() { _ip++; };
 	inline void IncrementIp(int amount) { _ip += amount; };
 	inline void SetIp(int ip) { _ip = ip; };
+	
+	inline void SaveBeforeIp() const { _beforeIp = _ip; };
+	inline int BeforeIp() const { return _beforeIp; };
 
 	inline int BasePointer() const { return _basePointer; };
 	inline void SetBasePointer(int bp) { _basePointer = bp; };
@@ -26,6 +59,7 @@ public:
 	inline const ClosureObj* ClosureRef() const { return _fn; };
 
 private:
+	mutable int _beforeIp;
 	int _ip;
 	const ClosureObj* _fn;
 	int _basePointer;
@@ -40,23 +74,62 @@ public:
 	~RogueVM();
 
 	void Run();
+	void Set_RTI_ErrorCallback(const std::function<void(const RogueVm_RuntimeError&)>& onError);
+	void Set_RTI_BreakCallback(const std::function<void(const StackTrace&)>& onBreak);
+
+	const IObject* Top() const;
+	const IObject* LastPopped() const;
+	const Frame& CurrentFrame() const;
+
+protected:
+
+	void OnErrorInternal(const RogueVm_RuntimeError& error);
+	void OnBreakInternal(const StackTrace& stack);
+
+	FrameTrace GetFrameTrace(const size_t idx, const Frame& frame) const;
+	StackTrace GetRuntimeInfo() const;
+	std::string PrintStack() const;
+
+	void Execute();
 
 	//stack operations
-	const IObject* Top() const;
 	void Push(const IObject* obj);
 	const IObject* Pop();
-	const IObject* LastPoppped() const;
 
 	//frame operations
-	inline void IncrementFrameIp() { _frames[_frameIndex-1].IncrementIp(); };
-	inline void IncrementFrameIp(int amount) { _frames[_frameIndex-1].IncrementIp(amount); };
-	inline void SetFrameIp(int ip) { _frames[_frameIndex-1].SetIp(ip); };
+	inline void IncrementFrameIp() { _frames[_frameIndex - 1].IncrementIp(); };
+	inline void IncrementFrameIp(int amount) { _frames[_frameIndex - 1].IncrementIp(amount); };
+	inline void SetFrameIp(int ip) { _frames[_frameIndex - 1].SetIp(ip); };
 
-	const Frame& CurrentFrame() const;
 	void PushFrame(Frame frame);
 	Frame PopFrame();
 
-protected:
+	template<std::integral T>
+	T ReadOperand(uint8_t width)
+	{
+		T operand = 0;
+		int currentOffset = CurrentFrame().Ip();
+		const auto& instructions = CurrentFrame().Instructions();
+		//use switch case to handle different operand widths - fallthrough is intentional
+		switch (width)
+		{
+		case 4:
+			operand = instructions[currentOffset] << 24;
+			currentOffset++;
+		case 3:
+			operand |= instructions[currentOffset] << 16;
+			currentOffset++;
+		case 2:
+			operand |= instructions[currentOffset] << 8;
+			currentOffset++;
+		case 1:
+			operand |= instructions[currentOffset];
+			currentOffset++;
+		}
+		IncrementFrameIp(width);
+		return operand;
+	}
+
 	void ExecuteArithmeticInfix(OpCode::Constants opcode);
 	void ExecuteIntegerArithmeticInfix(OpCode::Constants opcode, const IntegerObj* left, const IntegerObj* right);
 	void ExecuteDecimalArithmeticInfix(OpCode::Constants opcode, const DecimalObj* left, const DecimalObj* right);
@@ -81,16 +154,20 @@ protected:
 
 	void ExecuteGetInstruction(int idx);
 	void ExecuteSetInstruction(int idx);
-	GetSetType GetTypeFromIdx(int idx);
 
 private:
+
+	std::function<void(const RogueVm_RuntimeError&)> _onError;
+	std::function<void(const StackTrace&)> _onBreak;
+
 	int _frameIndex = 0;
 	uint16_t _sp = 0;
 	std::shared_ptr<ObjectFactory> _factory;
 	std::shared_ptr<BuiltIn> _externals;
 	TypeCoercer _coercer;
-	std::array<const IObject*, STACK_SIZE> _stack;
-	std::array<const IObject*, GLOBAL_SIZE> _globals;
+	std::array<const IObject*, STACK_SIZE> _stack{0};
+	std::array<const IObject*, GLOBAL_SIZE> _globals{0};
+	const IObject* _outputRegister = nullptr;
 	std::array<Frame, MAX_FRAMES> _frames;
 	ByteCode _byteCode;
 };

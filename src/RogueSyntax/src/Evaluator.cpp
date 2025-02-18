@@ -80,7 +80,7 @@ std::shared_ptr<Evaluator> Evaluator::New(EvaluatorType type, const std::shared_
 	}
 }
 
-const IObject* Evaluator::EvalPrefixExpression(const uint32_t env, const Token& optor, const IObject* right) const
+const IObject* Evaluator::EvalPrefixExpression(const uint32_t env, const RSToken& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
 	if (optor.Type == TokenType::TOKEN_BANG)
@@ -102,7 +102,7 @@ const IObject* Evaluator::EvalPrefixExpression(const uint32_t env, const Token& 
 	return result;
 }
 
-const IObject* Evaluator::EvalInfixExpression(const uint32_t env, const Token& optor, const IObject* left, const IObject* right) const
+const IObject* Evaluator::EvalInfixExpression(const uint32_t env, const RSToken& optor, const IObject* left, const IObject* right) const
 {
 	const IObject* result = nullptr;
 	if (left->IsThisA<NullObj>() || right->IsThisA<NullObj>())
@@ -145,7 +145,7 @@ const IObject* Evaluator::EvalInfixExpression(const uint32_t env, const Token& o
 	return result;
 }
 
-const IObject* Evaluator::EvalIndexExpression(const uint32_t env, const Token& op, const IObject* operand, const IObject* index) const
+const IObject* Evaluator::EvalIndexExpression(const uint32_t env, const RSToken& op, const IObject* operand, const IObject* index) const
 {
 	const IObject* result = nullptr;
 	if (operand->IsThisA<ArrayObj>() && index->IsThisA<IntegerObj>())
@@ -197,7 +197,7 @@ const IObject* Evaluator::EvalIndexExpression(const uint32_t env, const Token& o
 	return result;
 }
 
-const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const Token& op, const IObject* const left, const IObject* const right) const
+const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const RSToken& op, const IObject* const left, const IObject* const right) const
 {
 	//check what side the null is on
 	const IObject* result = nullptr;
@@ -263,7 +263,7 @@ const IObject* Evaluator::EvalNullInfixExpression(const uint32_t env, const Toke
 	return result;
 }
 
-const IObject* Evaluator::EvalIntegerInfixExpression(const uint32_t env, const Token& optor, const IntegerObj* const left, const IntegerObj* const right) const
+const IObject* Evaluator::EvalIntegerInfixExpression(const uint32_t env, const RSToken& optor, const IntegerObj* const left, const IntegerObj* const right) const
 {
 	const IObject* result = nullptr;
 
@@ -338,7 +338,7 @@ const IObject* Evaluator::EvalIntegerInfixExpression(const uint32_t env, const T
 	return result;
 }
 
-const IObject* Evaluator::EvalBooleanInfixExpression(const uint32_t env, const Token& optor, const BooleanObj* const left, const BooleanObj* const right) const
+const IObject* Evaluator::EvalBooleanInfixExpression(const uint32_t env, const RSToken& optor, const BooleanObj* const left, const BooleanObj* const right) const
 {
 	const IObject* result = nullptr;
 	if (optor.Type == TokenType::TOKEN_EQ)
@@ -364,7 +364,7 @@ const IObject* Evaluator::EvalBooleanInfixExpression(const uint32_t env, const T
 	return result;
 }
 
-const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const
+const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const RSToken& optor, const DecimalObj* const left, const DecimalObj* const right) const
 {
 	const IObject* result = nullptr;
 
@@ -402,11 +402,11 @@ const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const T
 	}
 	else if (optor.Type == TokenType::TOKEN_EQ)
 	{
-		result = abs(left->Value - right->Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		result = fabs(left->Value - right->Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 	}
 	else if (optor.Type == TokenType::TOKEN_NOT_EQ)
 	{
-		result = abs(left->Value - right->Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
+		result = fabs(left->Value - right->Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 	}
 	else if (optor.Type == TokenType::TOKEN_MODULO)
 	{
@@ -419,7 +419,7 @@ const IObject* Evaluator::EvalDecimalInfixExpression(const uint32_t env, const T
 	return result;
 }
 
-const IObject* Evaluator::EvalStringInfixExpression(const uint32_t env, const Token& optor, const StringObj* const left, const StringObj* const right) const
+const IObject* Evaluator::EvalStringInfixExpression(const uint32_t env, const RSToken& optor, const StringObj* const left, const StringObj* const right) const
 {
 	const IObject* result = nullptr;
 
@@ -434,7 +434,7 @@ const IObject* Evaluator::EvalStringInfixExpression(const uint32_t env, const To
 	return result;
 }
 
-const IObject* Evaluator::EvalAsBoolean(const uint32_t env, const Token& context, const IObject* const obj) const
+const IObject* Evaluator::EvalAsBoolean(const uint32_t env, const RSToken& context, const IObject* const obj) const
 {
 	try
 	{
@@ -445,7 +445,7 @@ const IObject* Evaluator::EvalAsBoolean(const uint32_t env, const Token& context
 		return MakeError(env, e.what(), context);
 	}
 }
-const IObject* Evaluator::EvalAsDecimal(const uint32_t env, const Token& context, const IObject* const obj) const
+const IObject* Evaluator::EvalAsDecimal(const uint32_t env, const RSToken& context, const IObject* const obj) const
 {
 	try
 	{
@@ -456,7 +456,7 @@ const IObject* Evaluator::EvalAsDecimal(const uint32_t env, const Token& context
 		return MakeError(env, e.what(), context);
 	}
 }
-const IObject* Evaluator::EvalAsInteger(const uint32_t env, const Token& context, const IObject* const obj) const
+const IObject* Evaluator::EvalAsInteger(const uint32_t env, const RSToken& context, const IObject* const obj) const
 {
 	try
 	{
@@ -468,7 +468,7 @@ const IObject* Evaluator::EvalAsInteger(const uint32_t env, const Token& context
 	}
 }
 
-const IObject* Evaluator::EvalBangPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
+const IObject* Evaluator::EvalBangPrefixOperatorExpression(const uint32_t env, const RSToken& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
 	if (right == BooleanObj::TRUE_OBJ_REF)
@@ -498,7 +498,7 @@ const IObject* Evaluator::EvalBangPrefixOperatorExpression(const uint32_t env, c
 	return result;
 }
 
-const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
+const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, const RSToken& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
 	if (!right->IsThisA<IntegerObj>())
@@ -513,7 +513,7 @@ const IObject* Evaluator::EvalMinusPrefixOperatorExpression(const uint32_t env, 
 	return result;
 }
 
-const IObject* Evaluator::EvalBitwiseNotPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const
+const IObject* Evaluator::EvalBitwiseNotPrefixOperatorExpression(const uint32_t env, const RSToken& optor, const IObject* right) const
 {
 	const IObject* result = nullptr;
 	if (!right->IsThisA<IntegerObj>())

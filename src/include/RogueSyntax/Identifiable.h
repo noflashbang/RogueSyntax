@@ -23,6 +23,9 @@ public:
 	template<typename U>
 	const bool IsThisA() const noexcept { return _typeInfo == std::type_index(typeid(U)); };
 
+	template<typename U>
+	static const bool IsThisNameA(const std::string& name) noexcept { return name == std::string(std::type_index(typeid(U)).name()); };
+
 	const ITypeTag& TypeTag() const noexcept { return *this; };
 
 protected:

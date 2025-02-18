@@ -15,8 +15,8 @@ public:
 
 	std::function<IObject* (const std::vector<const IObject*>& args)> Caller(std::function<IObject* (const ObjectFactory* factory, const std::vector<const IObject*>& args)> func);
 
-	bool IsBuiltIn(const std::string& name) const { return  std::find(_builtinNames.begin(), _builtinNames.end(), name) != _builtinNames.end(); }
-	int BuiltInIdx(const std::string& name) const 
+	bool IsBuiltIn(const std::string& name) const { return  std::find(_builtinNames.begin(), _builtinNames.end(), name) != _builtinNames.end(); };
+	int BuiltInIdx(const std::string& name) const
 	{
 		auto it = std::find(_builtinNames.begin(), _builtinNames.end(), name);
 		if (it != _builtinNames.end())
@@ -24,7 +24,10 @@ public:
 			return std::distance(_builtinNames.begin(), it);
 		}
 		return -1;
-	}
+	};
+
+	const std::vector<std::string>& GetBuiltInNames() const { return _builtinNames; };
+
 	//Built-in functions
 	IObject* Len(const ObjectFactory* factory, const std::vector<const IObject*>& args);
 	IObject* First(const ObjectFactory* factory, const std::vector<const IObject*>& args);

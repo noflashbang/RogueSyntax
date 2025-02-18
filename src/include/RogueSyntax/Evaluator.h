@@ -3,6 +3,10 @@
 #include "StandardLib.h"
 #include <RogueSyntaxCore.h>
 
+#ifndef FLT_EPSILON
+#define FLT_EPSILON 1.19209290E-07F
+#endif
+
 enum class EvaluatorType
 {
 	Stack,
@@ -53,23 +57,23 @@ protected:
 
 
 protected:
-	const IObject* EvalPrefixExpression(const uint32_t env, const Token& op, const IObject* right) const;
-	const IObject* EvalBangPrefixOperatorExpression(const uint32_t env, const Token& op, const IObject* right) const;
-	const IObject* EvalMinusPrefixOperatorExpression(const uint32_t env, const Token& op, const IObject* right) const;
-	const IObject* EvalBitwiseNotPrefixOperatorExpression(const uint32_t env, const Token& optor, const IObject* right) const;
+	const IObject* EvalPrefixExpression(const uint32_t env, const RSToken& op, const IObject* right) const;
+	const IObject* EvalBangPrefixOperatorExpression(const uint32_t env, const RSToken& op, const IObject* right) const;
+	const IObject* EvalMinusPrefixOperatorExpression(const uint32_t env, const RSToken& op, const IObject* right) const;
+	const IObject* EvalBitwiseNotPrefixOperatorExpression(const uint32_t env, const RSToken& optor, const IObject* right) const;
 
-	const IObject* EvalInfixExpression(const uint32_t env, const Token& op, const IObject* left, const IObject* right) const;
-	const IObject* EvalIndexExpression(const uint32_t env, const Token& op, const IObject* operand, const IObject* index) const;
+	const IObject* EvalInfixExpression(const uint32_t env, const RSToken& op, const IObject* left, const IObject* right) const;
+	const IObject* EvalIndexExpression(const uint32_t env, const RSToken& op, const IObject* operand, const IObject* index) const;
 
-	const IObject* EvalNullInfixExpression(const uint32_t env, const Token& op, const IObject* const left, const IObject* const right) const;
-	const IObject* EvalIntegerInfixExpression(const uint32_t env, const Token& op, const IntegerObj* const left, const IntegerObj* const right) const;
-	const IObject* EvalBooleanInfixExpression(const uint32_t env, const Token& op, const BooleanObj* const left, const BooleanObj* const right) const;
-	const IObject* EvalDecimalInfixExpression(const uint32_t env, const Token& optor, const DecimalObj* const left, const DecimalObj* const right) const;
-	const IObject* EvalStringInfixExpression(const uint32_t env, const Token& optor, const StringObj* const left, const StringObj* const right) const;
+	const IObject* EvalNullInfixExpression(const uint32_t env, const RSToken& op, const IObject* const left, const IObject* const right) const;
+	const IObject* EvalIntegerInfixExpression(const uint32_t env, const RSToken& op, const IntegerObj* const left, const IntegerObj* const right) const;
+	const IObject* EvalBooleanInfixExpression(const uint32_t env, const RSToken& op, const BooleanObj* const left, const BooleanObj* const right) const;
+	const IObject* EvalDecimalInfixExpression(const uint32_t env, const RSToken& optor, const DecimalObj* const left, const DecimalObj* const right) const;
+	const IObject* EvalStringInfixExpression(const uint32_t env, const RSToken& optor, const StringObj* const left, const StringObj* const right) const;
 
-	const IObject* EvalAsBoolean(const uint32_t env, const Token& context, const IObject* const obj) const;
-	const IObject* EvalAsDecimal(const uint32_t env, const Token& context, const IObject* const obj) const;
-	const IObject* EvalAsInteger(const uint32_t env, const Token& context, const IObject* const obj) const;
+	const IObject* EvalAsBoolean(const uint32_t env, const RSToken& context, const IObject* const obj) const;
+	const IObject* EvalAsDecimal(const uint32_t env, const RSToken& context, const IObject* const obj) const;
+	const IObject* EvalAsInteger(const uint32_t env, const RSToken& context, const IObject* const obj) const;
 
 	std::shared_ptr<Environment> EvalEnvironment;
 	std::shared_ptr<BuiltIn> EvalBuiltIn;
@@ -80,7 +84,7 @@ protected:
 
 	uint32_t ExtendFunctionEnv(const uint32_t rootEnv, const FunctionObj* func, const std::vector<const IObject*>& args);
 
-	inline IObject* MakeError(const uint32_t env, const std::string& message, const Token& token) const
+	inline IObject* MakeError(const uint32_t env, const std::string& message, const RSToken& token) const
 	{
 		return EvalFactory->New<ErrorObj>(message, token);
 	};

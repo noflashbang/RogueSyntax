@@ -38,8 +38,8 @@ static const std::map<TokenType, Precedence> PRECEDENCES = {
 	{TokenType::TOKEN_LBRACKET, Precedence::INDEX},
 	{TokenType::TOKEN_LT_EQ, Precedence::LESSGREATER},
 	{TokenType::TOKEN_GT_EQ, Precedence::LESSGREATER},
-	{TokenType::TOKEN_AND, Precedence::LESSGREATER},
-	{TokenType::TOKEN_OR, Precedence::LESSGREATER},
+	{TokenType::TOKEN_AND, Precedence::EQUALS},
+	{TokenType::TOKEN_OR, Precedence::EQUALS},
 	{TokenType::TOKEN_BITWISE_AND, Precedence::LESSGREATER},
 	{TokenType::TOKEN_BITWISE_OR, Precedence::LESSGREATER},
 	{TokenType::TOKEN_BITWISE_XOR, Precedence::LESSGREATER},
@@ -58,7 +58,7 @@ class Parser
 public:
 	Parser(const Lexer& lexer);
 	~Parser() = default;
-	std::shared_ptr<Program> ParseProgram();
+	std::shared_ptr<Program> ParseProgram(const std::string& sourceName);
 	std::vector<std::string> Errors() const;
 protected:
 
@@ -91,7 +91,6 @@ protected:
 
 	IStatement* ParseBlockStatement();
 	IStatement* ParseLetStatement();
-	IStatement* ParseAssignStatement();
 	IStatement* ParseReturnStatement();
 	IStatement* ParseBreakStatement();
 	IStatement* ParseContinueStatement();
@@ -115,8 +114,8 @@ private:
 	Precedence CurrentPrecedence() const;
 
 	Lexer _lexer;
-	Token _currentToken;
-	Token _nextToken;
+	RSToken _currentToken;
+	RSToken _nextToken;
 
 	std::vector<std::string> _errors;
 	std::map<TokenType, PrefixParseFn> _prefixDispatch;

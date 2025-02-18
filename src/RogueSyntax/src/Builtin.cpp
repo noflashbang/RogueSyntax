@@ -41,11 +41,21 @@ std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::Calle
 
 void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (const ObjectFactory* factory, const std::vector<const IObject*>& args)> func)
 {
-	_builtinNames.push_back(name);
-	_builtins.push_back(func);
+	if (GetBuiltInFunction(name) != nullptr)
+	{
+		//override
+		auto it = std::find(_builtinNames.begin(), _builtinNames.end(), name);
+		auto idx = std::distance(_builtinNames.begin(), it);
+		_builtins[idx] = func;
+	}
+	else
+	{
+		_builtinNames.push_back(name);
+		_builtins.push_back(func);
+	}
 
 	//sanity check
-	_ASSERT(_builtinNames.size() == _builtins.size());
+	assert((_builtinNames.size() == _builtins.size()));
 }
 
 IObject* BuiltIn::Len(const ObjectFactory* factory, const std::vector<const IObject*>& args)
@@ -72,7 +82,6 @@ IObject* BuiltIn::Len(const ObjectFactory* factory, const std::vector<const IObj
 		auto hash = dynamic_cast<const HashObj*>(args[0]);
 		return factory->New<IntegerObj>(hash->Elements.size());
 	}
-
 	throw std::runtime_error(std::format("argument to `len` not supported, got {}", args[0]->TypeName()));
 }
 

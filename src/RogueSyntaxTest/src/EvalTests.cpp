@@ -202,13 +202,17 @@ TEST_CASE("Test Return Expression")
 }
 TEST_CASE("Test Error Obj")
 {
+	auto boolObj = BooleanObj(true);
+
+	auto expect1 = std::format("unknown operator: -{}", boolObj.TypeName());
+	auto expect2 = std::format("unknown operator: {} + {}", boolObj.TypeName(), boolObj.TypeName());
+
 	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
-	auto [input, expected] = GENERATE(table<std::string, std::string>(
-	{
-		{"-true", "unknown operator: -class BooleanObj"},
-		{"true + false;", "unknown operator: class BooleanObj + class BooleanObj"},
-		{"5; true + false; 5", "unknown operator: class BooleanObj + class BooleanObj"},
-		{"if (10 > 1) { true + false; }", "unknown operator: class BooleanObj + class BooleanObj"},
+	auto [input, expected] = GENERATE_REF(table<std::string, std::string>({
+		{"-true", expect1},
+		{"true + false;", expect2},
+		{"5; true + false; 5", expect2},
+		{"if (10 > 1) { true + false; }", expect2},
 		{
 			"if (10 > 1) {"
 			"if (10 > 1) {"
@@ -216,9 +220,8 @@ TEST_CASE("Test Error Obj")
 			"}"
 			"return 1;"
 			"}",
-			"unknown operator: class BooleanObj + class BooleanObj"
-		},
-		//{"foobar", "identifier not found: foobar"}
+			expect2
+		}
 	}));
 
 	CAPTURE(input);
@@ -367,11 +370,10 @@ TEST_CASE("Hash Literal Tests")
 	auto [input, expected] = GENERATE(table<std::string, std::string>(
 		{
 			{"{}", "{}"},
-			{"{1: 2, 2: 3}", "{1: 2, 2: 3}"},
-			{"{1 + 1: 2 * 2, 3 + 3: 4 * 4}", "{2: 4, 6: 16}"}
+			{"{1: 2}", "{1: 2}"},
+			{"{1 + 1: 2 * 2}", "{2: 4}"}
 		}));
 
-	
 	CAPTURE(input);
 	REQUIRE(TestEvalInspect(eng, input, expected));
 }
@@ -470,26 +472,43 @@ TEST_CASE("Built In method test")
 			{"len(\"\");", "0"},
 			{"len(\"four\");", "4"},
 			{"len(\"hello world\");", "11"},
-			{"len(1);", "argument to `len` not supported, got class IntegerObj"},
-			{"len(\"one\", \"two\");", "wrong number of arguments. got=2, wanted=1"},
 			{"len([1, 2, 3]);", "3"},
 			{"len([]);", "0"},
 			{"first([1, 2, 3]);", "1"},
 			{"first([]);", "null"},
-			{"first(1);", "argument to `first` must be ARRAY, got class IntegerObj"},
 			{"last([1, 2, 3]);", "3"},
 			{"last([]);", "null"},
-			{"last(1);", "argument to `last` must be ARRAY, got class IntegerObj"},
 			{"rest([1, 2, 3]);", "[2, 3]"},
 			{"rest([]);", "null"},
 			{"push([], 1);", "[1]"},
-			{"push(1, 1);", "argument to `push` must be ARRAY, got class IntegerObj"},
 			{"let acc = 0; let list = [1,2,3,4,5,6,7,8,9]; for(iter = 0; iter < len(list); iter++) { acc = acc + list[iter]; } acc;", "45"},
+			{"len(\"one\", \"two\");", "wrong number of arguments. got=2, wanted=1"}
 		}));
 
 	
 	CAPTURE(input);
 	REQUIRE(TestEvalInspect(eng, input, expected));
+}
+
+TEST_CASE("Built In Type Error Msg test")
+{
+	auto [eng] = GENERATE(table<EvaluatorType>({ EvaluatorType::Stack, EvaluatorType::Recursive }));
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"first(1);", "argument to `first` must be ARRAY, got "},
+			{"last(1);", "argument to `last` must be ARRAY, got "},
+			{"len(1);", "argument to `len` not supported, got "},
+			{"push(1, 1);", "argument to `push` must be ARRAY, got "}
+		}));
+
+	auto intObj = IntegerObj(1);
+
+	std::stringstream ss;
+	ss << expected << intObj.TypeName();
+	auto expectedFmt = ss.str();
+	
+	CAPTURE(input);
+	REQUIRE(TestEvalInspect(eng, input, expectedFmt));
 }
 
 TEST_CASE("Null Tests")

@@ -1,7 +1,32 @@
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
+#include "VirtualMachine.h"
 #include "pch.h"
 
+
+std::string StackTrace::ToString() const
+{
+	std::string info = "";
+	for (size_t i = 0; i < Frames.size(); i++)
+	{
+		info += std::format("Frame: {:0>2}, Offset:@{:0>4}+{:0>4} -> |{:0>4}|\n", i, Frames[i].BaseInstructionOffset, Frames[i].FrameInstructionOffset, Frames[i].AbsoluteInstructionOffest);
+	}
+	return info;
+};
+
+std::string RogueVm_RuntimeError::ToString() const
+{
+	return std::format("Runtime Error: {}\n{}", Message, StackTrace.ToString());
+};
+
 RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>& factory)
-	: _byteCode(byteCode), _externals(nullptr), _factory(factory), _coercer(factory)
+	: _byteCode(byteCode), _externals(nullptr), _factory(factory), _coercer(factory), _onError(std::bind(&RogueVM::OnErrorInternal, this, std::placeholders::_1)), _onBreak(std::bind(&RogueVM::OnBreakInternal, this, std::placeholders::_1))
 {
 	//main frame
 	auto function = _factory->New<FunctionCompiledObj>(_byteCode.Instructions, 0, 0);
@@ -10,7 +35,7 @@ RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<ObjectFactory>&
 	_externals = nullptr;
 }
 
-RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<BuiltIn>& externals, const std::shared_ptr<ObjectFactory>& factory) : _byteCode(byteCode), _externals(externals), _factory(factory), _coercer(factory)
+RogueVM::RogueVM(const ByteCode& byteCode, const std::shared_ptr<BuiltIn>& externals, const std::shared_ptr<ObjectFactory>& factory) : _byteCode(byteCode), _externals(externals), _factory(factory), _coercer(factory), _onError(std::bind(&RogueVM::OnErrorInternal, this, std::placeholders::_1)), _onBreak(std::bind(&RogueVM::OnBreakInternal, this, std::placeholders::_1))
 {
 	//main frame
 	auto function = _factory->New<FunctionCompiledObj>(_byteCode.Instructions, 0, 0);
@@ -23,33 +48,241 @@ RogueVM::~RogueVM()
 }
 
 void RogueVM::Run()
-{
-	//make a local copy of the constants
-	auto pgrmConstants = _byteCode.Constants;	
-	std::vector<const IObject*> constants;
-	constants.reserve(pgrmConstants.size());
-	for (auto& c : pgrmConstants)
+{	
+	bool hadError = false;
+	RogueVm_RuntimeError error;
+	try
 	{
-		auto copy = _factory->Clone(c);
-		constants.push_back(copy);
+		Execute();
+	}
+	catch (const RogueVm_RuntimeError& ex)
+	{
+		hadError = true;
+		error = ex;;
+	}
+	if (hadError)
+	{
+		_onError(error);
+	}
+}
+
+void RogueVM::Set_RTI_ErrorCallback(const std::function<void(const RogueVm_RuntimeError&)>& onError)
+{
+	_onError = onError;
+}
+
+void RogueVM::Set_RTI_BreakCallback(const std::function<void(const StackTrace&)>& onBreak)
+{
+	_onBreak = onBreak;
+}
+
+const IObject* RogueVM::Top() const 
+{ 
+	return _sp > 0 ? _stack[_sp - 1] : NullObj::NULL_OBJ_REF; 
+}
+void RogueVM::Push(const IObject* obj) 
+{
+	if (_sp >= _stack.size()) 
+	{ 
+		throw std::exception("Stack Overflow"); 
+	}  
+	_stack[_sp++] = obj; 
+}
+
+const IObject* RogueVM::Pop() 
+{ 
+	if (_sp == 0) 
+	{ 
+		throw std::exception("Stack Underflow"); 
+	} 
+	_outputRegister =  _stack[--_sp];
+	return _outputRegister;
+}
+
+const IObject* RogueVM::LastPopped() const 
+{ 
+	return _outputRegister;
+}
+
+const Frame& RogueVM::CurrentFrame() const
+{
+	if (_frameIndex == 0)
+	{
+		throw std::exception("No frames");
+	}
+	return _frames[_frameIndex - 1];
+}
+
+void RogueVM::OnErrorInternal(const RogueVm_RuntimeError& error)
+{
+	_outputRegister = _factory->New<StringObj>(error.ToString());
+}
+
+void RogueVM::OnBreakInternal(const StackTrace& stack)
+{
+}
+
+FrameTrace RogueVM::GetFrameTrace(const size_t idx, const Frame& frame) const
+{
+	FrameTrace trace;
+	auto frameidx = idx;
+	if (frameidx == 0)
+	{
+		auto baseOffset = 0;
+		auto baseStackPointer = 0;
+		auto baseClosure = frame.Closure();
+
+		if (baseClosure != nullptr)
+		{
+			auto fn = baseClosure->Function;
+			if (fn != nullptr)
+			{
+				baseOffset = fn->FuncOffset;
+			}
+		}
+		auto baseAdjust = baseOffset;
+		auto ipAdjust = frame.BeforeIp();
+
+		trace.FrameIdx = frameidx;
+		trace.AbsoluteInstructionOffest = baseAdjust + ipAdjust;
+		trace.BaseInstructionOffset = baseAdjust;
+		trace.FrameInstructionOffset = ipAdjust;
+
+		auto i = 0;
+		while (_globals[i] != nullptr)
+		{
+			StackValue value;
+			value.Type = _globals[i]->TypeName();
+			value.Value = _globals[i]->Inspect();
+			trace.Stack.push_back(value);
+			i++;
+		}
+	}
+	else
+	{
+		auto baseOffset = 0;
+		auto baseStackPointer = 0;
+		auto baseClosure = frame.Closure();
+		auto locals = 0;
+		if (baseClosure != nullptr)
+		{
+			auto fn = baseClosure->Function;
+			if (fn != nullptr)
+			{
+				baseOffset = fn->FuncOffset;
+				locals = fn->NumLocals;
+			}
+		}
+		auto baseAdjust = baseOffset >= 9 ? baseOffset - 9 : baseOffset; //9 is the number of bytes for the func instruction - point to the function rather than the first instruction in the function
+		auto ipAdjust = frame.BeforeIp() + 9; //add back the 9 bytes to get the correct offset
+
+		trace.FrameIdx = frameidx;
+		trace.AbsoluteInstructionOffest = baseAdjust + ipAdjust;
+		trace.BaseInstructionOffset = baseAdjust;
+		trace.FrameInstructionOffset = ipAdjust;
+
+		for (int i = frame.BasePointer(); i < frame.BasePointer() + locals; i++)
+		{
+			if (_stack[i] != nullptr)
+			{
+				StackValue value;
+				value.Type = _stack[i]->TypeName();
+				value.Value = _stack[i]->Inspect();
+				trace.Stack.push_back(value);
+			}
+		}
 	}
 
+	return trace;
+}
+
+StackTrace RogueVM::GetRuntimeInfo() const
+{
+	StackTrace trace;
+	auto frameidx = 0;
+	while (frameidx < _frameIndex)
+	{
+		trace.Frames.push_back(GetFrameTrace(frameidx, _frames[frameidx]));
+		frameidx++;
+	}
+	return trace;
+}
+
+std::string RogueVM::PrintStack() const
+{
+	std::string stack;
+	for (int i = 0; i < _sp; i++)
+	{
+		if (i > 0)
+		{
+			if (_stack[i] != nullptr)
+			{
+				stack += std::format("{:0>2} : {}\n", i, _stack[i]->Inspect());
+			}
+			else
+			{
+				stack += std::format("{:0>2} : NULL\n", i);
+			}
+		}
+	}
+	return stack;
+}
+
+void RogueVM::Execute()
+{
 	while (CurrentFrame().Ip() < CurrentFrame().Instructions().size())
 	{
 		const auto& instructions = CurrentFrame().Instructions();
+		CurrentFrame().SaveBeforeIp(); //save the ip before the instruction is executed
 		auto opcode = OpCode::GetOpcode(instructions, CurrentFrame().Ip());
 		IncrementFrameIp();
-
+		
 		switch (opcode)
 		{
-		case OpCode::Constants::OP_CONSTANT:
+		case OpCode::Constants::OP_LINT:
 		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			auto constant = constants[idx];
-			//std::cout << constant->Inspect() << std::endl;
-			IncrementFrameIp(2);
+			auto value = ReadOperand<int>(4);
+			auto integer = _factory->New<IntegerObj>(value);
+			Push(integer);
+			break;
+		}
+		case OpCode::Constants::OP_LDECIMAL:
+		{
+			auto value = ReadOperand<int>(4);
+			// reinterpret the value as a float
+			float f = reinterpret_cast<float&>(value);
+			auto decimal = _factory->New<DecimalObj>(f);
+			Push(decimal);
+			break;
+		}
+		case OpCode::Constants::OP_LSTRING:
+		{
+			auto strLen = ReadOperand<int>(4);
+			std::string str;
+			for (int i = 0; i < strLen; i++)
+			{
+				str.push_back(instructions[CurrentFrame().Ip()]);
+				IncrementFrameIp(1);
+			}
+			auto string = _factory->New<StringObj>(str);
+			Push(string);
+			break;
+		}
+		case OpCode::Constants::OP_LFUN:
+		{
+			auto numLocals = ReadOperand<int>(2);
+			auto numParameters = ReadOperand<int>(2);
+			auto numInstructions = ReadOperand<int>(4);
 
-			Push(constant);
+			std::vector<uint8_t> fnInstructions;
+			for (int i = 0; i < numInstructions; i++)
+			{
+				fnInstructions.push_back(instructions[CurrentFrame().Ip()]);
+				IncrementFrameIp(1);
+			}
+			auto function = _factory->New<FunctionCompiledObj>(fnInstructions, numLocals, numParameters);
+			function->FuncOffset = CurrentFrame().BaseOffset() + CurrentFrame().Ip() - numInstructions;
+			Push(function);
 			break;
 		}
 		case OpCode::Constants::OP_ARRAY:
@@ -100,14 +333,14 @@ void RogueVM::Run()
 			ExecuteArithmeticInfix(opcode);
 			break;
 		}
-		case OpCode::Constants::OP_EQUAL:
-		case OpCode::Constants::OP_NOT_EQUAL:
-		case OpCode::Constants::OP_GREATER_THAN:
-		case OpCode::Constants::OP_GREATER_THAN_EQUAL:
-		case OpCode::Constants::OP_LESS_THAN:
-		case OpCode::Constants::OP_LESS_THAN_EQUAL:
-		case OpCode::Constants::OP_BOOL_AND:
-		case OpCode::Constants::OP_BOOL_OR:
+		case OpCode::Constants::OP_EQ:
+		case OpCode::Constants::OP_NEQ:
+		case OpCode::Constants::OP_GT:
+		case OpCode::Constants::OP_GTE:
+		case OpCode::Constants::OP_LT:
+		case OpCode::Constants::OP_LTE:
+		case OpCode::Constants::OP_AND:
+		case OpCode::Constants::OP_OR:
 		{
 			ExecuteComparisonInfix(opcode);
 			break;
@@ -140,7 +373,7 @@ void RogueVM::Run()
 			SetFrameIp(pos);
 			break;
 		}
-		case OpCode::Constants::OP_JUMP_IF_FALSE:
+		case OpCode::Constants::OP_JUMPIFZ:
 		{
 			auto pos = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
@@ -201,14 +434,15 @@ void RogueVM::Run()
 						auto arrayObj = dynamic_cast<ArrayObj*>(arrayClone);
 						auto rValueClone = _factory->Clone(rValue);
 						arrayObj->Elements[index->Value] = rValueClone;
-						
+
 						Push(arrayObj);
 						ExecuteSetInstruction(idx);
 						Push(rValueClone);
 					}
 					else
 					{
-						throw std::runtime_error("Index out of bounds");
+						auto rti = GetRuntimeInfo();
+						throw RogueVm_RuntimeError{ std::format("Index out of bounds value[{}] > {}", index->Value, arr->Elements.size()), rti };
 					}
 				}
 				else
@@ -223,9 +457,9 @@ void RogueVM::Run()
 				auto key = HashKey{ indexValue->Type(), indexValue->Inspect() };
 
 				auto rValueClone = _factory->Clone(rValue);
-				
+
 				auto keyClone = _factory->Clone(indexValue);
-				
+
 				auto entry = HashEntry{ keyClone, rValueClone };
 				hash->Elements[key] = entry;
 
@@ -245,10 +479,10 @@ void RogueVM::Run()
 			auto left = Pop();
 
 			ExecuteIndexOperation(left, index);
-			
+
 			break;
 		}
-		
+
 		case OpCode::Constants::OP_CALL:
 		{
 			auto numArgs = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
@@ -292,13 +526,14 @@ void RogueVM::Run()
 		}
 		case OpCode::Constants::OP_CLOSURE:
 		{
-			auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
-			IncrementFrameIp(2);
+			//auto idx = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
+			//IncrementFrameIp(2);
 			auto numFree = instructions[CurrentFrame().Ip()] << 8 | instructions[CurrentFrame().Ip() + 1];
 			IncrementFrameIp(2);
 
-			auto fn = dynamic_cast<const FunctionCompiledObj*>(constants[idx]);
-			
+			//auto fn = dynamic_cast<const FunctionCompiledObj*>(constants[idx]);
+			auto fn = dynamic_cast<const FunctionCompiledObj*>(Pop());
+
 			std::vector<const IObject*> free;
 			free.reserve(numFree);
 			for (int i = 0; i < numFree; i++)
@@ -311,7 +546,7 @@ void RogueVM::Run()
 			Push(closure);
 			break;
 		}
-		case OpCode::Constants::OP_CURRENT_CLOSURE:
+		case OpCode::Constants::OP_CUR_CLOSURE:
 		{
 			auto closure = CurrentFrame().ClosureRef();
 			Push(closure);
@@ -324,13 +559,21 @@ void RogueVM::Run()
 			Pop();
 			break;
 		}
-		case OpCode::Constants::OP_RETURN_VALUE:
+		case OpCode::Constants::OP_RET_VAL:
 		{
 			auto result = Pop();
-			auto frame = PopFrame();
-			_sp = frame.BasePointer();
-			Pop();
-			Push(result);
+			if (_frameIndex <= 1)
+			{
+				//global frame - load result into output
+				_outputRegister = result;
+			}
+			else
+			{
+				auto frame = PopFrame();
+				_sp = frame.BasePointer();
+				Pop();
+				Push(result);
+			}
 			break;
 		}
 		default:
@@ -339,54 +582,11 @@ void RogueVM::Run()
 	}
 }
 
-const IObject* RogueVM::Top() const 
-{ 
-	return _sp > 0 ? _stack[_sp - 1] : NullObj::NULL_OBJ_REF; 
-}
-void RogueVM::Push(const IObject* obj) 
-{
-	if (_sp >= _stack.size()) 
-	{ 
-		throw std::exception("Stack Overflow"); 
-	}  
-	_stack[_sp++] = obj; 
-}
-
-const IObject* RogueVM::Pop() 
-{ 
-	if (_sp == 0) 
-	{ 
-		throw std::exception("Stack Underflow"); 
-	} 
-	return _stack[--_sp];
-}
-
-const IObject* RogueVM::LastPoppped() const 
-{ 
-	if (_sp == 0)
-	{
-		if (_stack[_sp] == nullptr)
-		{
-			return NullObj::NULL_OBJ_REF;
-		}
-	}
-	return _stack[_sp];
-}
-
-const Frame& RogueVM::CurrentFrame() const
-{
-	if (_frameIndex == 0)
-	{
-		throw std::exception("No frames");
-	}
-	return _frames[_frameIndex - 1];
-}
-
 void RogueVM::PushFrame(Frame frame)
 {
 	if (_frameIndex >= MAX_FRAMES)
 	{
-		throw std::exception("Frame stack overflow");
+		throw std::runtime_error("Frame stack overflow");
 	}
 	_frames[_frameIndex++] = frame;
 }
@@ -395,7 +595,7 @@ Frame RogueVM::PopFrame()
 {
 	if (_frameIndex == 0)
 	{
-		throw std::exception("Frame stack underflow");
+		throw std::runtime_error("Frame stack underflow");
 	}
 	return _frames[--_frameIndex];
 }
@@ -600,37 +800,37 @@ void RogueVM::ExecuteIntegerComparisonInfix(OpCode::Constants opcode, const Inte
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN:
+	case OpCode::Constants::OP_GT:
 	{
 		auto result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
+	case OpCode::Constants::OP_GTE:
 	{
 		auto result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN:
+	case OpCode::Constants::OP_LT:
 	{
 		auto result = left->Value < right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN_EQUAL:
+	case OpCode::Constants::OP_LTE:
 	{
 		auto result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -645,37 +845,37 @@ void RogueVM::ExecuteDecimalComparisonInfix(OpCode::Constants opcode, const Deci
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = std::abs(left->Value - right->Value) <= FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = std::abs(left->Value - right->Value) > FLT_EPSILON ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN:
+	case OpCode::Constants::OP_GT:
 	{
 		auto result = left->Value > right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_GREATER_THAN_EQUAL:
+	case OpCode::Constants::OP_GTE:
 	{
 		auto result = left->Value >= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN:
+	case OpCode::Constants::OP_LT:
 	{
 		auto result = left->Value < right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_LESS_THAN_EQUAL:
+	case OpCode::Constants::OP_LTE:
 	{
 		auto result = left->Value <= right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -690,13 +890,13 @@ void RogueVM::ExecuteStringComparisonInfix(OpCode::Constants opcode, const Strin
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -711,12 +911,12 @@ void RogueVM::ExecuteNullComparisonInfix(OpCode::Constants opcode, const NullObj
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		Push(BooleanObj::TRUE_OBJ_REF);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		Push(BooleanObj::FALSE_OBJ_REF);
 		break;
@@ -730,25 +930,25 @@ void RogueVM::ExecuteBooleanComparisonInfix(OpCode::Constants opcode, const Bool
 {
 	switch (opcode)
 	{
-	case OpCode::Constants::OP_EQUAL:
+	case OpCode::Constants::OP_EQ:
 	{
 		auto result = left->Value == right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_NOT_EQUAL:
+	case OpCode::Constants::OP_NEQ:
 	{
 		auto result = left->Value != right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_BOOL_AND:
+	case OpCode::Constants::OP_AND:
 	{
 		auto result = left->Value && right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
 		break;
 	}
-	case OpCode::Constants::OP_BOOL_OR:
+	case OpCode::Constants::OP_OR:
 	{
 		auto result = left->Value || right->Value ? BooleanObj::TRUE_OBJ_REF : BooleanObj::FALSE_OBJ_REF;
 		Push(result);
@@ -873,7 +1073,8 @@ void RogueVM::ExecuteIndexOperation(const IObject* left, const IObject* index)
 		}
 		if (idx->Value < 0 || idx->Value >= arr->Elements.size())
 		{
-			throw std::runtime_error("Index out of bounds");
+			auto rti = GetRuntimeInfo();
+			throw RogueVm_RuntimeError{ std::format("Index out of bounds value[{}] > {}", idx->Value, arr->Elements.size()), rti };
 		}
 		auto value = arr->Elements[idx->Value];
 		Push(value);
@@ -916,29 +1117,29 @@ void RogueVM::ExecuteGetInstruction(int idx)
 	auto type = GetTypeFromIdx(idx);
 	switch (type)
 	{
-		case GetSetType::GLOBAL:
+		case ScopeType::SCOPE_GLOBAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto global = _globals[adjustedIdx];
 			Push(global);
 			break;
 		}
-		case GetSetType::LOCAL:
+		case ScopeType::SCOPE_LOCAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto local = CurrentFrame().BasePointer() + adjustedIdx;
 			Push(_stack[local]);
 			break;
 		}
-		case GetSetType::EXTERN:
+		case ScopeType::SCOPE_EXTERN:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			Push(_factory->New<BuiltInObj>(adjustedIdx));
 			break;
 		}
-		case GetSetType::FREE:
+		case ScopeType::SCOPE_FREE:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto free = CurrentFrame().Closure()->Frees[adjustedIdx];
 			Push(free);
 			break;
@@ -951,17 +1152,17 @@ void RogueVM::ExecuteSetInstruction(int idx)
 	auto type = GetTypeFromIdx(idx);
 	switch (type)
 	{
-		case GetSetType::GLOBAL:
+		case ScopeType::SCOPE_GLOBAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto global = Pop();
 			auto cloned = _factory->Clone(global);
 			_globals[adjustedIdx] = cloned;
 			break;
 		}
-		case GetSetType::LOCAL:
+		case ScopeType::SCOPE_LOCAL:
 		{
-			auto adjustedIdx = (idx & 0x3FFF);
+			auto adjustedIdx = AdjustIdx(idx);
 			auto local = Pop();
 			auto localIdx = CurrentFrame().BasePointer() + adjustedIdx;
 			auto cloned =  _factory->Clone(local);
@@ -971,28 +1172,5 @@ void RogueVM::ExecuteSetInstruction(int idx)
 	}
 }
 
-GetSetType RogueVM::GetTypeFromIdx(int idx)
-{
-	auto flags = idx & 0xC000;
-	if (flags == 0x0000)
-	{
-		return GetSetType::GLOBAL;
-	}
-	else if (flags == 0x8000)
-	{
-		return GetSetType::LOCAL;
-	}
-	else if (flags == 0x4000)
-	{
-		return GetSetType::EXTERN;
-	}
-	else if (flags == 0xC000)
-	{
-		return GetSetType::FREE;
-	}
-	else
-	{
-		throw std::runtime_error("Invalid index");
-	}
-}
+
 

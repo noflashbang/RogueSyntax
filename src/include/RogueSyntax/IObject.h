@@ -300,7 +300,7 @@ public:
 class ErrorObj : public IObject
 {
 public:
-	ErrorObj(const std::string& message, const Token& token) : Message(message), Token(token) { SetUniqueId(this); }
+	ErrorObj(const std::string& message, const RSToken& token) : Message(message), Token(token) { SetUniqueId(this); }
 	virtual ~ErrorObj() = default;
 
 	std::string Inspect() const override
@@ -311,7 +311,7 @@ public:
 	virtual IObject* Clone(const ObjectFactory* factory) const override;
 
 	std::string Message;
-	Token Token;
+	RSToken Token;
 };
 
 class FunctionObj : public IObject
@@ -372,7 +372,8 @@ public:
 class FunctionCompiledObj : public IObject
 {
 public:
-	FunctionCompiledObj(const Instructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) { SetUniqueId(this); }
+	FunctionCompiledObj(const RSInstructions& instructions, int numLocals, int numParameters) : FuncInstructions(instructions), NumLocals(numLocals), NumParameters(numParameters) { SetUniqueId(this); FuncOffset = 0;
+	}
 	virtual ~FunctionCompiledObj() = default;
 
 	std::string Inspect() const override
@@ -382,9 +383,10 @@ public:
 
 	virtual IObject* Clone(const ObjectFactory* factory) const override;
 	
-	Instructions FuncInstructions;
+	RSInstructions FuncInstructions;
 	int NumLocals;
 	int NumParameters;
+	int FuncOffset;
 };
 
 class ClosureObj : public IObject

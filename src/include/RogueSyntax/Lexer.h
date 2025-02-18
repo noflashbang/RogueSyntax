@@ -7,16 +7,17 @@ class Lexer
 {
 public:
 	Lexer(const std::string& input);
-	Token NextToken();
+	RSToken NextToken(bool skipComments);
 
 private:
 
-	Token GetCurrentToken();
+	RSToken GetCurrentToken();
 
 	void ReadChar();
 	std::string ReadIdentifier();
 	std::string ReadNumber();
 	std::string ReadString();
+	std::string ReadComment();
 
 	void SkipWhitespace();
 
