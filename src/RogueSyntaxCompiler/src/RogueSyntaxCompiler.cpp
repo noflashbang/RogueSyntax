@@ -7,6 +7,8 @@ void InteractiveCompiler::Run(const ByteCode& code)
 	_output.clear();
 	_byteCode = code;
 
+	syntax.RegisterBuiltIn("printLine", std::bind(&InteractiveCompiler::OverridePrintLine, this, std::placeholders::_1, std::placeholders::_2));
+
 	auto vm = syntax.MakeVM(code);
 
 	vm->Set_RTI_ErrorCallback(std::bind(&InteractiveCompiler::InternalOnError, this, std::placeholders::_1));
@@ -27,9 +29,21 @@ void InteractiveCompiler::Run(const ByteCode& code)
 		}
 		else
 		{
-			InternalPrintLine(top->Inspect());
+			if (!(top->IsThisA<VoidObj>() || top->IsThisA<NullObj>()))
+			{
+				InternalPrintLine(top->Inspect());
+			}
 		}
 	}
+}
+
+IObject* InteractiveCompiler::OverridePrintLine(const ObjectFactory* factory, const std::vector<const IObject*>& args)
+{
+	for (const auto& arg : args)
+	{
+		InternalPrintLine(arg->Inspect());
+	}
+	return VoidObj::VOID_OBJ_REF;
 }
 
 std::vector<std::string> InteractiveCompiler::GetResult() const

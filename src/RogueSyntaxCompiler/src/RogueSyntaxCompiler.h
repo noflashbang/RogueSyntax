@@ -4,6 +4,7 @@
 #include <string>
 #include <RogueSyntaxCore.h>
 #include <RogueSyntax.h>
+#include "UI_Layout_Event.h"
 
 class InteractiveCompiler
 {
@@ -23,6 +24,8 @@ public:
 
 	std::vector<DissaemblyDetail> Disassemble();
 	std::vector<DebugSymbol> GetDebugSymbols();
+
+	IObject* OverridePrintLine(const ObjectFactory* factory, const std::vector<const IObject*>& args);
 
 private:
 

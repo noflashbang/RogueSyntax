@@ -78,6 +78,7 @@ void OnSaveAsFile();
 void OnSaveFormClosed(const std::string& filename);
 void OnNewFile();
 void OnClose();
+void OnOutput(const std::string& output);
 
 
 static std::string GetFileAsString(const std::string& filename)
@@ -265,6 +266,11 @@ void OnClose()
     _closeWindow = true;
 }
 
+void OnOutput(const std::string& output)
+{
+	pUi->AddOutputText(output);
+}
+
 void OnCommand(std::string cmd)
 {
 	auto log = std::format("{}{}\n", pConsole->GetPrompt(), cmd);
@@ -288,13 +294,16 @@ void OnCommand(std::string cmd)
             auto byteCode = pConsole->Compile(code);
             pUi->AddOutputText(std::format("Running {} bytes", byteCode.Instructions.size()));
             pConsole->Run(byteCode);
-            pUi->AddOutputText("Result>");
 
             auto result = pConsole->GetResult();
 
-            for (const auto& line : result)
+            if (!result.empty())
             {
-                pUi->AddOutputText(line);
+                pUi->AddOutputText("Result>");
+                for (const auto& line : result)
+                {
+                    pUi->AddOutputText(line);
+                }
             }
         }
         else if (curCmd == "!e")

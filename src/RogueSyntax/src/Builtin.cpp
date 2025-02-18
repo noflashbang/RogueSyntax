@@ -41,8 +41,18 @@ std::function<IObject* (const std::vector<const IObject*>& args)> BuiltIn::Calle
 
 void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (const ObjectFactory* factory, const std::vector<const IObject*>& args)> func)
 {
-	_builtinNames.push_back(name);
-	_builtins.push_back(func);
+	if (GetBuiltInFunction(name) != nullptr)
+	{
+		//override
+		auto it = std::find(_builtinNames.begin(), _builtinNames.end(), name);
+		auto idx = std::distance(_builtinNames.begin(), it);
+		_builtins[idx] = func;
+	}
+	else
+	{
+		_builtinNames.push_back(name);
+		_builtins.push_back(func);
+	}
 
 	//sanity check
 	_ASSERT(_builtinNames.size() == _builtins.size());
