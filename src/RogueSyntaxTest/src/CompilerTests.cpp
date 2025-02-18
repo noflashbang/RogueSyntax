@@ -803,7 +803,7 @@ TEST_CASE("Function Tests")
 									OpCode::MakeIntegerLiteral(24),
 									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
 								}
-							),1,0
+							),0,0
 						).get()
 					),
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
@@ -829,7 +829,7 @@ TEST_CASE("Function Tests")
 									OpCode::Make(OpCode::Constants::OP_ADD, {}),
 									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
 								}
-							),4,3
+							),3,3
 						).get()
 					),
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
@@ -1111,7 +1111,7 @@ TEST_CASE("Closure Test")
 									OpCode::Make(OpCode::Constants::OP_CLOSURE, {1}),
 									OpCode::Make(OpCode::Constants::OP_RET_VAL, {}),
 								}
-							),2,1
+							),1,1
 						).get()
 					),
 					OpCode::Make(OpCode::Constants::OP_CLOSURE, {0}),
