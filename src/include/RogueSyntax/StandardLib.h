@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cmath>
+#include <cassert>
+
 #include <tuple>
 #include <iostream>
 #include <string>

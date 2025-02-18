@@ -452,7 +452,7 @@ IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 	NextToken();
 	if (token.Type == TokenType::TOKEN_INCREMENT)
 	{
-		Token opToken = Token(TokenType::TOKEN_PLUS, "+");
+		RSToken opToken = RSToken(TokenType::TOKEN_PLUS, "+");
 		opToken.Location = token.Location;
 
 		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, _currentStore->New_IntegerLiteral(opToken, 1));
@@ -462,7 +462,7 @@ IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 	}
 	else if (token.Type == TokenType::TOKEN_DECREMENT)
 	{
-		Token opToken = Token(TokenType::TOKEN_MINUS, "-");
+		RSToken opToken = RSToken(TokenType::TOKEN_MINUS, "-");
 		opToken.Location = token.Location;
 		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, _currentStore->New_IntegerLiteral(opToken, 1));
 
@@ -471,7 +471,7 @@ IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 	}
 	else if (token.Type == TokenType::TOKEN_MINUS_ASSIGN)
 	{
-		Token opToken = Token(TokenType::TOKEN_MINUS, "-");
+		RSToken opToken = RSToken(TokenType::TOKEN_MINUS, "-");
 		opToken.Location = token.Location;
 		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
@@ -480,7 +480,7 @@ IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 	}
 	else if (token.Type == TokenType::TOKEN_PLUS_ASSIGN)
 	{
-		Token opToken = Token(TokenType::TOKEN_PLUS, "+");
+		RSToken opToken = RSToken(TokenType::TOKEN_PLUS, "+");
 		opToken.Location = token.Location;
 		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
@@ -489,7 +489,7 @@ IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 	}
 	else if (token.Type == TokenType::TOKEN_ASTERISK_ASSIGN)
 	{
-		Token opToken = Token(TokenType::TOKEN_ASTERISK, "*");
+		RSToken opToken = RSToken(TokenType::TOKEN_ASTERISK, "*");
 		opToken.Location = token.Location;
 		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
@@ -498,7 +498,7 @@ IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 	}
 	else if (token.Type == TokenType::TOKEN_SLASH_ASSIGN)
 	{
-		Token opToken = Token(TokenType::TOKEN_SLASH, "/");
+		RSToken opToken = RSToken(TokenType::TOKEN_SLASH, "/");
 		opToken.Location = token.Location;
 		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 
@@ -507,7 +507,7 @@ IExpression* Parser::ParseOpAssignExpression(const IExpression* left)
 	}
 	else if (token.Type == TokenType::TOKEN_MODULO_ASSIGN)
 	{
-		Token opToken = Token(TokenType::TOKEN_MODULO, "%");
+		RSToken opToken = RSToken(TokenType::TOKEN_MODULO, "%");
 		opToken.Location = token.Location;
 		auto right = _currentStore->New_InfixExpression(opToken, left, opToken.Literal, ParseExpression(Precedence::LOWEST));
 

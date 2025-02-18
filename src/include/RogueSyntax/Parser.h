@@ -114,8 +114,8 @@ private:
 	Precedence CurrentPrecedence() const;
 
 	Lexer _lexer;
-	Token _currentToken;
-	Token _nextToken;
+	RSToken _currentToken;
+	RSToken _nextToken;
 
 	std::vector<std::string> _errors;
 	std::map<TokenType, PrefixParseFn> _prefixDispatch;

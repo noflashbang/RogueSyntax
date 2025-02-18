@@ -7,7 +7,7 @@ Lexer::Lexer(const std::string& input) : _input(input), _position(0), _readPosit
 	ReadChar();
 }
 
-Token Lexer::NextToken(bool skipComments)
+RSToken Lexer::NextToken(bool skipComments)
 {
 	SkipWhitespace();
 
@@ -27,9 +27,9 @@ Token Lexer::NextToken(bool skipComments)
 	return token;
 }
 
-Token Lexer::GetCurrentToken()
+RSToken Lexer::GetCurrentToken()
 {
-	Token result = Token::New();
+	RSToken result = RSToken::New();
 	switch (_currentChar)
 	{
 		case '=':
@@ -38,37 +38,37 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_EQ, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_EQ, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_ASSIGN, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_ASSIGN, _currentChar);
 			}
 			break;
 		}
 		case ';':
 		{
-			result = Token::New(TokenType::TOKEN_SEMICOLON, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_SEMICOLON, _currentChar);
 			break;
 		}
 		case ':':
 		{
-			result = Token::New(TokenType::TOKEN_COLON, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_COLON, _currentChar);
 			break;
 		}
 		case '(':
 		{
-			result = Token::New(TokenType::TOKEN_LPAREN, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_LPAREN, _currentChar);
 			break;
 		}
 		case ')':
 		{
-			result = Token::New(TokenType::TOKEN_RPAREN, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_RPAREN, _currentChar);
 			break;
 		}
 		case ',':
 		{
-			result = Token::New(TokenType::TOKEN_COMMA, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_COMMA, _currentChar);
 			break;
 		}
 		case '+':
@@ -77,17 +77,17 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_INCREMENT, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_INCREMENT, std::string(1, ch) + _currentChar);
 			}
 			else if (_peekChar == '=')
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_PLUS_ASSIGN, std::string(1, ch) + _currentChar);	
+				result = RSToken::New(TokenType::TOKEN_PLUS_ASSIGN, std::string(1, ch) + _currentChar);	
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_PLUS, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_PLUS, _currentChar);
 			}
 			break;
 		}
@@ -97,17 +97,17 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_DECREMENT, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_DECREMENT, std::string(1, ch) + _currentChar);
 			}
 			else if (_peekChar == '=')
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_MINUS_ASSIGN, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_MINUS_ASSIGN, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_MINUS, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_MINUS, _currentChar);
 			}
 			break;
 		}
@@ -117,11 +117,11 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_NOT_EQ, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_NOT_EQ, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_BANG, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_BANG, _currentChar);
 			}
 			break;
 		}
@@ -131,15 +131,15 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_SLASH_ASSIGN, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_SLASH_ASSIGN, std::string(1, ch) + _currentChar);
 			}
 			else if (_peekChar == '/')
 			{
-				result = Token::New(TokenType::TOKEN_COMMENT, ReadComment());
+				result = RSToken::New(TokenType::TOKEN_COMMENT, ReadComment());
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_SLASH, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_SLASH, _currentChar);
 			}
 			break;
 		}
@@ -149,11 +149,11 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_ASTERISK_ASSIGN, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_ASTERISK_ASSIGN, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_ASTERISK, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_ASTERISK, _currentChar);
 			}
 			break;
 		}
@@ -163,17 +163,17 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_LT_EQ, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_LT_EQ, std::string(1, ch) + _currentChar);
 			}
 			else if (_peekChar == '<')
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_SHIFT_LEFT, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_SHIFT_LEFT, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_LT, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_LT, _currentChar);
 			}
 			break;
 		}
@@ -183,17 +183,17 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_GT_EQ, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_GT_EQ, std::string(1, ch) + _currentChar);
 			}
 			else if (_peekChar == '>')
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_SHIFT_RIGHT, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_SHIFT_RIGHT, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_GT, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_GT, _currentChar);
 			}
 			break;
 		}
@@ -203,11 +203,11 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_AND, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_AND, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_BITWISE_AND, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_BITWISE_AND, _currentChar);
 			}
 			break;
 		}
@@ -217,22 +217,22 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_OR, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_OR, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_BITWISE_OR, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_BITWISE_OR, _currentChar);
 			}
 			break;
 		}
 		case '^':
 		{
-			result = Token::New(TokenType::TOKEN_BITWISE_XOR, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_BITWISE_XOR, _currentChar);
 			break;
 		}
 		case '~':
 		{
-			result = Token::New(TokenType::TOKEN_BITWISE_NOT, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_BITWISE_NOT, _currentChar);
 			break;
 		}
 		case '%':
@@ -241,42 +241,42 @@ Token Lexer::GetCurrentToken()
 			{
 				auto ch = _currentChar;
 				ReadChar();
-				result = Token::New(TokenType::TOKEN_MODULO_ASSIGN, std::string(1, ch) + _currentChar);
+				result = RSToken::New(TokenType::TOKEN_MODULO_ASSIGN, std::string(1, ch) + _currentChar);
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_MODULO, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_MODULO, _currentChar);
 			}
 			break;
 		}
 		case '{':
 		{
-			result = Token::New(TokenType::TOKEN_LBRACE, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_LBRACE, _currentChar);
 			break;
 		}
 		case '}':
 		{
-			result = Token::New(TokenType::TOKEN_RBRACE, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_RBRACE, _currentChar);
 			break;
 		}
 		case '[':
 		{
-			result = Token::New(TokenType::TOKEN_LBRACKET, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_LBRACKET, _currentChar);
 			break;
 		}
 		case ']':
 		{
-			result = Token::New(TokenType::TOKEN_RBRACKET, _currentChar);
+			result = RSToken::New(TokenType::TOKEN_RBRACKET, _currentChar);
 			break;
 		}
 		case '\0':
 		{
-			result = Token::New(TokenType::TOKEN_EOF, "");
+			result = RSToken::New(TokenType::TOKEN_EOF, "");
 			break;
 		}
 		case '"':
 		{
-			result = Token::New(TokenType::TOKEN_STRING, ReadString());
+			result = RSToken::New(TokenType::TOKEN_STRING, ReadString());
 			break;
 		}
 		default:
@@ -285,23 +285,23 @@ Token Lexer::GetCurrentToken()
 			{
 				auto literal = ReadIdentifier();
 				auto tokenType = TokenType::LookupIdent(literal);
-				result = Token::New(tokenType, literal);
+				result = RSToken::New(tokenType, literal);
 			}
 			else if (IsDigit(_currentChar))
 			{
 				auto literal = ReadNumber();
 				if (literal.ends_with('d') || std::any_of(literal.begin(), literal.end(), [](char c) { return c == '.'; }))
 				{
-					result = Token::New(TokenType::TOKEN_DECIMAL, literal);
+					result = RSToken::New(TokenType::TOKEN_DECIMAL, literal);
 				}
 				else
 				{
-					result = Token::New(TokenType::TOKEN_INT, literal);
+					result = RSToken::New(TokenType::TOKEN_INT, literal);
 				}
 			}
 			else
 			{
-				result = Token::New(TokenType::TOKEN_ILLEGAL, _currentChar);
+				result = RSToken::New(TokenType::TOKEN_ILLEGAL, _currentChar);
 			}
 		}
 	}

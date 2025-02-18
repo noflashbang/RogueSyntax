@@ -68,7 +68,7 @@ protected:
 
 	uint32_t AddConstant(const IObject* obj);
 	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands);
-	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands, Instructions data);
+	int Emit(OpCode::Constants opcode, std::vector<uint32_t> operands, RSInstructions data);
 	int EmitGet(Symbol symbol);
 	int EmitSet(Symbol symbol);
 

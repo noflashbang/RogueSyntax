@@ -3,8 +3,9 @@
 #include <variant>
 
 #include <Token.h>
+typedef std::vector<uint8_t> RSInstructions;
 
-typedef std::vector<uint8_t> Instructions;
+
 
 struct Definition
 {
@@ -165,24 +166,24 @@ struct OpCode
 
 	static const std::unordered_map<Constants, Definition> Definitions;
 	static std::variant<Definition, std::string> Lookup(const Constants opcode);
-	static Instructions Make(Constants opcode, std::vector<uint32_t> operands);
-	static Instructions Make(Constants opcode, std::vector<uint32_t> operands, Instructions data);
+	static RSInstructions Make(Constants opcode, std::vector<uint32_t> operands);
+	static RSInstructions Make(Constants opcode, std::vector<uint32_t> operands, RSInstructions data);
 
-	static Instructions MakeIntegerLiteral(int value);
-	static Instructions MakeDecimalLiteral(float value);
-	static Instructions MakeStringLiteral(const std::string& value);
+	static RSInstructions MakeIntegerLiteral(int value);
+	static RSInstructions MakeDecimalLiteral(float value);
+	static RSInstructions MakeStringLiteral(const std::string& value);
 
-	static std::tuple<Constants, std::vector<uint32_t>, size_t> ReadOperand(const Instructions& instructions, size_t offset);
+	static std::tuple<Constants, std::vector<uint32_t>, size_t> ReadOperand(const RSInstructions& instructions, size_t offset);
 	static bool HasData(Constants opcode);
-	static std::vector<uint8_t> ReadData(std::tuple<Constants, std::vector<uint32_t>, size_t>, const Instructions& instructions);
-	static Constants GetOpcode(const Instructions& instructions, size_t offset);
-	static std::string PrintInstructions(const Instructions& instructions);
+	static std::vector<uint8_t> ReadData(std::tuple<Constants, std::vector<uint32_t>, size_t>, const RSInstructions& instructions);
+	static Constants GetOpcode(const RSInstructions& instructions, size_t offset);
+	static std::string PrintInstructions(const RSInstructions& instructions);
 	static std::string PrintInstructionsWithDebug(const ByteCode& code);
 
-	static std::vector<DissaemblyDetail> Disassemble(const Instructions& instructions);
+	static std::vector<DissaemblyDetail> Disassemble(const RSInstructions& instructions);
 	static std::string PrintDisassemblyDetail(const DissaemblyDetail& detail);
 
-	static std::string PrintInstuctionsCompared(const Instructions& instructions, const Instructions& otherInstructions);
+	static std::string PrintInstuctionsCompared(const RSInstructions& instructions, const RSInstructions& otherInstructions);
 	static std::string InstructionsToHex(std::span<const uint8_t> bytes);
 	static std::vector<std::string> InstructionsToHexVec(std::span<const uint8_t> bytes, size_t width);
 	

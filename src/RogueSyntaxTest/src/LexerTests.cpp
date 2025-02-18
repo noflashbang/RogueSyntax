@@ -14,14 +14,14 @@ namespace Catch {
 
 namespace Catch {
 	template<>
-	struct StringMaker<Token> {
-		static std::string convert(Token const& value) {
+	struct StringMaker<RSToken> {
+		static std::string convert(RSToken const& value) {
 			return std::format("Token:{},{}", value.Type.Name, value.Literal);
 		}
 	};
 }
 
-static bool operator==(const Token& lhs, const Token& rhs)
+static bool operator==(const RSToken& lhs, const RSToken& rhs)
 {
 	return lhs.Type == rhs.Type && lhs.Literal == rhs.Literal;
 };
@@ -43,7 +43,7 @@ TEST_CASE("Test Location Information 1")
 
 	for (const auto& expectedLocation : expectedLocations)
 	{
-		Token nt = lexer.NextToken(true);
+		RSToken nt = lexer.NextToken(true);
 		CHECK(nt.Location == expectedLocation);
 	}
 }
@@ -59,14 +59,14 @@ TEST_CASE("Test Location Information 2")
 
 	for (const auto& expectedLocation : expectedLocations)
 	{
-		Token nt = lexer.NextToken(true);
+		RSToken nt = lexer.NextToken(true);
 		CHECK(nt.Location == expectedLocation);
 	}
 }
 
 TEST_CASE("Test NextToken 1")
 {
-	auto test = std::tuple<std::string, std::vector<Token>>{ "let x = 5;", { {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "5"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_EOF, ""} } };
+	auto test = std::tuple<std::string, std::vector<RSToken>>{ "let x = 5;", { {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "5"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_EOF, ""} } };
 
 	auto [input, expectedTokens] = test;
 	Lexer lexer(input);
@@ -75,14 +75,14 @@ TEST_CASE("Test NextToken 1")
 
 	for (const auto& expected : expectedTokens)
 	{
-		Token nt = lexer.NextToken(true);
+		RSToken nt = lexer.NextToken(true);
 		CHECK(nt == expected);
 	}
 }
 
 TEST_CASE("Test NextToken 2")
 {
-	auto test = std::tuple<std::string, std::vector<Token>>{ "let five = 5; let ten = 10; let add = fn(x, y) { x + y; }; let result = add(five, ten);", { {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "five"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "5"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "ten"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "10"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "add"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_FUNCTION , "fn"}, {TokenType::TOKEN_LPAREN, "("}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_COMMA, ","}, {TokenType::TOKEN_IDENT , "y"}, {TokenType::TOKEN_RPAREN, ")"}, {TokenType::TOKEN_LBRACE, "{"}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_PLUS, "+"}, {TokenType::TOKEN_IDENT , "y"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_RBRACE, "}"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "result"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_IDENT, "add"}, {TokenType::TOKEN_LPAREN, "("}, {TokenType::TOKEN_IDENT , "five"}, {TokenType::TOKEN_COMMA, ","}, {TokenType::TOKEN_IDENT, "ten"}, {TokenType::TOKEN_RPAREN, ")"}, {TokenType::TOKEN_SEMICOLON, ";" }, {TokenType::TOKEN_EOF, ""} } };
+	auto test = std::tuple<std::string, std::vector<RSToken>>{ "let five = 5; let ten = 10; let add = fn(x, y) { x + y; }; let result = add(five, ten);", { {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "five"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "5"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "ten"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "10"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "add"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_FUNCTION , "fn"}, {TokenType::TOKEN_LPAREN, "("}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_COMMA, ","}, {TokenType::TOKEN_IDENT , "y"}, {TokenType::TOKEN_RPAREN, ")"}, {TokenType::TOKEN_LBRACE, "{"}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_PLUS, "+"}, {TokenType::TOKEN_IDENT , "y"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_RBRACE, "}"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "result"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_IDENT, "add"}, {TokenType::TOKEN_LPAREN, "("}, {TokenType::TOKEN_IDENT , "five"}, {TokenType::TOKEN_COMMA, ","}, {TokenType::TOKEN_IDENT, "ten"}, {TokenType::TOKEN_RPAREN, ")"}, {TokenType::TOKEN_SEMICOLON, ";" }, {TokenType::TOKEN_EOF, ""} } };
 
 	auto [input, expectedTokens] = test;
 	Lexer lexer(input);
@@ -91,14 +91,14 @@ TEST_CASE("Test NextToken 2")
 
 	for (const auto& expected : expectedTokens)
 	{
-		Token nt = lexer.NextToken(true);
+		RSToken nt = lexer.NextToken(true);
 		CHECK(nt == expected);
 	}
 }
 
 TEST_CASE("Test NextToken With Comment")
 {
-	auto test = std::tuple<std::string, std::vector<Token>>{ "let x = 5; //test comment \n //extra comment \nlet y = 10; //another comment \n", { {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "5"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "y"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "10"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_EOF, ""} } };
+	auto test = std::tuple<std::string, std::vector<RSToken>>{ "let x = 5; //test comment \n //extra comment \nlet y = 10; //another comment \n", { {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "x"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "5"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_LET, "let"}, {TokenType::TOKEN_IDENT, "y"}, {TokenType::TOKEN_ASSIGN, "="}, {TokenType::TOKEN_INT, "10"}, {TokenType::TOKEN_SEMICOLON, ";"}, {TokenType::TOKEN_EOF, ""} } };
 	auto [input, expectedTokens] = test;
 	Lexer lexer(input);
 
@@ -106,7 +106,7 @@ TEST_CASE("Test NextToken With Comment")
 
 	for (const auto& expected : expectedTokens)
 	{
-		Token nt = lexer.NextToken(true);
+		RSToken nt = lexer.NextToken(true);
 		CHECK(nt == expected);
 	}
 }
@@ -114,7 +114,7 @@ TEST_CASE("Test NextToken With Comment")
 TEST_CASE("Test NextToken 3")
 {
 
-	auto test = std::tuple < std::string, std::vector < Token >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar $ while break continue for 23d 2.3 \"some string\" [ ] : ~ <= >= += -= /= *= % %= || | && & ^ //Some Comment",
+	auto test = std::tuple < std::string, std::vector < RSToken >>{ "let return if else true false fn {}()!= ! == = + - * / > < ; , 234 x somevar $ while break continue for 23d 2.3 \"some string\" [ ] : ~ <= >= += -= /= *= % %= || | && & ^ //Some Comment",
 		{
 			{TokenType::TOKEN_LET, "let"},
 			{TokenType::TOKEN_RETURN, "return"},
@@ -178,7 +178,7 @@ TEST_CASE("Test NextToken 3")
 
 	for (const auto& expected : expectedTokens)
 	{
-		Token nt = lexer.NextToken(false);
+		RSToken nt = lexer.NextToken(false);
 		CHECK(nt == expected);
 	}
 }

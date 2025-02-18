@@ -6,13 +6,13 @@
 #include <catch2/benchmark/catch_benchmark.hpp>
 
 
-std::shared_ptr<FunctionCompiledObj> MakeFunction(Instructions instructions, int numLocals, int numParameters)
+std::shared_ptr<FunctionCompiledObj> MakeFunction(RSInstructions instructions, int numLocals, int numParameters)
 {
 	auto fn = std::make_shared<FunctionCompiledObj>(instructions, numLocals, numParameters);
 	return fn;
 };
 
-Instructions MakeFunctionLiteral(const FunctionCompiledObj* pFun)
+RSInstructions MakeFunctionLiteral(const FunctionCompiledObj* pFun)
 {
 	uint32_t numLocals = pFun->NumLocals;
 	uint32_t numParameters = pFun->NumParameters;
@@ -55,7 +55,7 @@ TEST_CASE("OpCode::Make tests")
 
 TEST_CASE("Expression Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1; 2", { }, 
 				{
@@ -73,7 +73,7 @@ TEST_CASE("Expression Complier test")
 
 TEST_CASE("Greaterthan Comparison Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 > 2", { },
 				{
@@ -91,7 +91,7 @@ TEST_CASE("Greaterthan Comparison Complier test")
 
 TEST_CASE("LessThan Comparison Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 < 2", {  },
 				{
@@ -109,7 +109,7 @@ TEST_CASE("LessThan Comparison Complier test")
 
 TEST_CASE("Equal Comparison Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 == 2", {},
 				{
@@ -127,7 +127,7 @@ TEST_CASE("Equal Comparison Complier test")
 
 TEST_CASE("NotEqual Comparison Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 != 2", {  },
 				{
@@ -145,7 +145,7 @@ TEST_CASE("NotEqual Comparison Complier test")
 
 TEST_CASE("GreaterThanOrEqual Comparison Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 >= 2", {  },
 				{
@@ -163,7 +163,7 @@ TEST_CASE("GreaterThanOrEqual Comparison Complier test")
 
 TEST_CASE("LessThanOrEqual Comparison Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 <= 2", {  },
 				{
@@ -181,7 +181,7 @@ TEST_CASE("LessThanOrEqual Comparison Complier test")
 
 TEST_CASE("Addition Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 + 2", {  },
 				{
@@ -199,7 +199,7 @@ TEST_CASE("Addition Complier test")
 
 TEST_CASE("Addition 2 Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 + 2 + 3 + 4 + 5", { },
 				{
@@ -224,7 +224,7 @@ TEST_CASE("Addition 2 Complier test")
 
 TEST_CASE("Subtraction Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 - 2", {  },
 				{
@@ -242,7 +242,7 @@ TEST_CASE("Subtraction Complier test")
 
 TEST_CASE("Multiplication Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 * 2", {  },
 				{
@@ -260,7 +260,7 @@ TEST_CASE("Multiplication Complier test")
 
 TEST_CASE("Division Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 / 2", {  },
 				{
@@ -278,7 +278,7 @@ TEST_CASE("Division Complier test")
 
 TEST_CASE("Modulus Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 % 2", {  },
 				{
@@ -296,7 +296,7 @@ TEST_CASE("Modulus Complier test")
 
 TEST_CASE("Bitwise OR Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 | 2", {  },
 				{
@@ -314,7 +314,7 @@ TEST_CASE("Bitwise OR Complier test")
 
 TEST_CASE("Bitwise AND Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 & 2", { },
 				{
@@ -332,7 +332,7 @@ TEST_CASE("Bitwise AND Complier test")
 
 TEST_CASE("Bitwise XOR Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 ^ 2", { },
 				{
@@ -350,7 +350,7 @@ TEST_CASE("Bitwise XOR Complier test")
 
 TEST_CASE("Bitwise Left Shift Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"1 << 2", {  },
 				{
@@ -368,7 +368,7 @@ TEST_CASE("Bitwise Left Shift Complier test")
 
 TEST_CASE("Bitwise Right Shift Complier test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"8 >> 2", { },
 				{
@@ -386,7 +386,7 @@ TEST_CASE("Bitwise Right Shift Complier test")
 
 TEST_CASE("Negate test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "-1", {  },
 				{
@@ -403,7 +403,7 @@ TEST_CASE("Negate test")
 
 TEST_CASE("Not test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "!true", { },
 				{
@@ -420,7 +420,7 @@ TEST_CASE("Not test")
 
 TEST_CASE("Boolean AND test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "true && false", { },
 				{
@@ -438,7 +438,7 @@ TEST_CASE("Boolean AND test")
 
 TEST_CASE("Boolean OR test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "true || false", { },
 				{
@@ -456,7 +456,7 @@ TEST_CASE("Boolean OR test")
 
 TEST_CASE("BNOT test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "~5", {  },
 				{
@@ -473,7 +473,7 @@ TEST_CASE("BNOT test")
 
 TEST_CASE("Conditional Test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "if (true) { 10 }; 3333;", { },
 				{
@@ -493,7 +493,7 @@ TEST_CASE("Conditional Test")
 
 TEST_CASE("Conditional with Else Test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "if (true) { 10 } else { 20 }; 3333;", {  },
 				{
@@ -516,7 +516,7 @@ TEST_CASE("Conditional with Else Test")
 
 TEST_CASE("Let statement")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "let one = 1; let two = 2;", {  },
 				{
@@ -552,7 +552,7 @@ TEST_CASE("Let statement")
 
 TEST_CASE("string tests")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{"\"1\";", {},
 				{
@@ -576,7 +576,7 @@ TEST_CASE("string tests")
 
 TEST_CASE("Array Tests")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "[]", { },
 				{
@@ -616,7 +616,7 @@ TEST_CASE("Array Tests")
 
 TEST_CASE("Hash Tests")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "{}", { },
 				{
@@ -636,7 +636,7 @@ TEST_CASE("Hash Tests")
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 				}
 			},
-			{ "{1 + 2: 3 - 4, 5 * 6: 7 / 8}", {  },
+			{ "{1 + 2: 3 - 4}", {  },
 				{
 					OpCode::MakeIntegerLiteral(1),
 					OpCode::MakeIntegerLiteral(2),
@@ -644,13 +644,7 @@ TEST_CASE("Hash Tests")
 					OpCode::MakeIntegerLiteral(3),
 					OpCode::MakeIntegerLiteral(4),
 					OpCode::Make(OpCode::Constants::OP_SUB, {}),
-					OpCode::MakeIntegerLiteral(5),
-					OpCode::MakeIntegerLiteral(6),
-					OpCode::Make(OpCode::Constants::OP_MUL, {}),
-					OpCode::MakeIntegerLiteral(7),
-					OpCode::MakeIntegerLiteral(8),
-					OpCode::Make(OpCode::Constants::OP_DIV, {}),
-					OpCode::Make(OpCode::Constants::OP_HASH, {2}),
+					OpCode::Make(OpCode::Constants::OP_HASH, {1}),
 					OpCode::Make(OpCode::Constants::OP_POP, {})
 					}
 		}
@@ -662,7 +656,7 @@ TEST_CASE("Hash Tests")
 
 TEST_CASE("Index Tests")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "[1, 2, 3][1]", { },
 				{
@@ -693,7 +687,7 @@ TEST_CASE("Index Tests")
 
 TEST_CASE("Function Tests")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "fn() { return 5 + 10; }", { },
 				{
@@ -856,7 +850,7 @@ TEST_CASE("Function Tests")
 
 TEST_CASE("Let statement scopes tests")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "let x = 5; fn() { x; }", { },
 				{
@@ -933,7 +927,7 @@ TEST_CASE("Let statement scopes tests")
 
 TEST_CASE("While test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "let x = 10; while (x > 0) { x = x - 1; }", {  },
 				{
@@ -1002,7 +996,7 @@ TEST_CASE("While test")
 
 TEST_CASE("For loop test")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "for (let i = 0; i < 10; i = i + 1) { i; }", {  },
 				{
@@ -1069,7 +1063,7 @@ TEST_CASE("For loop test")
 
 TEST_CASE("External functions")
 {
-	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+	auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "len([]);", { },
 				{
@@ -1087,7 +1081,7 @@ TEST_CASE("External functions")
 
 TEST_CASE("Closure Test")
 {
-		auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<Instructions>>(
+		auto [input, expectedConstants, expectedInstructions] = GENERATE(table<std::string, std::vector<ConstantValue>, std::vector<RSInstructions>>(
 		{
 			{ "let newClosure = fn(a) { fn(b) { a + b; }; }; let closure = newClosure(2); closure(3);", { },
 				{

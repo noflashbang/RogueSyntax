@@ -43,7 +43,7 @@ public:
 	Frame(const ClosureObj* fn, int basepointer) : _fn(fn), _basePointer(basepointer), _ip(0), _beforeIp(0) {};
 	Frame(const ClosureObj* fn, int ip, int basepointer) : _fn(fn), _ip(ip), _beforeIp(0), _basePointer(basepointer) {};
 	~Frame() {};
-	inline const Instructions& Instructions() const { return _fn->Function->FuncInstructions; };
+	inline const RSInstructions& Instructions() const { return _fn->Function->FuncInstructions; };
 	inline int Ip() const { return _ip; };
 	inline int BaseOffset() const { return _fn->Function->FuncOffset; };
 	inline void IncrementIp() { _ip++; };

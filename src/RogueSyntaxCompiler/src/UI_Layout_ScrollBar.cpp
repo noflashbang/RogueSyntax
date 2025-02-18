@@ -1,4 +1,4 @@
-#include "UI_Layout_Scrollbar.h"
+#include "UI_Layout_ScrollBar.h"
 
 UI_ScrollBar::UI_ScrollBar(const UIConfig& config, float min, float max, float initalValue, float step, ScrollBarType type) : _config(config), _min(min), _max(max), _value(initalValue), _step(step), _type(type)
 {

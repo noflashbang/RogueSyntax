@@ -1,4 +1,5 @@
 #include <vector>
+#include <sstream>
 #include "CompilerTestHelpers.h"
 #include <RogueSyntaxCore.h>
 #include <catch2/catch_test_macros.hpp>
@@ -265,19 +266,35 @@ TEST_CASE("Extern/Builtin Function tests")
 			{"len(\"\")", 0},
 			{"len(\"four\")", 4},
 			{"len(\"hello world\")", 11},
-			{"len(1)", "argument to `len` not supported, got class IntegerObj"},
 			{"len(\"one\", \"two\")", "wrong number of arguments. got=2, wanted=1"},
 			{"len([1, 2, 3])", 3},
 			{"first([1, 2, 3])", 1},
 			{"last([1, 2, 3])", 3},
 			{"rest([1, 2, 3])", Array({2,3})},
 			{"push([1, 2, 3], 4)", Array({1,2,3,4})},
-			{"push([1, 2, 3], 4, 5)", "wrong number of arguments. got=3, wanted=2"},
-			{"push(1, 2)", "argument to `push` must be ARRAY, got class IntegerObj"},
+			{"push([1, 2, 3], 4, 5)", "wrong number of arguments. got=3, wanted=2"}
 		}));
 
 	CAPTURE(input);
 	REQUIRE(VmTest(input, expected));
+}
+
+TEST_CASE("Extern/Builtin Function tests with Typename")
+{
+	auto [input, expected] = GENERATE(table<std::string, std::string>(
+		{
+			{"len(1)", "argument to `len` not supported, got "},
+			{"push(1, 2)", "argument to `push` must be ARRAY, got "},
+		}));
+
+	auto intObj = IntegerObj(1);
+
+	std::stringstream ss;
+	ss << expected << intObj.TypeName();
+	auto expectedFmt = ss.str();
+
+	CAPTURE(input);
+	REQUIRE(VmTest(input, expectedFmt));
 }
 
 TEST_CASE("Closure Tests")

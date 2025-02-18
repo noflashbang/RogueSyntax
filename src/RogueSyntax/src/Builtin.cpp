@@ -55,7 +55,7 @@ void BuiltIn::RegisterBuiltIn(const std::string& name, std::function<IObject* (c
 	}
 
 	//sanity check
-	_ASSERT(_builtinNames.size() == _builtins.size());
+	assert((_builtinNames.size() == _builtins.size()));
 }
 
 IObject* BuiltIn::Len(const ObjectFactory* factory, const std::vector<const IObject*>& args)
@@ -82,7 +82,6 @@ IObject* BuiltIn::Len(const ObjectFactory* factory, const std::vector<const IObj
 		auto hash = dynamic_cast<const HashObj*>(args[0]);
 		return factory->New<IntegerObj>(hash->Elements.size());
 	}
-
 	throw std::runtime_error(std::format("argument to `len` not supported, got {}", args[0]->TypeName()));
 }
 

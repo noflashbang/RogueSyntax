@@ -586,7 +586,7 @@ void RogueVM::PushFrame(Frame frame)
 {
 	if (_frameIndex >= MAX_FRAMES)
 	{
-		throw std::exception("Frame stack overflow");
+		throw std::runtime_error("Frame stack overflow");
 	}
 	_frames[_frameIndex++] = frame;
 }
@@ -595,7 +595,7 @@ Frame RogueVM::PopFrame()
 {
 	if (_frameIndex == 0)
 	{
-		throw std::exception("Frame stack underflow");
+		throw std::runtime_error("Frame stack underflow");
 	}
 	return _frames[--_frameIndex];
 }

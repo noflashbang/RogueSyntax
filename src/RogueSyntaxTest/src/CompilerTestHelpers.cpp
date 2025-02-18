@@ -88,7 +88,7 @@ bool TestConstant(const ConstantValue& expected, const IObject* actual)
 	return true;
 }
 
-bool TestInstructions(const Instructions& expected, const Instructions& actual)
+bool TestInstructions(const RSInstructions& expected, const RSInstructions& actual)
 {
 	if (expected.size() != actual.size())
 	{
@@ -121,9 +121,9 @@ bool TestConstants(const std::vector<ConstantValue>& expected, const std::vector
 	return true;
 }
 
-Instructions ConcatInstructions(const std::vector<Instructions>& instructions)
+RSInstructions ConcatInstructions(const std::vector<RSInstructions>& instructions)
 {
-	Instructions result;
+	RSInstructions result;
 	for (const auto& instruction : instructions)
 	{
 		result.insert(result.end(), instruction.begin(), instruction.end());
@@ -131,13 +131,13 @@ Instructions ConcatInstructions(const std::vector<Instructions>& instructions)
 	return result;
 }
 
-bool TestObjectCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, const ObjectCode& actual)
+bool TestObjectCode(const std::vector<ConstantValue>& expectedConstants, const std::vector<RSInstructions>& expectedInstructions, const ObjectCode& actual)
 {
 	auto flattened = ConcatInstructions(expectedInstructions);
 	return TestInstructions(flattened, actual.Instructions);
 }
 
-bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<Instructions>& expectedInstructions, std::string input)
+bool CompilerTest(const std::vector<ConstantValue>& expectedConstants, const std::vector<RSInstructions>& expectedInstructions, std::string input)
 {
 	RogueSyntax syn;
 	auto byteCode = syn.Compile(input, "COMPILETEST");
