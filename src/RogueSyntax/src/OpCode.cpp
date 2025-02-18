@@ -295,7 +295,7 @@ std::string OpCode::PrintInstructionsWithDebug(const ByteCode& code)
 	return result;
 }
 
-std::vector<DissaemblyDetail> OpCode::Disassemble(const Instructions& instructions)
+std::vector<DissaemblyDetail> OpCode::Disassemble(const RSInstructions& instructions)
 {
 	std::vector<DissaemblyDetail> result;
 	size_t offset{0};
@@ -407,7 +407,7 @@ std::string OpCode::PrintDisassemblyDetail(const DissaemblyDetail& detail)
 	return decompiled;
 }
 
-std::string OpCode::PrintInstuctionsCompared(const RSInstructions& instructions, const Instructions& otherInstructions)
+std::string OpCode::PrintInstuctionsCompared(const RSInstructions& instructions, const RSInstructions& otherInstructions)
 {
 	using namespace std::literals;
 	std::string result;

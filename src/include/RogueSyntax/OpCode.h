@@ -69,7 +69,7 @@ struct Symbol
 struct DebugSymbol
 {
 	size_t Offset;
-	Token BaseToken;
+	RSToken BaseToken;
 	size_t Index;
 	std::string Symbol;
 	std::string Scope;
@@ -78,14 +78,14 @@ struct DebugSymbol
 
 struct ObjectCode
 {
-	Instructions Instructions;
+	RSInstructions Instructions;
 	std::vector<Symbol> Symbols;
 	std::vector<DebugSymbol> DebugSymbols;
 };
 
 struct ByteCode
 {
-	Instructions Instructions;
+	RSInstructions Instructions;
 	std::vector<DebugSymbol> DebugSymbols;
 };
 

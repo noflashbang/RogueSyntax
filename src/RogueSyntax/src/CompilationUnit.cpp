@@ -49,7 +49,7 @@ void CompilationUnit::ReplaceInstruction(int position, RSInstructions instructio
 	}
 }
 
-void CompilationUnit::AddDebugSymbol(const Token& baseToken, const Symbol* sym, const std::string& astStr)
+void CompilationUnit::AddDebugSymbol(const RSToken& baseToken, const Symbol* sym, const std::string& astStr)
 {
 	size_t index = 0;
 	std::string symbol = "";
