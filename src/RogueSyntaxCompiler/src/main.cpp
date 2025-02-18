@@ -13,18 +13,6 @@
 #include <iostream>
 #include <cstdlib>
 
-//void* operator new(std::size_t size) {
-//    std::cout << "[Global new] Allocating " << size << " bytes\n";
-//    return std::malloc(size);
-//}
-//
-//void operator delete(void* ptr) noexcept {
-//    std::cout << "[Global delete] Freeing memory\n";
-//    std::free(ptr);
-//}
-
-
-
 void HandleClayErrors(Clay_ErrorData errorData) {
 	printf("%s", errorData.errorText.chars);
 }
@@ -87,13 +75,14 @@ void OnOpenFile();
 void OnOpenFormClosed(const std::string& filename);
 void OnSaveFile();
 void OnSaveAsFile();
+void OnSaveFormClosed(const std::string& filename);
 void OnNewFile();
 void OnClose();
 
 
 static std::string GetFileAsString(const std::string& filename)
 {
-    std::ifstream file(filename);
+    std::ifstream file(filename, std::ios::in);
     char readBuffer[256];
     std::string file_contents;
 
@@ -117,7 +106,7 @@ static std::string GetFileAsString(const std::string& filename)
 
 static void SaveFile(const std::string& filename, const std::string& content)
 {
-	std::ofstream file(filename, std::ios::trunc);
+	std::ofstream file(filename, std::ios::out | std::ios::trunc);
 	if (file.is_open())
 	{
 		file << content;
@@ -179,6 +168,7 @@ int main(int argc, char* argv[])
 	auto connNew = pUi->Subscribe("File", "New", OnNewFile);
 	auto connClose = pUi->Subscribe("File", "Close", OnClose);
 	auto connOnOpenClosed = pUi->GetOpenForm()->onFormClosed() += OnOpenFormClosed;
+	auto connOnSaveAsClosed = pUi->GetSaveForm()->onFormClosed() += OnSaveFormClosed;
 
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
@@ -205,6 +195,9 @@ int main(int argc, char* argv[])
 
 void OnOpenFile()
 {
+	//refresh the file explorer
+    pUi->GetOpenForm()->SetFileExplorer();
+    //open the form
 	pUi->GetFocusObserver()->SetEventData("OpenForm");
 	std::cout << "Open file" << std::endl;
 }
@@ -218,6 +211,8 @@ void OnOpenFormClosed(const std::string& filename)
 
     pUi->SetEditor(fileContents);
     fileName = filename;
+
+	pUi->GetSaveForm()->SetPath(filename);
 }
 
 void OnSaveFile()
@@ -225,6 +220,8 @@ void OnSaveFile()
 	std::cout << "Save file" << std::endl;
 	if (fileName.empty())
 	{
+        //refresh the file explorer
+        pUi->GetSaveForm()->SetFileExplorer();
 		OnSaveAsFile();
 	}
 	else
@@ -238,6 +235,16 @@ void OnSaveAsFile()
 {
 	std::cout << "Save as file" << std::endl;
     pUi->GetFocusObserver()->SetEventData("SaveForm");
+}
+
+void OnSaveFormClosed(const std::string& filename)
+{
+    std::cout << "Saving file contents" << std::endl;
+    pUi->ClearCommand();
+	fileName = filename;
+
+    std::string code = pUi->GetEditorText();
+    SaveFile(fileName, code);
 }
 
 void OnNewFile()
