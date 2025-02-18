@@ -1,18 +1,63 @@
 # RogueSyntax
 
-*RogueSyntax* is a cutting-edge project at the intersection of cyberpunk aesthetics and programming rebellion. This digital rebellion is a fusion of rogue code and untamed syntax, pushing the boundaries of the virtual realm. It embraces the chaotic beauty of raw, unfiltered data streams and challenges the conventional norms of programming.
+*~~ Rogue//Syntax ~~* is a hobby project used to deepen the understanding of various computer science areas including:
+- Lexer
+- Parser
+- AST
+- Interpreter
+- Compiler
+- Virtual Machine
+- IDE (debugging)
+
+For a simple toy language.
 
 ## Project Highlights
 
-- **Edgy Cyberpunk Vibes**: Immerse yourself in the gritty and neon-lit world where rogue code meets cyberpunk aesthetics.
+- **Lexer**: Tokenizes the input source code into meaningful symbols.
+- **Parser**: Analyzes the tokenized input to generate a syntax tree.
+- **Interpreter**: Executes the syntax tree directly.
+- **Compiler**: Translates the syntax tree into machine code or bytecode.
+- **Virtual Machine**: Executes the compiled bytecode.
+- **IDE**: Provides debugging capabilities for the language, Virtual Machine and Compiler.
 
-- **Syntax Liberation**: *RogueSyntax* rebels against the constraints of traditional syntax, forging its own path in the digital wilderness.
+## Getting Started
 
-- **Tech Anarchy**: Embrace the spirit of tech anarchy as you explore the unconventional and the unpredictable in the world of programming.
+Project is built using CMake and Ninja. Using Visual Studio or VSCode is recommended.
 
-- **Digital Rebellion**: Join the movement that disrupts the ordinary, challenges the status quo, and ushers in a new era of coding freedom.
+The "Install" targets are the intended target for building and running the projects. This is especially important for the IDE (RogueSyntaxCompiler) as it requires the resources to be copied to the output directory.
 
-## Get Involved
+Sample programs for the language are located in the `example` directory of the RogueSyntaxCompiler project.
 
-Dive into the world of *RogueSyntax* and become a part of the coding revolution. Unleash your creativity, break free from the shackles of conformity, and let your code run wild.
+## Overview
+
+The project is divided into the following sub-projects:
+
+- **RogueSyntax** - Contains the implementation of the lexer/parser/interpreter/compiler/vm.
+- **RogueSyntaxConsole** - Simple REPL (Read-Eval-Print Loop) for the language.
+- **RogueSyntaxCompiler** - Contains the IDE implemenation.
+- **RogueSyntaxTest** - Contains all the tests for the lexer/parser/interpreter/compiler/vm.
+
+### Prerequisites
+
+- C++20 compatible compiler
+- CMake
+- Ninja
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Building an Interpreter in Go](https://interpreterbook.com/) - Thorsten Ball's incredible book on building an interpreter.
+- [Building a Compiler in Go](https://compilerbook.com/) - Thorsten Ball's incredible book on building a compiler.
+- [Catch2](https://github.com/catchorg/Catch2) - Unit Test Framework for C++
+- [clay](https://github.com/nicbarker/clay) - UI Layout Library
+- [CMake](https://cmake.org/) - Build system
+- [Ninja](https://ninja-build.org/) - Build system
+
 
